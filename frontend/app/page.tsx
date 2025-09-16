@@ -1,25 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeScanner } from '@/components/QRCodeScanner';
 import { DocumentStatus } from '@/components/DocumentStatus';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useTranslation } from '@/lib/i18n';
 import { useNotifications } from '@/lib/context';
 
 export default function HomePage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { addNotification } = useNotifications();
   const [scannedData, setScannedData] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+
+  // Update document title when language changes
+  useEffect(() => {
+    document.title = t('app.title');
+  }, [language, t]);
 
   const handleScan = (data: string) => {
     setScannedData(data);
     setIsScanning(false);
     addNotification({
       type: 'success',
-      title: t('qr.scan'),
+      title: t('scan.title'),
       message: t('document.status') + ': ' + data,
     });
   };
@@ -27,7 +33,7 @@ export default function HomePage() {
   const handleScanError = (error: string) => {
     addNotification({
       type: 'error',
-      title: t('qr.scanFailed'),
+      title: t('error'),
       message: error,
     });
   };
@@ -44,9 +50,12 @@ export default function HomePage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              {t('app.title')}
-            </h1>
+            <div className="flex justify-center items-center gap-4 mb-4">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
+                {t('app.title')}
+              </h1>
+              <LanguageSwitcher />
+            </div>
             <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
               {t('app.description')}
             </p>
@@ -56,7 +65,7 @@ export default function HomePage() {
             {/* QR Scanner Section */}
             <div className="card p-6">
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-                {t('qr.scan')}
+                {t('scan.title')}
               </h2>
               
               {!isScanning && !scannedData && (
@@ -67,13 +76,13 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    Наведите камеру на QR-код документа для проверки его актуальности
+                    {t('scan.instruction')}
                   </p>
                   <button
                     onClick={() => setIsScanning(true)}
                     className="btn-primary"
                   >
-                    Начать сканирование
+                    {t('header.scan')}
                   </button>
                 </div>
               )}
@@ -93,7 +102,7 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <p className="text-gray-600 mb-4">
-                    QR-код успешно отсканирован
+                    {t('success')}
                   </p>
                   <div className="bg-gray-100 p-3 rounded-md mb-4">
                     <code className="text-sm text-gray-800 break-all">
@@ -104,7 +113,7 @@ export default function HomePage() {
                     onClick={handleReset}
                     className="btn-secondary mr-2"
                   >
-                    Сканировать еще
+                    {t('header.scan')}
                   </button>
                 </div>
               )}
@@ -113,14 +122,14 @@ export default function HomePage() {
             {/* Document Status Section */}
             <div className="card p-6">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Статус документа
+                {t('document.status')}
               </h2>
               
               {scannedData ? (
                 <DocumentStatus qrData={scannedData} />
               ) : (
                 <div className="text-center text-gray-500">
-                  <p>Отсканируйте QR-код для проверки статуса документа</p>
+                  <p>{t('scan.instruction')}</p>
                 </div>
               )}
             </div>
@@ -135,10 +144,14 @@ export default function HomePage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Проверка актуальности
+                {language === 'ru' ? 'Проверка актуальности' : 
+                 language === 'en' ? 'Status Verification' : 
+                 '状态验证'}
               </h3>
               <p className="text-gray-600">
-                Мгновенная проверка актуальности документа и его ревизии
+                {language === 'ru' ? 'Мгновенная проверка актуальности документа и его ревизии' : 
+                 language === 'en' ? 'Instant verification of document status and revision' : 
+                 '即时验证文档状态和修订版'}
               </p>
             </div>
 
@@ -149,10 +162,14 @@ export default function HomePage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Мобильная версия
+                {language === 'ru' ? 'Мобильная версия' : 
+                 language === 'en' ? 'Mobile Version' : 
+                 '移动版本'}
               </h3>
               <p className="text-gray-600">
-                Оптимизировано для использования на мобильных устройствах
+                {language === 'ru' ? 'Оптимизировано для использования на мобильных устройствах' : 
+                 language === 'en' ? 'Optimized for use on mobile devices' : 
+                 '针对移动设备使用进行了优化'}
               </p>
             </div>
 
@@ -163,10 +180,14 @@ export default function HomePage() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Безопасность
+                {language === 'ru' ? 'Безопасность' : 
+                 language === 'en' ? 'Security' : 
+                 '安全性'}
               </h3>
               <p className="text-gray-600">
-                HMAC подпись обеспечивает защиту от подделки QR-кодов
+                {language === 'ru' ? 'HMAC подпись обеспечивает защиту от подделки QR-кодов' : 
+                 language === 'en' ? 'HMAC signature provides protection against QR code forgery' : 
+                 'HMAC签名提供防止二维码伪造的保护'}
               </p>
             </div>
           </div>
