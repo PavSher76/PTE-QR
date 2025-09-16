@@ -6,6 +6,8 @@ FastAPI application for QR code generation and document status checking
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from app.api.api_v1.api import api_router
+from app.core.config import settings
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -42,6 +44,9 @@ async def root():
 async def health():
     """Health check endpoint"""
     return {"status": "healthy", "service": "PTE-QR Backend"}
+
+# Include API v1 router
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

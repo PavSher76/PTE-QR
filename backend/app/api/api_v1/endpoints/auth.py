@@ -1,154 +1,275 @@
 """
-Authentication endpoints for SSO integration
+Authentication endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from typing import Optional
-import secrets
-import json
+import structlog
+import time
 
 from app.core.database import get_db
-from app.core.sso import get_sso_provider, authenticate_user
-from app.core.config import settings
+from app.services.auth_service import auth_service
+from app.services.metrics_service import metrics_service
 from app.models.user import User
-from app.utils.jwt import create_access_token
-from app.models.schemas import TokenResponse, UserResponse
 
 router = APIRouter()
+logger = structlog.get_logger()
 
 
-@router.get("/login")
-async def login(request: Request):
-    """Initiate SSO login"""
-    # Generate state parameter for CSRF protection
-    state = secrets.token_urlsafe(32)
-    
-    # Store state in session or cache for validation
-    # For simplicity, we'll use a simple approach here
-    # In production, use Redis or database to store state
-    
-    provider = get_sso_provider()
-    authorization_url = provider.get_authorization_url(state)
-    
-    return RedirectResponse(url=authorization_url)
-
-
-@router.get("/callback")
-async def callback(
-    code: str,
-    state: str,
+@router.post("/login")
+async def login(
+    credentials: dict,
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    """Handle SSO callback"""
+    """
+    User login endpoint
+    """
+    start_time = time.time()
+    
     try:
-        # Validate state parameter (implement proper state validation)
-        # For now, we'll skip state validation for simplicity
+        username = credentials.get("username")
+        password = credentials.get("password")
         
-        provider = get_sso_provider()
-        
-        # Exchange code for token
-        token_data = await provider.exchange_code_for_token(code)
-        access_token = token_data.get('access_token')
-        
-        if not access_token:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No access token received"
-            )
-        
-        # Get user information
-        user_info = await provider.get_user_info(access_token)
+        if not username or not password:
+            raise HTTPException(status_code=422, detail="Username and password are required")
         
         # Authenticate user
-        user = await authenticate_user(db, user_info)
+        user = await auth_service.authenticate_user(username, password, db)
+        if not user:
+            duration = time.time() - start_time
+            metrics_service.record_api_request("POST", "/auth/login", 401, duration)
+            raise HTTPException(status_code=401, detail="Invalid credentials")
         
-        # Create JWT token
-        jwt_token = create_access_token(
-            data={"sub": user.username, "user_id": user.id}
+        if not user.is_active:
+            duration = time.time() - start_time
+            metrics_service.record_api_request("POST", "/auth/login", 403, duration)
+            raise HTTPException(status_code=403, detail="User account is deactivated")
+        
+        # Create token response
+        token_response = auth_service.create_token_response(user)
+        
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/login", 200, duration)
+        
+        logger.info(
+            "User logged in successfully",
+            username=username,
+            user_id=user.id,
+            duration=duration
         )
         
-        return TokenResponse(
-            access_token=jwt_token,
-            token_type="bearer",
-            user=UserResponse(
-                id=user.id,
-                username=user.username,
-                email=user.email,
-                role=user.role,
-                is_active=user.is_active
-            )
-        )
+        return token_response
         
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Authentication failed: {str(e)}"
-        )
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/login", 500, duration)
+        
+        logger.error("Login failed", error=str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/logout")
-async def logout():
-    """Logout user"""
-    # In a real implementation, you might want to:
-    # 1. Revoke the SSO token
-    # 2. Blacklist the JWT token
-    # 3. Clear session data
+async def logout(request: Request):
+    """
+    User logout endpoint
+    """
+    start_time = time.time()
     
-    return {"message": "Successfully logged out"}
-
-
-@router.get("/me", response_model=UserResponse)
-async def get_current_user(
-    current_user: User = Depends(get_current_user_dependency)
-):
-    """Get current user information"""
-    return UserResponse(
-        id=current_user.id,
-        username=current_user.username,
-        email=current_user.email,
-        role=current_user.role,
-        is_active=current_user.is_active
-    )
-
-
-# Dependency for getting current user
-async def get_current_user_dependency(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
-) -> User:
-    """Dependency to get current authenticated user"""
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        username: str = payload.get("sub")
-        user_id: int = payload.get("user_id")
+        # In a real implementation, you would invalidate the token
+        # For now, we'll just return a success message
         
-        if username is None or user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/logout", 200, duration)
         
-        user = db.query(User).filter(User.id == user_id).first()
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+        logger.info("User logged out")
         
-        return user
+        return {"message": "Successfully logged out"}
         
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+    except Exception as e:
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/logout", 500, duration)
+        
+        logger.error("Logout failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/me")
+async def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Get current user information
+    """
+    start_time = time.time()
+    
+    try:
+        # Extract token from Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        
+        token = auth_header.split(" ")[1]
+        
+        # Verify token
+        payload = auth_service.verify_token(token)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        
+        # Get user
+        username = payload.get("sub")
+        user = await auth_service.get_user_by_username(username, db)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="User account is deactivated")
+        
+        duration = time.time() - start_time
+        metrics_service.record_api_request("GET", "/auth/me", 200, duration)
+        
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "roles": [role.name for role in user.roles],
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None
+        }
+        
+    except HTTPException:
+        duration = time.time() - start_time
+        metrics_service.record_api_request("GET", "/auth/me", 401, duration)
+        raise
+    except Exception as e:
+        duration = time.time() - start_time
+        metrics_service.record_api_request("GET", "/auth/me", 500, duration)
+        
+        logger.error("Failed to get current user", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/register")
+async def register(
+    user_data: dict,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Register new user
+    """
+    start_time = time.time()
+    
+    try:
+        username = user_data.get("username")
+        email = user_data.get("email")
+        password = user_data.get("password")
+        roles = user_data.get("roles", ["user"])
+        
+        if not username or not email or not password:
+            raise HTTPException(status_code=422, detail="Username, email and password are required")
+        
+        # Create user
+        user = await auth_service.create_user(username, email, password, roles, db)
+        if not user:
+            raise HTTPException(status_code=409, detail="Username already exists")
+        
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/register", 201, duration)
+        
+        logger.info(
+            "User registered successfully",
+            username=username,
+            email=email,
+            user_id=user.id
         )
+        
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "roles": [role.name for role in user.roles],
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None
+        }
+        
+    except HTTPException:
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/register", 422, duration)
+        raise
+    except Exception as e:
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/register", 500, duration)
+        
+        logger.error("User registration failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
-# OAuth2 scheme for JWT tokens
-from fastapi.security import OAuth2PasswordBearer
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/callback")
+@router.post("/change-password")
+async def change_password(
+    password_data: dict,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Change user password
+    """
+    start_time = time.time()
+    
+    try:
+        # Extract token from Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        
+        token = auth_header.split(" ")[1]
+        
+        # Verify token
+        payload = auth_service.verify_token(token)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        
+        # Get user
+        username = payload.get("sub")
+        user = await auth_service.get_user_by_username(username, db)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Validate current password
+        current_password = password_data.get("current_password")
+        new_password = password_data.get("new_password")
+        
+        if not current_password or not new_password:
+            raise HTTPException(status_code=422, detail="Current password and new password are required")
+        
+        if not auth_service.verify_password(current_password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        # Update password
+        success = await auth_service.update_user_password(user.id, new_password, db)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update password")
+        
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/change-password", 200, duration)
+        
+        logger.info("User password changed", username=username, user_id=user.id)
+        
+        return {"message": "Password changed successfully"}
+        
+    except HTTPException:
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/change-password", 400, duration)
+        raise
+    except Exception as e:
+        duration = time.time() - start_time
+        metrics_service.record_api_request("POST", "/auth/change-password", 500, duration)
+        
+        logger.error("Password change failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")

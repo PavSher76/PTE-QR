@@ -2,21 +2,21 @@
 Health check endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from app.core.database import get_db, get_redis
-from app.models.schemas import HealthResponse
-from app.services.enovia_service import enovia_service
 import time
+import structlog
+from app.core.database import get_db
+from app.services.cache_service import cache_service
+from app.services.enovia_service import enovia_service
+from app.services.metrics_service import metrics_service
 
+logger = structlog.get_logger()
 router = APIRouter()
 
 
-@router.get("/", response_model=HealthResponse)
-async def health_check(
-    db: Session = Depends(get_db),
-    redis = Depends(get_redis)
-):
+@router.get("/")
+async def health_check(db: Session = Depends(get_db)):
     """
     Comprehensive health check for all services
     """
@@ -25,32 +25,38 @@ async def health_check(
     
     # Check database
     try:
-        db.execute("SELECT 1")
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
         checks["database"] = "healthy"
     except Exception as e:
         checks["database"] = f"unhealthy: {str(e)}"
         status = "unhealthy"
     
-    # Check Redis
+    # Check Redis cache
     try:
-        redis.ping()
-        checks["redis"] = "healthy"
+        cache_health = await cache_service.health_check()
+        checks["cache"] = cache_health["status"]
+        if cache_health["status"] != "healthy":
+            status = "unhealthy"
     except Exception as e:
-        checks["redis"] = f"unhealthy: {str(e)}"
+        checks["cache"] = f"unhealthy: {str(e)}"
         status = "unhealthy"
     
-    # Check ENOVIA (optional)
+    # Check ENOVIA
     try:
         enovia_health = await enovia_service.health_check()
-        checks["enovia"] = enovia_health.get("enovia", "unhealthy")
+        checks["enovia"] = enovia_health["enovia"]
+        if enovia_health["enovia"] != "healthy":
+            status = "degraded"  # ENOVIA is optional
     except Exception as e:
         checks["enovia"] = f"unhealthy: {str(e)}"
+        status = "degraded"
     
-    return HealthResponse(
-        status=status,
-        timestamp=time.time(),
-        **checks
-    )
+    return {
+        "status": status,
+        "timestamp": time.time(),
+        "checks": checks
+    }
 
 
 @router.get("/metrics")
@@ -58,17 +64,16 @@ async def metrics():
     """
     Prometheus metrics endpoint
     """
-    from app.core.metrics import metrics_collector
-    from fastapi.responses import Response
-    
     try:
-        metrics_data = metrics_collector.get_metrics()
+        from fastapi.responses import Response
+        metrics_data = metrics_service.get_metrics_prometheus()
+        from prometheus_client import CONTENT_TYPE_LATEST
         return Response(
             content=metrics_data,
-            media_type="text/plain; version=0.0.4; charset=utf-8"
+            media_type=CONTENT_TYPE_LATEST
         )
     except Exception as e:
-        logger.error("Failed to get metrics", error=str(e), exc_info=True)
+        logger.error("Failed to get metrics", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to get metrics")
 
 
@@ -77,54 +82,56 @@ async def metrics_json():
     """
     Metrics in JSON format
     """
-    from app.core.metrics import metrics_collector
-    
     try:
-        metrics_dict = metrics_collector.get_metrics_dict()
-        return metrics_dict
+        return metrics_service.get_metrics_dict()
     except Exception as e:
-        logger.error("Failed to get metrics JSON", error=str(e), exc_info=True)
+        logger.error("Failed to get metrics JSON", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to get metrics")
 
 
 @router.get("/status")
-async def detailed_status():
+async def detailed_status(db: Session = Depends(get_db)):
     """
     Detailed system status with metrics
     """
-    from app.core.metrics import metrics_collector
-    from app.core.cache import cache_manager
-    from app.services.enovia_service import enovia_service
-    import psutil
-    import time
-    
     try:
-        # System metrics
-        system_info = {
-            "cpu_percent": psutil.cpu_percent(interval=1),
-            "memory_percent": psutil.virtual_memory().percent,
-            "disk_percent": psutil.disk_usage('/').percent,
-            "load_average": psutil.getloadavg() if hasattr(psutil, 'getloadavg') else None
-        }
+        # Get health metrics
+        health_metrics = metrics_service.get_health_metrics()
         
-        # Application metrics
-        app_metrics = metrics_collector.get_metrics_dict()
+        # Get cache health
+        cache_health = await cache_service.health_check()
         
-        # Cache health
-        cache_health = await cache_manager.health_check()
-        
-        # ENOVIA health
+        # Get ENOVIA health
         enovia_health = await enovia_service.health_check()
+        
+        # Get database info
+        try:
+            from sqlalchemy import text
+            db.execute(text("SELECT 1"))
+            db_status = "healthy"
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)}"
         
         return {
             "status": "healthy",
             "timestamp": time.time(),
-            "system": system_info,
-            "application": app_metrics,
-            "cache": cache_health,
-            "enovia": enovia_health
+            "system": {
+                "cpu_usage_percent": health_metrics["cpu_usage_percent"],
+                "memory_usage_percent": health_metrics["memory_usage_percent"],
+                "disk_usage_percent": health_metrics["disk_usage_percent"],
+                "uptime_seconds": health_metrics["uptime_seconds"]
+            },
+            "application": {
+                "total_requests": health_metrics["total_requests"],
+                "total_qr_codes": health_metrics["total_qr_codes"]
+            },
+            "services": {
+                "database": db_status,
+                "cache": cache_health,
+                "enovia": enovia_health
+            }
         }
         
     except Exception as e:
-        logger.error("Failed to get detailed status", error=str(e), exc_info=True)
+        logger.error("Failed to get detailed status", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to get system status")

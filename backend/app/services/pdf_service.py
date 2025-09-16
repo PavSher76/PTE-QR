@@ -1,394 +1,247 @@
 """
-PDF stamping service
+PDF processing service
 """
 
-import asyncio
-import tempfile
-import os
-from typing import List, Dict, Any, Optional, BinaryIO
-from datetime import datetime
+import io
+from typing import List, Dict, Any, Optional, Tuple
+from PIL import Image
+import PyPDF2
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.units import mm
+from reportlab.lib.colors import black, white
 import structlog
-
-from app.core.config import settings
-from app.utils.pdf_stamper import PDFStamper
 from app.services.qr_service import qr_service
-from app.core.cache import cache_manager
-from app.core.database import get_db
-from app.models.user import User
+from app.core.config import settings
 
 logger = structlog.get_logger()
 
 
-class PDFStampingService:
-    """PDF stamping service for embedding QR codes"""
+class PDFStamper:
+    """PDF stamping service"""
     
     def __init__(self):
-        self.stamper = PDFStamper()
-        self.cache_ttl = 3600  # 1 hour for stamped PDFs
-    
-    async def stamp_pdf_with_qr_codes(
+        self.qr_size_mm = settings.PDF_QR_SIZE
+        self.qr_position = settings.PDF_QR_POSITION
+        
+    def stamp_pdf_with_qr(
         self,
-        pdf_file: BinaryIO,
+        pdf_data: bytes,
         doc_uid: str,
         revision: str,
         pages: List[int],
-        position: str = "bottom-right",
-        margin_mm: int = 5,
-        user: Optional[User] = None
+        dpi: int = 300
     ) -> bytes:
-        """
-        Stamp PDF with QR codes on specified pages
-        
-        Args:
-            pdf_file: PDF file as binary stream
-            doc_uid: Document UID
-            revision: Document revision
-            pages: List of page numbers to stamp (1-indexed)
-            position: QR position (bottom-right, top-right, top-center)
-            margin_mm: Margin from edge in millimeters
-            user: User performing the stamping
-            
-        Returns:
-            Stamped PDF as bytes
-        """
+        """Stamp PDF with QR codes"""
         try:
-            # Check cache for existing stamped PDF
-            cache_key = f"stamped_pdf:{doc_uid}:{revision}:{position}:{margin_mm}:{','.join(map(str, pages))}"
-            cached_pdf = await cache_manager.get(cache_key)
-            if cached_pdf:
-                logger.info("Stamped PDF retrieved from cache", doc_uid=doc_uid, revision=revision, pages=pages)
-                return cached_pdf
+            # Read input PDF
+            input_pdf = PyPDF2.PdfReader(io.BytesIO(pdf_data))
+            output_pdf = PyPDF2.PdfWriter()
             
-            # Create temporary file for input PDF
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_input:
-                temp_input.write(pdf_file.read())
-                temp_input_path = temp_input.name
-            
-            try:
-                # Stamp PDF with QR codes
-                stamped_pdf_bytes = self.stamper.stamp_pdf_with_qr(
-                    pdf_path=temp_input_path,
-                    doc_uid=doc_uid,
-                    revision=revision,
-                    pages=pages,
-                    position=position,
-                    margin_mm=margin_mm
-                )
+            # Process each page
+            for page_num in range(len(input_pdf.pages)):
+                page = input_pdf.pages[page_num]
                 
-                # Cache the result
-                await cache_manager.set(cache_key, stamped_pdf_bytes, ttl=self.cache_ttl)
+                # Check if this page needs QR code
+                if (page_num + 1) in pages:
+                    # Generate QR code for this page
+                    qr_img = qr_service.generate_qr_for_pdf_stamp(
+                        doc_uid, revision, page_num + 1, dpi, self.qr_size_mm
+                    )
+                    
+                    # Create stamp PDF
+                    stamp_pdf = self._create_qr_stamp_pdf(
+                        qr_img, page.mediabox.width, page.mediabox.height, dpi
+                    )
+                    
+                    # Merge stamp with page
+                    page.merge_page(stamp_pdf.pages[0])
                 
-                # Log the stamping operation
-                await self._log_pdf_stamping(
-                    doc_uid=doc_uid,
-                    revision=revision,
-                    pages=pages,
-                    position=position,
-                    user=user
-                )
-                
-                logger.info(
-                    "PDF stamped successfully",
-                    doc_uid=doc_uid,
-                    revision=revision,
-                    pages=pages,
-                    position=position
-                )
-                
-                return stamped_pdf_bytes
-                
-            finally:
-                # Clean up temporary file
-                if os.path.exists(temp_input_path):
-                    os.unlink(temp_input_path)
-                
-        except Exception as e:
-            logger.error(
-                "Failed to stamp PDF",
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages,
-                error=str(e),
-                exc_info=True
-            )
-            raise
-    
-    async def generate_pdf_with_qr_codes(
-        self,
-        doc_uid: str,
-        revision: str,
-        pages: List[int],
-        position: str = "bottom-right",
-        margin_mm: int = 5,
-        user: Optional[User] = None
-    ) -> bytes:
-        """
-        Generate a new PDF with embedded QR codes (without existing PDF)
-        
-        Args:
-            doc_uid: Document UID
-            revision: Document revision
-            pages: List of page numbers
-            position: QR position
-            margin_mm: Margin from edge in millimeters
-            user: User generating the PDF
+                output_pdf.add_page(page)
             
-        Returns:
-            Generated PDF with QR codes as bytes
-        """
-        try:
-            # Check cache
-            cache_key = f"generated_pdf:{doc_uid}:{revision}:{position}:{margin_mm}:{','.join(map(str, pages))}"
-            cached_pdf = await cache_manager.get(cache_key)
-            if cached_pdf:
-                logger.info("Generated PDF retrieved from cache", doc_uid=doc_uid, revision=revision, pages=pages)
-                return cached_pdf
-            
-            # Generate QR codes for all pages
-            qr_results = await qr_service.generate_qr_codes(
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages,
-                user=user
-            )
-            
-            # Create PDF with QR codes
-            pdf_bytes = self._create_pdf_with_qr_codes(
-                qr_results=qr_results,
-                doc_uid=doc_uid,
-                revision=revision,
-                position=position,
-                margin_mm=margin_mm
-            )
-            
-            # Cache the result
-            await cache_manager.set(cache_key, pdf_bytes, ttl=self.cache_ttl)
-            
-            # Log the generation
-            await self._log_pdf_stamping(
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages,
-                position=position,
-                user=user
-            )
-            
-            logger.info(
-                "PDF with QR codes generated successfully",
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages
-            )
-            
-            return pdf_bytes
+            # Write output PDF
+            output_buffer = io.BytesIO()
+            output_pdf.write(output_buffer)
+            return output_buffer.getvalue()
             
         except Exception as e:
             logger.error(
-                "Failed to generate PDF with QR codes",
+                "Failed to stamp PDF with QR codes",
                 doc_uid=doc_uid,
                 revision=revision,
                 pages=pages,
-                error=str(e),
-                exc_info=True
+                error=str(e)
             )
             raise
     
-    def _create_pdf_with_qr_codes(
+    def _create_qr_stamp_pdf(
         self,
-        qr_results: Dict[str, Any],
-        doc_uid: str,
-        revision: str,
-        position: str,
-        margin_mm: int
-    ) -> bytes:
-        """
-        Create a new PDF with QR codes embedded
-        
-        Args:
-            qr_results: QR code generation results
-            doc_uid: Document UID
-            revision: Document revision
-            position: QR position
-            margin_mm: Margin from edge
+        qr_img: Image.Image,
+        page_width: float,
+        page_height: float,
+        dpi: int
+    ) -> PyPDF2.PdfWriter:
+        """Create PDF with QR code stamp"""
+        try:
+            # Convert QR image to bytes
+            qr_buffer = io.BytesIO()
+            qr_img.save(qr_buffer, format='PNG')
+            qr_buffer.seek(0)
             
-        Returns:
-            PDF bytes
-        """
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.units import mm
-        import base64
-        import io
-        
-        # Create PDF buffer
-        pdf_buffer = io.BytesIO()
-        pdf_canvas = canvas.Canvas(pdf_buffer, pagesize=A4)
-        
-        page_width, page_height = A4
-        
-        for item in qr_results["items"]:
-            # Decode QR code image
-            qr_image_data = base64.b64decode(item["data_base64"])
-            qr_image = io.BytesIO(qr_image_data)
+            # Create stamp PDF
+            stamp_buffer = io.BytesIO()
+            c = canvas.Canvas(stamp_buffer, pagesize=(page_width, page_height))
             
             # Calculate position
-            qr_size_mm = settings.QR_SIZE_MM
-            qr_size_points = qr_size_mm * 72 / 25.4
-            margin_points = margin_mm * 72 / 25.4
+            qr_width_pt = self.qr_size_mm * mm
+            qr_height_pt = self.qr_size_mm * mm
             
-            if position == "bottom-right":
-                x = page_width - qr_size_points - margin_points
-                y = margin_points
-            elif position == "top-right":
-                x = page_width - qr_size_points - margin_points
-                y = page_height - qr_size_points - margin_points
-            elif position == "top-center":
-                x = (page_width - qr_size_points) / 2
-                y = page_height - qr_size_points - margin_points
-            else:
-                x = page_width - qr_size_points - margin_points
-                y = margin_points
+            if self.qr_position == "bottom-right":
+                x = page_width - qr_width_pt - 10
+                y = 10
+            elif self.qr_position == "bottom-left":
+                x = 10
+                y = 10
+            elif self.qr_position == "top-right":
+                x = page_width - qr_width_pt - 10
+                y = page_height - qr_height_pt - 10
+            elif self.qr_position == "top-left":
+                x = 10
+                y = page_height - qr_height_pt - 10
+            else:  # center
+                x = (page_width - qr_width_pt) / 2
+                y = (page_height - qr_height_pt) / 2
             
-            # Add QR code to page
-            pdf_canvas.drawImage(
-                qr_image,
+            # Draw QR code
+            c.drawImage(
+                qr_buffer,
                 x, y,
-                width=qr_size_points,
-                height=qr_size_points,
+                width=qr_width_pt,
+                height=qr_height_pt,
                 mask='auto'
             )
             
-            # Add page info
-            pdf_canvas.setFont("Helvetica", 10)
-            pdf_canvas.drawString(
-                margin_points,
-                page_height - 20,
-                f"Document: {doc_uid} | Revision: {revision} | Page: {item['page']}"
-            )
+            c.save()
+            stamp_buffer.seek(0)
             
-            # Start new page (except for last item)
-            if item != qr_results["items"][-1]:
-                pdf_canvas.showPage()
-        
-        pdf_canvas.save()
-        pdf_buffer.seek(0)
-        
-        return pdf_buffer.getvalue()
-    
-    async def get_stamp_positions(
-        self,
-        page_width: float,
-        page_height: float,
-        position: str = "bottom-right",
-        margin_mm: int = 5
-    ) -> List[Dict[str, float]]:
-        """
-        Get QR stamp positions for pages
-        
-        Args:
-            page_width: Page width in points
-            page_height: Page height in points
-            position: Position on page
-            margin_mm: Margin in millimeters
-            
-        Returns:
-            List of position dictionaries
-        """
-        try:
-            positions = self.stamper.get_stamp_positions(
-                page_width=page_width,
-                page_height=page_height,
-                position=position,
-                margin_mm=margin_mm
-            )
-            
-            return [
-                {"x": pos[0], "y": pos[1]}
-                for pos in positions
-            ]
+            # Convert to PyPDF2
+            stamp_pdf = PyPDF2.PdfReader(stamp_buffer)
+            return stamp_pdf
             
         except Exception as e:
-            logger.error(
-                "Failed to get stamp positions",
-                page_width=page_width,
-                page_height=page_height,
-                position=position,
-                error=str(e)
-            )
-            return []
+            logger.error("Failed to create QR stamp PDF", error=str(e))
+            raise
     
-    async def _log_pdf_stamping(
+    def extract_pdf_info(self, pdf_data: bytes) -> Dict[str, Any]:
+        """Extract information from PDF"""
+        try:
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_data))
+            
+            info = {
+                "pages": len(pdf_reader.pages),
+                "title": pdf_reader.metadata.get("/Title", "") if pdf_reader.metadata else "",
+                "author": pdf_reader.metadata.get("/Author", "") if pdf_reader.metadata else "",
+                "subject": pdf_reader.metadata.get("/Subject", "") if pdf_reader.metadata else "",
+                "creator": pdf_reader.metadata.get("/Creator", "") if pdf_reader.metadata else "",
+                "producer": pdf_reader.metadata.get("/Producer", "") if pdf_reader.metadata else "",
+                "creation_date": pdf_reader.metadata.get("/CreationDate", "") if pdf_reader.metadata else "",
+                "modification_date": pdf_reader.metadata.get("/ModDate", "") if pdf_reader.metadata else ""
+            }
+            
+            return info
+            
+        except Exception as e:
+            logger.error("Failed to extract PDF info", error=str(e))
+            raise
+    
+    def validate_pdf(self, pdf_data: bytes) -> Tuple[bool, Optional[str]]:
+        """Validate PDF file"""
+        try:
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_data))
+            
+            # Check if PDF is encrypted
+            if pdf_reader.is_encrypted:
+                return False, "PDF is encrypted"
+            
+            # Check number of pages
+            if len(pdf_reader.pages) == 0:
+                return False, "PDF has no pages"
+            
+            # Check if PDF is too large
+            if len(pdf_data) > settings.MAX_FILE_SIZE:
+                return False, f"PDF is too large (max {settings.MAX_FILE_SIZE} bytes)"
+            
+            return True, None
+            
+        except Exception as e:
+            logger.error("PDF validation failed", error=str(e))
+            return False, f"Invalid PDF: {str(e)}"
+    
+    def create_pdf_with_qr_codes(
         self,
         doc_uid: str,
         revision: str,
         pages: List[int],
-        position: str,
-        user: Optional[User] = None
-    ):
-        """Log PDF stamping operation to database"""
+        title: str = "",
+        dpi: int = 300
+    ) -> bytes:
+        """Create new PDF with QR codes"""
         try:
-            db = next(get_db())
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib.units import mm
             
-            # This would log to a PDF stamping log table
-            # For now, we'll just log the operation
-            logger.info(
-                "PDF stamping logged",
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages,
-                position=position,
-                user_id=user.id if user else None
-            )
+            buffer = io.BytesIO()
+            c = canvas.Canvas(buffer, pagesize=A4)
+            
+            for page_num in pages:
+                # Generate QR code
+                qr_img = qr_service.generate_qr_for_pdf_stamp(
+                    doc_uid, revision, page_num, dpi, self.qr_size_mm
+                )
+                
+                # Convert to bytes
+                qr_buffer = io.BytesIO()
+                qr_img.save(qr_buffer, format='PNG')
+                qr_buffer.seek(0)
+                
+                # Add page title
+                if title:
+                    c.setFont("Helvetica-Bold", 16)
+                    c.drawString(50, A4[1] - 50, f"{title} - Page {page_num}")
+                
+                # Add QR code
+                qr_size_pt = self.qr_size_mm * mm
+                c.drawImage(
+                    qr_buffer,
+                    50, A4[1] - 100,
+                    width=qr_size_pt,
+                    height=qr_size_pt,
+                    mask='auto'
+                )
+                
+                # Add document info
+                c.setFont("Helvetica", 10)
+                c.drawString(50, A4[1] - 120, f"Document: {doc_uid}")
+                c.drawString(50, A4[1] - 135, f"Revision: {revision}")
+                c.drawString(50, A4[1] - 150, f"Page: {page_num}")
+                
+                c.showPage()
+            
+            c.save()
+            buffer.seek(0)
+            return buffer.getvalue()
             
         except Exception as e:
             logger.error(
-                "Failed to log PDF stamping",
+                "Failed to create PDF with QR codes",
                 doc_uid=doc_uid,
                 revision=revision,
                 pages=pages,
                 error=str(e)
             )
-    
-    async def invalidate_pdf_cache(self, doc_uid: str, revision: Optional[str] = None):
-        """
-        Invalidate PDF cache
-        
-        Args:
-            doc_uid: Document UID
-            revision: Optional revision to invalidate
-        """
-        try:
-            if revision:
-                patterns = [
-                    f"stamped_pdf:{doc_uid}:{revision}:*",
-                    f"generated_pdf:{doc_uid}:{revision}:*"
-                ]
-            else:
-                patterns = [
-                    f"stamped_pdf:{doc_uid}:*",
-                    f"generated_pdf:{doc_uid}:*"
-                ]
-            
-            total_deleted = 0
-            for pattern in patterns:
-                deleted_count = await cache_manager.delete_pattern(pattern)
-                total_deleted += deleted_count
-            
-            logger.info(
-                "PDF cache invalidated",
-                doc_uid=doc_uid,
-                revision=revision,
-                deleted_keys=total_deleted
-            )
-            
-        except Exception as e:
-            logger.error(
-                "Failed to invalidate PDF cache",
-                doc_uid=doc_uid,
-                revision=revision,
-                error=str(e)
-            )
+            raise
 
 
-# Global service instance
-pdf_service = PDFStampingService()
+# Global PDF service instance
+pdf_service = PDFStamper()

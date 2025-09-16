@@ -21,10 +21,10 @@ class Settings:
     QR_HMAC_SECRET: str = "your-qr-hmac-secret-change-in-production"
     
     # Database
-    DATABASE_URL: str = "postgresql://pte_qr:pte_qr_dev@localhost:5432/pte_qr"
+    DATABASE_URL: str = "postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr"
     
     # Redis
-    REDIS_URL: str = "redis://localhost:6379"
+    REDIS_URL: str = "redis://redis:6379"
     CACHE_TTL_SECONDS: int = 900  # 15 minutes
     
     # CORS

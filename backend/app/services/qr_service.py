@@ -2,160 +2,204 @@
 QR Code generation service
 """
 
-import asyncio
+import qrcode
+import segno
+from PIL import Image, ImageDraw, ImageFont
+import io
+import base64
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 import structlog
-
-from app.core.config import settings
-from app.utils.qr_generator import QRCodeGenerator
 from app.utils.hmac_signer import HMACSigner
-from app.models.qr_code import QRCodeFormatEnum, QRCodeStyleEnum
-from app.core.cache import cache_manager
-from app.core.database import get_db
-from app.models.qr_code import QRCode as QRCodeModel
-from app.models.user import User
+from app.core.config import settings
 
 logger = structlog.get_logger()
 
 
-class QRCodeService:
-    """QR Code generation and management service"""
+class QRCodeGenerator:
+    """QR Code generator service"""
     
     def __init__(self):
-        self.generator = QRCodeGenerator()
         self.hmac_signer = HMACSigner()
-        self.cache_ttl = 3600  # 1 hour for QR codes
+        self.base_url = "https://pte-qr.pti.ru"
+        
+    def _generate_qr_url(self, doc_uid: str, revision: str, page: int) -> str:
+        """Generate QR code URL with HMAC signature"""
+        return self.hmac_signer.generate_qr_url(doc_uid, revision, page)
     
-    async def generate_qr_codes(
+    def _create_qr_image(
+        self,
+        data: str,
+        size: int = 200,
+        border: int = 4,
+        error_correction: str = "M",
+        style: str = "BLACK"
+    ) -> Image.Image:
+        """Create QR code image"""
+        # Create QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=getattr(qrcode.constants, f"ERROR_CORRECT_{error_correction}"),
+            box_size=size // 25,  # Adjust box size based on total size
+            border=border,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        
+        # Create image
+        if style == "BLACK":
+            fill_color = "black"
+            back_color = "white"
+        elif style == "INVERTED":
+            fill_color = "white"
+            back_color = "black"
+        else:
+            fill_color = "black"
+            back_color = "white"
+        
+        img = qr.make_image(fill_color=fill_color, back_color=back_color)
+        
+        # Resize to exact size
+        img = img.resize((size, size), Image.Resampling.LANCZOS)
+        
+        return img
+    
+    def _create_qr_with_label(
+        self,
+        data: str,
+        label: str,
+        size: int = 200,
+        border: int = 4,
+        error_correction: str = "M"
+    ) -> Image.Image:
+        """Create QR code with label"""
+        # Create base QR code
+        qr_img = self._create_qr_image(data, size - 40, border, error_correction)
+        
+        # Create image with space for label
+        final_img = Image.new("RGB", (size, size + 30), "white")
+        
+        # Paste QR code
+        final_img.paste(qr_img, (20, 0))
+        
+        # Add label
+        try:
+            draw = ImageDraw.Draw(final_img)
+            # Try to use a system font
+            try:
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+            except:
+                font = ImageFont.load_default()
+            
+            # Center the text
+            bbox = draw.textbbox((0, 0), label, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_x = (size - text_width) // 2
+            
+            draw.text((text_x, size - 25), label, fill="black", font=font)
+        except Exception as e:
+            logger.warning("Failed to add label to QR code", error=str(e))
+        
+        return final_img
+    
+    def generate_qr_codes(
         self,
         doc_uid: str,
         revision: str,
         pages: List[int],
-        style: QRCodeStyleEnum = QRCodeStyleEnum.BLACK,
+        style: str = "BLACK",
         dpi: int = 300,
-        size_mm: int = 35,
-        user: Optional[User] = None
-    ) -> Dict[str, Any]:
-        """
-        Generate QR codes for multiple pages with caching
+        size: int = 200
+    ) -> List[Dict[str, Any]]:
+        """Generate QR codes for multiple pages"""
+        results = []
         
-        Args:
-            doc_uid: Document UID
-            revision: Document revision
-            pages: List of page numbers
-            style: QR code style
-            dpi: DPI for generation
-            size_mm: Size in millimeters
-            user: User generating the codes
-            
-        Returns:
-            QR code generation results
-        """
-        try:
-            # Check cache for existing QR codes
-            cached_results = await self._get_cached_qr_codes(doc_uid, revision, pages, style, dpi, size_mm)
-            if cached_results:
-                logger.info("QR codes retrieved from cache", doc_uid=doc_uid, revision=revision, pages=pages)
-                return cached_results
-            
-            # Generate new QR codes
-            qr_results = self.generator.generate_qr_codes(
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages,
-                style=style,
-                dpi=dpi,
-                size_mm=size_mm
-            )
-            
-            # Build response
-            response = {
-                "doc_uid": doc_uid,
-                "revision": revision,
-                "items": []
-            }
-            
-            for qr_result in qr_results:
-                # Create QR code item
-                item = {
-                    "page": qr_result["page"],
-                    "format": QRCodeFormatEnum.PNG.value,
-                    "data_base64": qr_result["data"]["png"],
-                    "url": qr_result["url"]
-                }
-                response["items"].append(item)
+        for page in pages:
+            try:
+                # Generate URL
+                qr_url = self._generate_qr_url(doc_uid, revision, page)
                 
-                # Log QR code generation
-                await self._log_qr_generation(
+                # Create QR code image
+                if style == "WITH_LABEL":
+                    qr_img = self._create_qr_with_label(
+                        qr_url,
+                        f"{doc_uid} Rev.{revision} P.{page}",
+                        size
+                    )
+                else:
+                    qr_img = self._create_qr_image(qr_url, size, style=style)
+                
+                # Convert to different formats
+                png_data = self._image_to_base64(qr_img, "PNG")
+                svg_data = self._generate_svg_qr(qr_url, size)
+                
+                results.append({
+                    "page": page,
+                    "url": qr_url,
+                    "data": {
+                        "png": png_data,
+                        "svg": svg_data
+                    }
+                })
+                
+                logger.info(
+                    "QR code generated",
                     doc_uid=doc_uid,
                     revision=revision,
-                    page=qr_result["page"],
-                    user=user
+                    page=page,
+                    style=style
                 )
-            
-            # Cache the results
-            await self._cache_qr_codes(doc_uid, revision, pages, style, dpi, size_mm, response)
-            
-            logger.info(
-                "QR codes generated successfully",
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages,
-                count=len(pages)
-            )
-            
-            return response
-            
-        except Exception as e:
-            logger.error(
-                "Failed to generate QR codes",
-                doc_uid=doc_uid,
-                revision=revision,
-                pages=pages,
-                error=str(e),
-                exc_info=True
-            )
-            raise
+                
+            except Exception as e:
+                logger.error(
+                    "Failed to generate QR code",
+                    doc_uid=doc_uid,
+                    revision=revision,
+                    page=page,
+                    error=str(e)
+                )
+                raise
+        
+        return results
     
-    async def generate_single_qr_code(
+    def generate_qr_for_pdf_stamp(
         self,
         doc_uid: str,
         revision: str,
         page: int,
-        style: QRCodeStyleEnum = QRCodeStyleEnum.BLACK,
         dpi: int = 300,
-        size_mm: int = 35,
-        user: Optional[User] = None
-    ) -> Dict[str, Any]:
-        """
-        Generate a single QR code
+        size_mm: int = 35
+    ) -> Image.Image:
+        """Generate QR code optimized for PDF stamping"""
+        # Convert mm to pixels (assuming 300 DPI)
+        size_px = int(size_mm * dpi / 25.4)
         
-        Args:
-            doc_uid: Document UID
-            revision: Document revision
-            page: Page number
-            style: QR code style
-            dpi: DPI for generation
-            size_mm: Size in millimeters
-            user: User generating the code
-            
-        Returns:
-            Single QR code result
-        """
-        result = await self.generate_qr_codes(
-            doc_uid=doc_uid,
-            revision=revision,
-            pages=[page],
-            style=style,
-            dpi=dpi,
-            size_mm=size_mm,
-            user=user
-        )
+        # Generate URL
+        qr_url = self._generate_qr_url(doc_uid, revision, page)
         
-        return result["items"][0] if result["items"] else None
+        # Create QR code with high error correction for small size
+        qr = segno.make(qr_url, error='h')  # High error correction
+        
+        # Convert to PIL Image
+        qr_img = qr.to_pil(size=size_px, border=2)
+        
+        # Convert to RGB if needed
+        if qr_img.mode != 'RGB':
+            qr_img = qr_img.convert('RGB')
+        
+        return qr_img
     
-    async def verify_qr_signature(
+    def _image_to_base64(self, img: Image.Image, format: str) -> str:
+        """Convert PIL Image to base64 string"""
+        buffer = io.BytesIO()
+        img.save(buffer, format=format)
+        return base64.b64encode(buffer.getvalue()).decode()
+    
+    def _generate_svg_qr(self, data: str, size: int) -> str:
+        """Generate SVG QR code"""
+        qr = segno.make(data)
+        return qr.svg_inline(scale=size//25, border=2)
+    
+    def verify_qr_signature(
         self,
         doc_uid: str,
         revision: str,
@@ -163,209 +207,9 @@ class QRCodeService:
         timestamp: int,
         signature: str
     ) -> bool:
-        """
-        Verify QR code signature
-        
-        Args:
-            doc_uid: Document UID
-            revision: Document revision
-            page: Page number
-            timestamp: Timestamp from QR code
-            signature: HMAC signature
-            
-        Returns:
-            True if signature is valid, False otherwise
-        """
-        try:
-            is_valid = self.hmac_signer.verify_signature(
-                doc_uid=doc_uid,
-                revision=revision,
-                page=page,
-                timestamp=timestamp,
-                signature=signature
-            )
-            
-            logger.info(
-                "QR signature verification",
-                doc_uid=doc_uid,
-                revision=revision,
-                page=page,
-                is_valid=is_valid
-            )
-            
-            return is_valid
-            
-        except Exception as e:
-            logger.error(
-                "QR signature verification failed",
-                doc_uid=doc_uid,
-                revision=revision,
-                page=page,
-                error=str(e),
-                exc_info=True
-            )
-            return False
-    
-    async def get_qr_url(
-        self,
-        doc_uid: str,
-        revision: str,
-        page: int
-    ) -> str:
-        """
-        Generate QR code URL with signature
-        
-        Args:
-            doc_uid: Document UID
-            revision: Document revision
-            page: Page number
-            
-        Returns:
-            Signed QR code URL
-        """
-        return self.hmac_signer.generate_qr_url(doc_uid, revision, page)
-    
-    async def _get_cached_qr_codes(
-        self,
-        doc_uid: str,
-        revision: str,
-        pages: List[int],
-        style: QRCodeStyleEnum,
-        dpi: int,
-        size_mm: int
-    ) -> Optional[Dict[str, Any]]:
-        """Get QR codes from cache"""
-        cache_key = f"qr_codes:{doc_uid}:{revision}:{style.value}:{dpi}:{size_mm}:{','.join(map(str, pages))}"
-        return await cache_manager.get(cache_key)
-    
-    async def _cache_qr_codes(
-        self,
-        doc_uid: str,
-        revision: str,
-        pages: List[int],
-        style: QRCodeStyleEnum,
-        dpi: int,
-        size_mm: int,
-        data: Dict[str, Any]
-    ):
-        """Cache QR codes"""
-        cache_key = f"qr_codes:{doc_uid}:{revision}:{style.value}:{dpi}:{size_mm}:{','.join(map(str, pages))}"
-        await cache_manager.set(cache_key, data, ttl=self.cache_ttl)
-    
-    async def _log_qr_generation(
-        self,
-        doc_uid: str,
-        revision: str,
-        page: int,
-        user: Optional[User] = None
-    ):
-        """Log QR code generation to database"""
-        try:
-            db = next(get_db())
-            
-            qr_log = QRCodeModel(
-                doc_uid=doc_uid,
-                revision=revision,
-                page=page,
-                generated_at=datetime.utcnow(),
-                generated_by=user.id if user else None
-            )
-            
-            db.add(qr_log)
-            db.commit()
-            
-        except Exception as e:
-            logger.error(
-                "Failed to log QR code generation",
-                doc_uid=doc_uid,
-                revision=revision,
-                page=page,
-                error=str(e)
-            )
-    
-    async def get_qr_generation_history(
-        self,
-        doc_uid: Optional[str] = None,
-        user_id: Optional[int] = None,
-        limit: int = 100
-    ) -> List[Dict[str, Any]]:
-        """
-        Get QR code generation history
-        
-        Args:
-            doc_uid: Filter by document UID
-            user_id: Filter by user ID
-            limit: Maximum number of records
-            
-        Returns:
-            List of QR code generation records
-        """
-        try:
-            db = next(get_db())
-            
-            query = db.query(QRCodeModel)
-            
-            if doc_uid:
-                query = query.filter(QRCodeModel.doc_uid == doc_uid)
-            
-            if user_id:
-                query = query.filter(QRCodeModel.generated_by == user_id)
-            
-            records = query.order_by(QRCodeModel.generated_at.desc()).limit(limit).all()
-            
-            return [
-                {
-                    "id": record.id,
-                    "doc_uid": record.doc_uid,
-                    "revision": record.revision,
-                    "page": record.page,
-                    "generated_at": record.generated_at,
-                    "generated_by": record.generated_by
-                }
-                for record in records
-            ]
-            
-        except Exception as e:
-            logger.error(
-                "Failed to get QR generation history",
-                doc_uid=doc_uid,
-                user_id=user_id,
-                error=str(e),
-                exc_info=True
-            )
-            return []
-    
-    async def invalidate_qr_cache(self, doc_uid: str, revision: Optional[str] = None):
-        """
-        Invalidate QR code cache
-        
-        Args:
-            doc_uid: Document UID
-            revision: Optional revision to invalidate
-        """
-        try:
-            if revision:
-                pattern = f"qr_codes:{doc_uid}:{revision}:*"
-            else:
-                pattern = f"qr_codes:{doc_uid}:*"
-            
-            deleted_count = await cache_manager.delete_pattern(pattern)
-            
-            logger.info(
-                "QR cache invalidated",
-                doc_uid=doc_uid,
-                revision=revision,
-                deleted_keys=deleted_count
-            )
-            
-        except Exception as e:
-            logger.error(
-                "Failed to invalidate QR cache",
-                doc_uid=doc_uid,
-                revision=revision,
-                error=str(e)
-            )
+        """Verify QR code signature"""
+        return self.hmac_signer.verify_signature(doc_uid, revision, page, timestamp, signature)
 
 
-# Global service instance
-qr_service = QRCodeService()
+# Global QR service instance
+qr_service = QRCodeGenerator()

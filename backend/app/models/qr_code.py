@@ -2,7 +2,7 @@
 QR Code related database models
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -11,16 +11,16 @@ import enum
 
 class QRCodeFormatEnum(str, enum.Enum):
     """QR Code format enumeration"""
-    PNG = "png"
-    SVG = "svg"
-    PDF = "pdf"
+    PNG = "PNG"
+    SVG = "SVG"
+    PDF = "PDF"
 
 
 class QRCodeStyleEnum(str, enum.Enum):
     """QR Code style enumeration"""
-    BLACK = "black"
-    INVERTED = "inverted"
-    WITH_LABEL = "with_label"
+    BLACK = "BLACK"
+    INVERTED = "INVERTED"
+    WITH_LABEL = "WITH_LABEL"
 
 
 class QRCode(Base):
@@ -30,56 +30,49 @@ class QRCode(Base):
     id = Column(Integer, primary_key=True, index=True)
     document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
     page = Column(Integer, nullable=False)
-    revision = Column(String(10), nullable=False)
-    
-    # QR Code data
-    url = Column(Text, nullable=False)  # Full URL with signature
-    signature = Column(String(255), nullable=False)  # HMAC signature
-    timestamp = Column(Integer, nullable=False)  # Unix timestamp
-    
-    # Generation metadata
     format = Column(Enum(QRCodeFormatEnum), nullable=False)
     style = Column(Enum(QRCodeStyleEnum), nullable=False)
-    dpi = Column(Integer, nullable=False, default=300)
-    size_mm = Column(Integer, nullable=False, default=35)
+    dpi = Column(Integer, default=300)
     
-    # Status
-    is_active = Column(Boolean, default=True)
+    # Generated data
+    data_base64 = Column(Text, nullable=False)  # Base64 encoded QR code data
+    url = Column(Text, nullable=False)  # QR code URL
+    
+    # Metadata
+    size_bytes = Column(Integer, nullable=True)
+    generated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    expires_at = Column(DateTime(timezone=True), nullable=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
     document = relationship("Document", back_populates="qr_codes")
-    generation = relationship("QRCodeGeneration", back_populates="qr_codes")
 
 
 class QRCodeGeneration(Base):
-    """QR Code generation batch"""
+    """QR Code generation log"""
     __tablename__ = "qr_code_generations"
     
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    doc_uid = Column(String(255), nullable=False)
     revision = Column(String(10), nullable=False)
-    
-    # Generation parameters
     pages = Column(Text, nullable=False)  # JSON array of page numbers
     style = Column(Enum(QRCodeStyleEnum), nullable=False)
-    dpi = Column(Integer, nullable=False, default=300)
-    mode = Column(String(20), nullable=False, default="images")  # images or pdf-stamp
+    dpi = Column(Integer, default=300)
+    mode = Column(String(50), default="qr-only")
     
-    # Generation metadata
-    generated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    generation_reason = Column(String(255), nullable=True)
+    # Request info
+    client_ip = Column(String(45), nullable=True)
+    user_agent = Column(Text, nullable=True)
     
-    # Status
-    status = Column(String(20), nullable=False, default="completed")  # pending, completed, failed
+    # Response info
+    qr_codes_count = Column(Integer, nullable=False)
+    total_size_bytes = Column(Integer, nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+    generated_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    qr_codes = relationship("QRCode", back_populates="generation")
-    user = relationship("User", back_populates="qr_generations")
+    # user = relationship("User", back_populates="qr_generations")
