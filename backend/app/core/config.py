@@ -63,6 +63,7 @@ class Settings:
     SSO_AUTHORIZATION_URL: str = ""
     SSO_TOKEN_URL: str = ""
     SSO_USERINFO_URL: str = ""
+    SSO_SCOPE: str = "openid profile email"
 
 # Create settings instance
 settings = Settings()
