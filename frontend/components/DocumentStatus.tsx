@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { DocumentStatusData } from '@/types/document';
+import { useTranslation } from '@/lib/i18n';
 
 interface DocumentStatusProps {
   data?: DocumentStatusData;
@@ -13,6 +14,8 @@ interface DocumentStatusProps {
 }
 
 function DocumentStatus({ data, qrData }: DocumentStatusProps) {
+  const { t } = useTranslation();
+
   // If we have qrData, create mock data
   if (qrData && !data) {
     data = {
@@ -33,20 +36,20 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
   if (!data) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <p className="text-gray-500">Нет данных для отображения</p>
+        <p className="text-gray-500">{t('document.noData')}</p>
       </div>
     );
   }
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-        Статус документа
+        {t('document.status')}
       </h2>
       
       <div className="space-y-4">
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Документ
+            {t('document.document')}
           </label>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {data.doc_uid}
@@ -55,7 +58,7 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
         
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Ревизия
+            {t('document.revision')}
           </label>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {data.revision}
@@ -64,7 +67,7 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
         
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Страница
+            {t('document.page')}
           </label>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {data.page}
@@ -73,20 +76,20 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
         
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Статус
+            {t('document.status')}
           </label>
           <p className={`text-lg font-semibold ${
             data.is_actual 
               ? 'text-green-600 dark:text-green-400' 
               : 'text-red-600 dark:text-red-400'
           }`}>
-            {data.is_actual ? 'АКТУАЛЬНЫЙ' : 'УСТАРЕЛ'}
+            {data.is_actual ? t('status.actual') : t('status.outdated')}
           </p>
         </div>
         
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Состояние в ENOVIA
+            {t('document.enoviaState')}
           </label>
           <p className="text-lg font-semibold text-gray-900 dark:text-white">
             {data.enovia_state}
@@ -96,7 +99,7 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
         {data.released_at && (
           <div>
             <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Дата выпуска
+              {t('document.releasedAt')}
             </label>
             <p className="text-lg font-semibold text-gray-900 dark:text-white">
               {new Date(data.released_at).toLocaleDateString('ru-RU')}
@@ -111,7 +114,7 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
                 href={data.links.openDocument}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Открыть документ
+                {t('document.openDocument')}
               </a>
             )}
             {data.links.openLatest && (
@@ -119,7 +122,7 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
                 href={data.links.openLatest}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Открыть последнюю версию
+                {t('document.openLatest')}
               </a>
             )}
           </div>

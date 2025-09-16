@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
 
 interface QRCodeScannerProps {
   onScan: (data: string) => void;
@@ -8,6 +9,7 @@ interface QRCodeScannerProps {
 }
 
 export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
         setIsScanning(true);
       }
     } catch (err) {
-      setError('Не удалось получить доступ к камере');
+      setError(t('error.cameraAccess'));
       console.error('Camera error:', err);
     }
   };
@@ -80,7 +82,7 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
         </div>
         <p className="text-danger-600 mb-4">{error}</p>
         <button onClick={handleCancel} className="btn-secondary">
-          Закрыть
+          {t('scan.close')}
         </button>
       </div>
     );
@@ -113,7 +115,7 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
 
       <div className="text-center">
         <p className="text-gray-600 mb-4">
-          Наведите камеру на QR-код документа
+          {t('scan.cameraInstruction')}
         </p>
         
         {isScanning && (
@@ -130,13 +132,13 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
             className="btn-primary flex-1"
             disabled={!isScanning}
           >
-            Сканировать
+            {t('scan.scan')}
           </button>
           <button
             onClick={handleCancel}
             className="btn-secondary flex-1"
           >
-            Отмена
+            {t('scan.cancel')}
           </button>
         </div>
       </div>
