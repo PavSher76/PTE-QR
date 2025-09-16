@@ -1,0 +1,30 @@
+# Docker Compose Override для автоматической инициализации БД
+version: '3.8'
+
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: pte_qr
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init-scripts:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pte_qr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    environment:
+      DATABASE_URL: postgresql://pte_qr_user:pte_qr_password@postgres:5432/pte_qr
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

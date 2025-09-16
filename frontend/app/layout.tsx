@@ -14,6 +14,30 @@ export const metadata: Metadata = {
   keywords: ['PTE', 'QR', 'documents', 'status', 'ENOVIA'],
   authors: [{ name: 'PTI' }],
   viewport: 'width=device-width, initial-scale=1',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
+  openGraph: {
+    title: 'PTE QR System',
+    description: 'Document status verification system via QR codes',
+    type: 'website',
+    images: [
+      {
+        url: '/images/logo.svg',
+        width: 120,
+        height: 120,
+        alt: 'PTE QR Logo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'PTE QR System',
+    description: 'Document status verification system via QR codes',
+    images: ['/images/logo.svg'],
+  },
 };
 
 export default function RootLayout({

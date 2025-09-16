@@ -6,6 +6,7 @@ import { DocumentStatus } from '@/components/DocumentStatus';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { Logo } from '@/components/Logo';
 import { useTranslation } from '@/lib/i18n';
 import { useNotifications } from '@/lib/context';
 
@@ -50,6 +51,9 @@ export default function HomePage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
+            <div className="flex justify-center items-center gap-4 mb-6">
+              <Logo size="large" variant="full" />
+            </div>
             <div className="flex justify-center items-center gap-4 mb-4">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
                 {t('app.title')}

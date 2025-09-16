@@ -1,0 +1,31 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .logo-text {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-weight: 700;
+        font-size: 6px;
+        fill: #1f2937;
+        text-anchor: middle;
+      }
+    </style>
+  </defs>
+  
+  <!-- Rounded square background with two-tone border -->
+  <rect x="2" y="2" width="28" height="28" rx="6" ry="6" fill="white" stroke="none"/>
+  
+  <!-- Top and right border segments (deep blue) -->
+  <path d="M 2 2 L 30 2 L 30 8 L 8 8 L 8 30 L 2 30 Z" fill="#1e40af" stroke="none"/>
+  
+  <!-- Bottom and left border segments (deep green) -->
+  <path d="M 2 2 L 8 2 L 8 8 L 30 8 L 30 30 L 2 30 Z" fill="#059669" stroke="none"/>
+  
+  <!-- Inner white area -->
+  <rect x="8" y="8" width="16" height="16" rx="2" ry="2" fill="white" stroke="none"/>
+  
+  <!-- PTE text -->
+  <text x="16" y="14" class="logo-text">PTE</text>
+  
+  <!-- QR text -->
+  <text x="16" y="21" class="logo-text">QR</text>
+</svg>

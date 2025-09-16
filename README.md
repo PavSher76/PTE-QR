@@ -73,4 +73,4 @@ SSO_USERINFO_URL=https://your-oauth2-provider.com/oauth/userinfo
 
 ## Лицензия
 
-Внутренний проект ПТИ
+Внутренний проект ООО "ПроТех Инжиниринг"

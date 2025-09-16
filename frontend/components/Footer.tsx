@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@/lib/i18n';
+import { Logo } from './Logo';
 
 export function Footer() {
   const { t } = useTranslation();
@@ -10,7 +11,10 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-lg font-semibold mb-4">{t('footer.title')}</h3>
+            <div className="flex items-center space-x-3 mb-4">
+              <Logo size="small" variant="compact" />
+              <h3 className="text-lg font-semibold">{t('footer.title')}</h3>
+            </div>
             <p className="text-gray-400 text-sm">
               {t('footer.description')}
             </p>
