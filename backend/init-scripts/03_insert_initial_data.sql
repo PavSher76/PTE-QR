@@ -7,7 +7,7 @@
 -- Установка поискового пути
 SET search_path TO pte_qr, public;
 
--- Вставка администратора по умолчанию
+-- Вставка администратора по умолчанию (admin/admin)
 INSERT INTO pte_qr.users (
     username, 
     email, 
@@ -19,12 +19,29 @@ INSERT INTO pte_qr.users (
     'admin',
     'admin@pte-qr.local',
     'System Administrator',
-    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8Kz8KzK', -- password: admin123
+    '$2b$12$arF.8K5vrAY0xRLse97GDue5bZ9iK8ns7XfB89WQS.WTbEQqcpYia', -- password: admin
     TRUE,
     TRUE
 ) ON CONFLICT (username) DO NOTHING;
 
--- Вставка демо пользователя
+-- Вставка тестового пользователя (user/testuser)
+INSERT INTO pte_qr.users (
+    username, 
+    email, 
+    full_name, 
+    hashed_password, 
+    is_active, 
+    is_superuser
+) VALUES (
+    'user',
+    'user@pte-qr.local',
+    'Test User',
+    '$2b$12$Zvug9csBPo7b0lPbysnak.CL3w5wBisCDP5Haj9qj3Kghx6i7U9zW', -- password: testuser
+    TRUE,
+    FALSE
+) ON CONFLICT (username) DO NOTHING;
+
+-- Вставка демо пользователя (дополнительный)
 INSERT INTO pte_qr.users (
     username, 
     email, 
@@ -36,7 +53,7 @@ INSERT INTO pte_qr.users (
     'demo_user',
     'demo@pte-qr.local',
     'Demo User',
-    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8Kz8KzK', -- password: demo123
+    '$2b$12$PKfUgkkGkwuwzy8eMA2YUeV.fAFzxNuLDCnE/XzSfcqmCpmdPws8O', -- password: demo123
     TRUE,
     FALSE
 ) ON CONFLICT (username) DO NOTHING;

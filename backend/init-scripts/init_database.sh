@@ -163,8 +163,14 @@ main() {
         echo ""
         print_status "Default admin credentials:"
         echo "  Username: admin"
-        echo "  Password: admin123"
+        echo "  Password: admin"
         echo "  Email: admin@pte-qr.local"
+        
+        echo ""
+        print_status "Test user credentials:"
+        echo "  Username: user"
+        echo "  Password: testuser"
+        echo "  Email: user@pte-qr.local"
         
         echo ""
         print_status "Demo user credentials:"

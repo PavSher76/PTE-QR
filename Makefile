@@ -58,6 +58,10 @@ test-db: ## Тестировать подключение к базе данны
 	@echo "🧪 Testing database connection..."
 	@docker exec pte-qr-postgres psql -U postgres -d pte_qr -c "SELECT 'Database connection successful' as status;"
 
+test-auth: ## Тестировать аутентификацию пользователей
+	@echo "🧪 Testing user authentication..."
+	@cd backend/init-scripts && python3 test_auth.py
+
 backup-db: ## Создать резервную копию базы данных
 	@echo "💾 Creating database backup..."
 	@mkdir -p backups
