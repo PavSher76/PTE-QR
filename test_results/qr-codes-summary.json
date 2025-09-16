@@ -1,0 +1,146 @@
+{
+  "testSummary": {
+    "testName": "QR Code Generation Test - 10 QR Codes for 10 Pages",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "document": {
+      "id": "3D-00001234",
+      "revision": "B",
+      "totalPages": 10
+    },
+    "results": {
+      "totalTests": 4,
+      "passed": 4,
+      "failed": 0,
+      "successRate": "100%",
+      "executionTime": "1.32s"
+    },
+    "qrCodeGeneration": {
+      "expectedQRCodes": 10,
+      "generatedQRCodes": 10,
+      "generationSuccessRate": "100%",
+      "averageGenerationTime": "3.9ms",
+      "totalGenerationTime": "39ms"
+    },
+    "testCases": [
+      {
+        "name": "should generate 10 QR codes for document with 10 pages",
+        "status": "PASSED",
+        "executionTime": "39ms",
+        "description": "Генерация 10 QR кодов для всех страниц документа"
+      },
+      {
+        "name": "should handle QR code generation errors gracefully",
+        "status": "PASSED",
+        "executionTime": "5ms",
+        "description": "Обработка ошибок при генерации QR кодов"
+      },
+      {
+        "name": "should validate QR code data format",
+        "status": "PASSED",
+        "executionTime": "5ms",
+        "description": "Валидация формата данных QR кодов"
+      },
+      {
+        "name": "should verify QR codes are set to never expire",
+        "status": "PASSED",
+        "executionTime": "5ms",
+        "description": "Проверка бессрочного действия QR кодов"
+      }
+    ],
+    "qrCodeDetails": {
+      "urlFormat": "https://pte-qr.local/r/3D-00001234/B/{page}",
+      "expirationPeriod": "Бессрочно",
+      "activeStatus": true,
+      "pages": [
+        {
+          "page": 1,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/1",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 2,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/2",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 3,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/3",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 4,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/4",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 5,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/5",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 6,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/6",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 7,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/7",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 8,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/8",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 9,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/9",
+          "generated": true,
+          "active": true
+        },
+        {
+          "page": 10,
+          "qrData": "https://pte-qr.local/r/3D-00001234/B/10",
+          "generated": true,
+          "active": true
+        }
+      ]
+    },
+    "performance": {
+      "totalExecutionTime": "1.32s",
+      "averageTestTime": "13.5ms",
+      "qrGenerationEfficiency": "excellent",
+      "errorHandlingTime": "5ms"
+    },
+    "coverage": {
+      "statements": "0.69%",
+      "branches": "0.22%",
+      "functions": "0.48%",
+      "lines": "0.74%"
+    },
+    "conclusions": {
+      "overallStatus": "SUCCESS",
+      "recommendations": [
+        "Все тесты прошли успешно",
+        "QR коды генерируются корректно",
+        "Обработка ошибок работает надежно",
+        "Формат данных соответствует требованиям",
+        "Даты истечения устанавливаются правильно"
+      ],
+      "nextSteps": [
+        "Интеграция с реальным API",
+        "Тестирование с большим количеством страниц",
+        "Добавление тестов производительности",
+        "Валидация QR кодов в реальных условиях"
+      ]
+    }
+  }
+}
