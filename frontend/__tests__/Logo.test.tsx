@@ -2,13 +2,6 @@ import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { Logo } from '../components/Logo'
 
-// Mock Next.js Image component
-jest.mock('next/image', () => {
-  return function MockImage({ src, alt, ...props }: any) {
-    return <img src={src} alt={alt} {...props} />
-  }
-})
-
 describe('Logo', () => {
   it('renders with default props', () => {
     render(<Logo />)

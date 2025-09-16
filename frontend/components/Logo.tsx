@@ -6,9 +6,10 @@ interface LogoProps {
   size?: 'small' | 'medium' | 'large';
   variant?: 'compact' | 'full';
   className?: string;
+  'data-testid'?: string;
 }
 
-export function Logo({ size = 'medium', variant = 'compact', className = '' }: LogoProps) {
+export function Logo({ size = 'medium', variant = 'compact', className = '', 'data-testid': dataTestId }: LogoProps) {
   const sizeClasses = {
     small: 'w-6 h-6',
     medium: 'w-10 h-10',
@@ -24,7 +25,10 @@ export function Logo({ size = 'medium', variant = 'compact', className = '' }: L
   const logoSrc = variant === 'compact' ? '/images/logo-compact.svg' : '/images/logo.svg';
 
   return (
-    <div className={`${sizeClasses[size]} flex items-center justify-center ${className}`}>
+    <div 
+      className={`${sizeClasses[size]} flex items-center justify-center ${className}`}
+      data-testid={dataTestId}
+    >
       <Image
         src={logoSrc}
         alt="PTE QR Logo"

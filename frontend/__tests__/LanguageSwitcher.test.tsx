@@ -1,23 +1,20 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
+import { LanguageProvider } from '../lib/i18n'
 
-// Mock the i18n hook
-jest.mock('../lib/i18n', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-    language: 'ru',
-    setLanguage: jest.fn(),
-  }),
-  useLanguage: () => ({
-    language: 'ru',
-    setLanguage: jest.fn(),
-  }),
-}))
+// Helper function to render with LanguageProvider
+const renderWithLanguageProvider = (component: React.ReactElement) => {
+  return render(
+    <LanguageProvider>
+      {component}
+    </LanguageProvider>
+  )
+}
 
 describe('LanguageSwitcher', () => {
   it('renders language options', () => {
-    render(<LanguageSwitcher />)
+    renderWithLanguageProvider(<LanguageSwitcher />)
     
     const select = screen.getByRole('combobox')
     expect(select).toBeInTheDocument()
@@ -29,29 +26,42 @@ describe('LanguageSwitcher', () => {
   })
 
   it('has Russian selected by default', () => {
-    render(<LanguageSwitcher />)
+    renderWithLanguageProvider(<LanguageSwitcher />)
     
     const select = screen.getByRole('combobox')
     expect(select).toHaveValue('ru')
   })
 
-  it('calls setLanguage when selection changes', () => {
-    const mockSetLanguage = jest.fn()
-    
-    jest.doMock('../lib/i18n', () => ({
-      useTranslation: () => ({
-        t: (key: string) => key,
-        language: 'ru',
-        setLanguage: mockSetLanguage,
-      }),
-    }))
-
-    render(<LanguageSwitcher />)
+  it('changes language when selection changes', () => {
+    renderWithLanguageProvider(<LanguageSwitcher />)
     
     const select = screen.getByRole('combobox')
+    
+    // Change to English
+    fireEvent.change(select, { target: { value: 'en' } })
+    expect(select).toHaveValue('en')
+    
+    // Change to Chinese
+    fireEvent.change(select, { target: { value: 'zh' } })
+    expect(select).toHaveValue('zh')
+    
+    // Change back to Russian
+    fireEvent.change(select, { target: { value: 'ru' } })
+    expect(select).toHaveValue('ru')
+  })
+
+  it('persists language selection in localStorage', () => {
+    // Clear localStorage before test
+    localStorage.clear()
+    
+    renderWithLanguageProvider(<LanguageSwitcher />)
+    
+    const select = screen.getByRole('combobox')
+    
+    // Change to English
     fireEvent.change(select, { target: { value: 'en' } })
     
-    // Note: This test might not work as expected due to module mocking limitations
-    // In a real scenario, you'd need to properly mock the module
+    // Check that language is stored in localStorage
+    expect(localStorage.getItem('pte-qr-language')).toBe('en')
   })
 })
