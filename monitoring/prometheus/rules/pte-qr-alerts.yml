@@ -1,0 +1,102 @@
+groups:
+  - name: pte-qr-alerts
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: rate(pte_qr_requests_total{status_code=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second for the last 5 minutes"
+
+      # High response time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(pte_qr_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }} seconds"
+
+      # ENOVIA API down
+      - alert: ENOVIAAPIDown
+        expr: rate(pte_qr_enovia_requests_total{status="error"}[5m]) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ENOVIA API is down"
+          description: "ENOVIA API error rate is {{ $value }} errors per second"
+
+      # Cache hit rate low
+      - alert: LowCacheHitRate
+        expr: rate(pte_qr_cache_hits_total[5m]) / (rate(pte_qr_cache_hits_total[5m]) + rate(pte_qr_cache_misses_total[5m])) < 0.7
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value }} which is below 70%"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: pte_qr_memory_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: pte_qr_cpu_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      # High disk usage
+      - alert: HighDiskUsage
+        expr: pte_qr_disk_percent > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is {{ $value }}%"
+
+      # No QR codes generated
+      - alert: NoQRCodesGenerated
+        expr: rate(pte_qr_codes_generated_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No QR codes generated"
+          description: "No QR codes have been generated in the last 10 minutes"
+
+      # High authentication failures
+      - alert: HighAuthFailures
+        expr: rate(pte_qr_auth_attempts_total{status="failed"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is {{ $value }} failures per second"
+
+      # PDF processing failures
+      - alert: PDFProcessingFailures
+        expr: rate(pte_qr_pdf_stamping_operations_total{status="error"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PDF processing failures"
+          description: "PDF processing error rate is {{ $value }} errors per second"
