@@ -45,4 +45,4 @@ black==24.1.1
 isort==5.12.0
 flake8==6.1.0
 mypy==1.7.1
-safety==2.3.5
+# safety==3.0.1  # Temporarily disabled due to pydantic version conflicts

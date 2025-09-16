@@ -20,37 +20,51 @@ async def health_check(db: Session = Depends(get_db)):
     """
     Comprehensive health check for all services
     """
+    logger.info("Starting health check")
+    start_time = time.time()
     status = "healthy"
     checks = {}
     
     # Check database
     try:
+        logger.info("Checking database connection")
         from sqlalchemy import text
         db.execute(text("SELECT 1"))
         checks["database"] = "healthy"
+        logger.info("Database check passed")
     except Exception as e:
         checks["database"] = f"unhealthy: {str(e)}"
         status = "unhealthy"
+        logger.error("Database check failed", error=str(e))
     
     # Check Redis cache
     try:
+        logger.info("Checking Redis cache connection")
         cache_health = await cache_service.health_check()
         checks["cache"] = cache_health["status"]
         if cache_health["status"] != "healthy":
             status = "unhealthy"
+        logger.info("Cache check completed", status=cache_health["status"])
     except Exception as e:
         checks["cache"] = f"unhealthy: {str(e)}"
         status = "unhealthy"
+        logger.error("Cache check failed", error=str(e))
     
     # Check ENOVIA
     try:
+        logger.info("Checking ENOVIA connection")
         enovia_health = await enovia_service.health_check()
         checks["enovia"] = enovia_health["enovia"]
         if enovia_health["enovia"] != "healthy":
             status = "degraded"  # ENOVIA is optional
+        logger.info("ENOVIA check completed", status=enovia_health["enovia"])
     except Exception as e:
         checks["enovia"] = f"unhealthy: {str(e)}"
         status = "degraded"
+        logger.warning("ENOVIA check failed", error=str(e))
+    
+    duration = time.time() - start_time
+    logger.info("Health check completed", status=status, duration=duration, checks=checks)
     
     return {
         "status": status,

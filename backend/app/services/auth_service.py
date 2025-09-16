@@ -44,7 +44,15 @@ class AuthService:
         else:
             expire = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
         
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": int(expire.timestamp())})
+        
+        # Ensure all values are JSON serializable
+        for key, value in to_encode.items():
+            if hasattr(value, '__str__') and not isinstance(value, (str, int, float, bool, list, dict)):
+                logger.warning(f"Converting non-serializable value for key '{key}': {type(value)} -> {str(value)}")
+                to_encode[key] = str(value)
+        
+        logger.info(f"JWT payload: {to_encode}")
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
     
@@ -67,17 +75,24 @@ class AuthService:
         db
     ) -> Optional[User]:
         """Authenticate user with username and password"""
+        logger.info("Starting user authentication", username=username)
+        
         try:
             user = db.query(User).filter(User.username == username).first()
             if not user:
+                logger.warning("User not found", username=username)
                 return None
+            
+            logger.info("User found, verifying password", username=username, user_id=str(user.id))
             
             if not self.verify_password(password, user.hashed_password):
+                logger.warning("Invalid password for user", username=username)
                 return None
             
+            logger.info("User authentication successful", username=username, user_id=str(user.id))
             return user
         except Exception as e:
-            logger.error("User authentication failed", username=username, error=str(e))
+            logger.error("User authentication failed", username=username, error=str(e), exc_info=True)
             return None
     
     async def create_user(
@@ -202,8 +217,13 @@ class AuthService:
     def create_token_response(self, user: User) -> Dict[str, Any]:
         """Create token response for user"""
         access_token_expires = timedelta(minutes=self.access_token_expire_minutes)
+        
+        # Debug: log the data being passed to create_access_token
+        token_data = {"sub": user.username, "user_id": str(user.id)}
+        logger.info(f"Creating token for user: {user.username}, data: {token_data}")
+        
         access_token = self.create_access_token(
-            data={"sub": user.username, "user_id": user.id},
+            data=token_data,
             expires_delta=access_token_expires
         )
         
@@ -212,10 +232,10 @@ class AuthService:
             "token_type": "bearer",
             "expires_in": self.access_token_expire_minutes * 60,
             "user": {
-                "id": user.id,
+                "id": str(user.id),
                 "username": user.username,
                 "email": user.email,
-                "roles": [role.name for role in user.roles],
+                "roles": [str(role.name) for role in user.roles] if user.roles else [],
                 "is_active": user.is_active
             }
         }

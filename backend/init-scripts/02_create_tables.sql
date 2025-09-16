@@ -9,7 +9,7 @@ SET search_path TO pte_qr, public;
 
 -- Создание таблицы пользователей
 CREATE TABLE IF NOT EXISTS pte_qr.users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255),
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS pte_qr.users (
 
 -- Создание таблицы документов
 CREATE TABLE IF NOT EXISTS pte_qr.documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     doc_uid VARCHAR(100) UNIQUE NOT NULL,
     title VARCHAR(500),
     description TEXT,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS pte_qr.documents (
 
 -- Создание таблицы QR кодов
 CREATE TABLE IF NOT EXISTS pte_qr.qr_codes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     doc_uid VARCHAR(100) NOT NULL,
     revision VARCHAR(20) NOT NULL,
     page INTEGER NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS pte_qr.qr_codes (
 
 -- Создание таблицы аудита
 CREATE TABLE IF NOT EXISTS pte_qr.audit_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_name VARCHAR(100) NOT NULL,
     record_id UUID NOT NULL,
     action VARCHAR(20) NOT NULL, -- INSERT, UPDATE, DELETE
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS pte_qr.audit_logs (
 
 -- Создание таблицы сессий
 CREATE TABLE IF NOT EXISTS pte_qr.user_sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES pte_qr.users(id),
     session_token VARCHAR(255) UNIQUE NOT NULL,
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS pte_qr.user_sessions (
 
 -- Создание таблицы настроек системы
 CREATE TABLE IF NOT EXISTS pte_qr.system_settings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     key VARCHAR(100) UNIQUE NOT NULL,
     value TEXT,
     description TEXT,

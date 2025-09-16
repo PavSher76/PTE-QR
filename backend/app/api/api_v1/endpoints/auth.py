@@ -27,27 +27,37 @@ async def login(
     User login endpoint
     """
     start_time = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+    
+    logger.info("Login attempt started", client_ip=client_ip)
     
     try:
         username = credentials.get("username")
         password = credentials.get("password")
         
+        logger.info("Login credentials received", username=username, has_password=bool(password))
+        
         if not username or not password:
+            logger.warning("Login failed: missing credentials", username=username, has_password=bool(password))
             raise HTTPException(status_code=422, detail="Username and password are required")
         
         # Authenticate user
+        logger.info("Starting user authentication", username=username)
         user = await auth_service.authenticate_user(username, password, db)
         if not user:
             duration = time.time() - start_time
             metrics_service.record_api_request("POST", "/auth/login", 401, duration)
+            logger.warning("Login failed: authentication failed", username=username, duration=duration)
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         if not user.is_active:
             duration = time.time() - start_time
             metrics_service.record_api_request("POST", "/auth/login", 403, duration)
+            logger.warning("Login failed: user account deactivated", username=username, user_id=str(user.id))
             raise HTTPException(status_code=403, detail="User account is deactivated")
         
         # Create token response
+        logger.info("Creating token response", username=username, user_id=str(user.id))
         token_response = auth_service.create_token_response(user)
         
         duration = time.time() - start_time
@@ -56,19 +66,22 @@ async def login(
         logger.info(
             "User logged in successfully",
             username=username,
-            user_id=user.id,
-            duration=duration
+            user_id=str(user.id),
+            duration=duration,
+            client_ip=client_ip
         )
         
         return token_response
         
     except HTTPException:
+        duration = time.time() - start_time
+        logger.warning("Login failed with HTTP exception", username=username, duration=duration, client_ip=client_ip)
         raise
     except Exception as e:
         duration = time.time() - start_time
         metrics_service.record_api_request("POST", "/auth/login", 500, duration)
         
-        logger.error("Login failed", error=str(e), exc_info=True)
+        logger.error("Login failed with internal error", username=username, error=str(e), duration=duration, client_ip=client_ip, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 

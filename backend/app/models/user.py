@@ -3,10 +3,12 @@ User and authentication related database models
 """
 
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Enum, Table, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 import enum
+import uuid
 
 
 class UserRoleEnum(str, enum.Enum):
@@ -20,7 +22,7 @@ class UserRoleEnum(str, enum.Enum):
 user_roles_association = Table(
     'user_user_roles',
     Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('user_id', UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True),
     Column('role_id', Integer, ForeignKey('user_roles.id'), primary_key=True)
 )
 
@@ -46,7 +48,7 @@ class User(Base):
     """User model"""
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     username = Column(String(100), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     full_name = Column(String(255), nullable=True)

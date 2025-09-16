@@ -13,8 +13,8 @@ echo "🎯 Initializing PostgreSQL database for PTE-QR system"
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
 DB_NAME="${DB_NAME:-pte_qr}"
-DB_USER="${DB_USER:-postgres}"
-DB_PASSWORD="${DB_PASSWORD:-postgres}"
+DB_USER="${DB_USER:-pte_qr}"
+DB_PASSWORD="${DB_PASSWORD:-pte_qr_dev}"
 
 # Colors for output
 RED='\033[0;31m'
