@@ -20,7 +20,7 @@ python-multipart==0.0.6
 
 # QR Code generation
 qrcode[pil]==7.4.2
-segno==1.5.4
+segno==1.6.6
 
 # PDF processing
 PyPDF2==3.0.1

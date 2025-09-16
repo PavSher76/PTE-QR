@@ -110,7 +110,7 @@ export class TestRunner {
 }
 
 export function createMockFetch(responses: Record<string, any>): typeof fetch {
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
+  return async (input: any, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input.toString();
     const response = responses[url];
 

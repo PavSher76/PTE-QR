@@ -2,65 +2,56 @@
  * Simple context providers
  */
 
-import React, { createContext, useContext, useState } from 'react';
+'use client';
 
-// Theme Context
-const ThemeContext = createContext(null);
+import React from 'react';
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('light');
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  const value = { theme, toggleTheme };
-
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+// Empty context for now - can be implemented later
+export function AppProviders({ children }: { children: React.ReactNode }) {
+  return React.createElement('div', null, children);
 }
 
+// Alias for compatibility
+export const AppProvider = AppProviders;
+
+// Placeholder hooks
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === null) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-}
-
-// Language Context
-const LanguageContext = createContext(null);
-
-export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('ru');
-
-  const value = { language, setLanguage };
-
-  return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
-  );
+  return {
+    theme: 'light' as const,
+    toggleTheme: () => {}
+  };
 }
 
 export function useLanguage() {
-  const context = useContext(LanguageContext);
-  if (context === null) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
+  return {
+    language: 'ru' as const,
+    setLanguage: (lang: string) => {}
+  };
 }
 
-// Combined Provider
-export function AppProviders({ children }) {
-  return (
-    <ThemeProvider>
-      <LanguageProvider>
-        {children}
-      </LanguageProvider>
-    </ThemeProvider>
-  );
+export function useNotifications() {
+  return {
+    notifications: [] as Array<{
+      id: string;
+      type: 'success' | 'error' | 'warning' | 'info';
+      title: string;
+      message: string;
+      timestamp: number;
+    }>,
+    addNotification: (notification: any) => {},
+    removeNotification: (id: string) => {},
+    clearNotifications: () => {}
+  };
+}
+
+export function useUser() {
+  return {
+    user: {
+      username: 'demo_user',
+      email: 'demo@example.com'
+    },
+    isAuthenticated: true,
+    login: (credentials: any) => {},
+    logout: () => {}
+  };
 }

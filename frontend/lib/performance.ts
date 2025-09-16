@@ -342,19 +342,19 @@ export function createLazyLoader(
     };
   }
   
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          callback();
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { rootMargin, threshold }
-  );
-  
   return (element: Element, callback: () => void) => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            callback();
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { rootMargin, threshold }
+    );
+    
     observer.observe(element);
   };
 }

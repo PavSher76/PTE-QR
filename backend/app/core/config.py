@@ -2,12 +2,8 @@
 Configuration settings for PTE-QR application
 """
 
-from pydantic_settings import BaseSettings
-from typing import List, Optional
-import os
-
-
-class Settings(BaseSettings):
+# Simple configuration without pydantic
+class Settings:
     """Application settings"""
     
     # API Configuration
@@ -32,44 +28,41 @@ class Settings(BaseSettings):
     CACHE_TTL_SECONDS: int = 900  # 15 minutes
     
     # CORS
-    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "0.0.0.0"]
+    ALLOWED_HOSTS: list = ["localhost", "127.0.0.1", "0.0.0.0"]
     
     # ENOVIA Integration
     ENOVIA_BASE_URL: str = "https://your-enovia-instance.com"
     ENOVIA_CLIENT_ID: str = ""
     ENOVIA_CLIENT_SECRET: str = ""
-    ENOVIA_SCOPE: str = "api"
     
-    # SSO Configuration
-    SSO_PROVIDER: str = "3DPassport"  # or "OAuth2"
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    
+    # QR Code settings
+    QR_CODE_SIZE: int = 200
+    QR_CODE_BORDER: int = 4
+    QR_CODE_ERROR_CORRECTION: str = "M"
+    
+    # PDF settings
+    PDF_QR_SIZE: int = 50
+    PDF_QR_POSITION: str = "bottom-right"
+    
+    # Rate limiting
+    RATE_LIMIT_REQUESTS: int = 100
+    RATE_LIMIT_WINDOW: int = 60  # seconds
+    
+    # File upload settings
+    MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    ALLOWED_FILE_TYPES: list = ["application/pdf", "image/png", "image/jpeg"]
+    
+    # SSO settings
+    SSO_PROVIDER: str = "3DPassport"
     SSO_CLIENT_ID: str = ""
     SSO_CLIENT_SECRET: str = ""
     SSO_REDIRECT_URI: str = ""
     SSO_AUTHORIZATION_URL: str = ""
     SSO_TOKEN_URL: str = ""
     SSO_USERINFO_URL: str = ""
-    SSO_SCOPE: str = "openid profile email"
-    
-    # QR Configuration
-    QR_SIZE_MM: int = 35  # QR size in millimeters
-    QR_DPI: int = 300
-    QR_ECC_LEVEL: str = "M"  # Error correction level
-    
-    # PDF Stamping
-    PDF_STAMP_POSITION: str = "bottom-right"  # bottom-right, top-right, top-center
-    PDF_STAMP_MARGIN_MM: int = 5
-    
-    # Logging
-    LOG_LEVEL: str = "INFO"
-    
-    # Rate Limiting
-    RATE_LIMIT_REQUESTS: int = 100
-    RATE_LIMIT_WINDOW: int = 60  # seconds
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
-
-# Global settings instance
+# Create settings instance
 settings = Settings()

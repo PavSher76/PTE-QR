@@ -106,7 +106,7 @@ export function getErrorMessage(code: string, language: 'ru' | 'en' = 'ru'): str
 }
 
 export function createErrorFromResponse(response: Response, language: 'ru' | 'en' = 'ru'): PTEQRError {
-  let code = ERROR_CODES.API_ERROR;
+  let code: any = ERROR_CODES.API_ERROR;
   let message = getErrorMessage(code, language);
 
   switch (response.status) {
@@ -142,7 +142,7 @@ export function createErrorFromException(error: any, language: 'ru' | 'en' = 'ru
     return error;
   }
 
-  let code = ERROR_CODES.UNKNOWN_ERROR;
+  let code: any = ERROR_CODES.UNKNOWN_ERROR;
   let message = getErrorMessage(code, language);
 
   if (error.name === 'TypeError' && error.message.includes('fetch')) {

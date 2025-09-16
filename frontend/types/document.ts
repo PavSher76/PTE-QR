@@ -13,6 +13,9 @@ export interface DocumentStatusData {
   };
 }
 
+// Alias for compatibility
+export type DocumentStatus = DocumentStatusData;
+
 export interface QRCodeRequest {
   doc_uid: string;
   revision: string;

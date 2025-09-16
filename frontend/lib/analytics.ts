@@ -2,6 +2,10 @@
  * Analytics and tracking utilities
  */
 
+'use client';
+
+import React, { useState, useEffect } from 'react';
+
 export interface AnalyticsEvent {
   name: string;
   properties?: Record<string, any>;
@@ -103,9 +107,9 @@ export const track = {
 };
 
 export function useAnalytics() {
-  const [events, setEvents] = React.useState(analytics.getEvents());
+  const [events, setEvents] = useState(analytics.getEvents());
 
-  React.useEffect(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       setEvents(analytics.getEvents());
     }, 1000);

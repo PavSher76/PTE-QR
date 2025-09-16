@@ -59,7 +59,6 @@ services:
       - ENOVIA_BASE_URL=https://your-enovia-instance.com
       - ENOVIA_CLIENT_ID=your-client-id
       - ENOVIA_CLIENT_SECRET=your-client-secret
-      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
       - LOG_LEVEL=INFO
     depends_on:
       postgres:

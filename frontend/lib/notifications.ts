@@ -2,6 +2,10 @@
  * Notification management utilities
  */
 
+'use client';
+
+import React, { useState, useEffect } from 'react';
+
 export interface Notification {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info';
@@ -34,7 +38,7 @@ export class NotificationManager {
     this.notifications.push(newNotification);
     this.notifyListeners();
 
-    if (newNotification.duration > 0) {
+    if (newNotification.duration && newNotification.duration > 0) {
       setTimeout(() => {
         this.remove(id);
       }, newNotification.duration);
@@ -92,9 +96,9 @@ export const notifications = {
 };
 
 export function useNotifications() {
-  const [notifications, setNotifications] = React.useState(notificationManager.getAll());
+  const [notifications, setNotifications] = useState(notificationManager.getAll());
 
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = notificationManager.subscribe(setNotifications);
     return unsubscribe;
   }, []);

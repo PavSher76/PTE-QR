@@ -2,6 +2,10 @@
  * Application settings management
  */
 
+'use client';
+
+import React, { useState, useEffect } from 'react';
+
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
   language: 'ru' | 'en';
@@ -144,9 +148,9 @@ export const settings = {
 };
 
 export function useSettings() {
-  const [settings, setSettings] = React.useState(settingsManager.getSettings());
+  const [settings, setSettings] = useState(settingsManager.getSettings());
 
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = settingsManager.subscribe(setSettings);
     return unsubscribe;
   }, []);
