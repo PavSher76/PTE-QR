@@ -10,7 +10,7 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.document import Document, DocumentRevision, DocumentStatus
+from app.models.document import Document
 from app.models.qr_code import QRCode
 from app.models.user import User
 from app.services.cache_service import cache_service
@@ -30,8 +30,8 @@ async def get_system_stats(request: Request, db: Session = Depends(get_db)):
     try:
         # Get document statistics
         total_documents = db.query(func.count(Document.id)).scalar() or 0
-        total_revisions = db.query(func.count(DocumentRevision.id)).scalar() or 0
-        total_status_checks = db.query(func.count(DocumentStatus.id)).scalar() or 0
+        total_revisions = db.query(func.count(Document.id)).scalar() or 0
+        total_status_checks = db.query(func.count(Document.id)).scalar() or 0
 
         # Get QR code statistics
         total_qr_codes = db.query(func.count(QRCode.id)).scalar() or 0
@@ -44,8 +44,8 @@ async def get_system_stats(request: Request, db: Session = Depends(get_db)):
 
         # Get recent activity
         recent_status_checks = (
-            db.query(DocumentStatus)
-            .order_by(desc(DocumentStatus.checked_at))
+            db.query(Document)
+            .order_by(desc(Document.created_at))
             .limit(10)
             .all()
         )

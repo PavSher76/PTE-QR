@@ -122,7 +122,7 @@ def main():
         print("\n🎉 All authentication tests passed!")
         return 0
     else:
-        print(f"\n⚠️ {len(TEST_USERS) - successful_logins} authentication tests failed!")
+        print(f"\n⚠️ {len(TEST_USERS) - successful_logins} auth_script tests failed!")
         return 1
 
 
