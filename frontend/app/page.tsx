@@ -138,14 +138,14 @@ export default function HomePage() {
 
             {/* Document Status Section */}
             <div className="card p-6">
-              <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+              <h2 className="mb-4 text-2xl font-semibold text-gray-900 dark:text-white">
                 {t('document.status')}
               </h2>
 
               {scannedData ? (
                 <DocumentStatus qrData={scannedData} />
               ) : (
-                <div className="text-center text-gray-500">
+                <div className="text-center text-gray-500 dark:text-gray-400">
                   <p>{t('scan.instruction')}</p>
                 </div>
               )}
@@ -170,14 +170,14 @@ export default function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
                 {language === 'ru'
                   ? 'Проверка актуальности'
                   : language === 'en'
                   ? 'Status Verification'
                   : '状态验证'}
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 {language === 'ru'
                   ? 'Мгновенная проверка актуальности документа и его ревизии'
                   : language === 'en'
@@ -202,14 +202,14 @@ export default function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
                 {language === 'ru'
                   ? 'Мобильная версия'
                   : language === 'en'
                   ? 'Mobile Version'
                   : '移动版本'}
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 {language === 'ru'
                   ? 'Оптимизировано для использования на мобильных устройствах'
                   : language === 'en'
@@ -234,14 +234,14 @@ export default function HomePage() {
                   />
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
                 {language === 'ru'
                   ? 'Безопасность'
                   : language === 'en'
                   ? 'Security'
                   : '安全性'}
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 {language === 'ru'
                   ? 'HMAC подпись обеспечивает защиту от подделки QR-кодов'
                   : language === 'en'

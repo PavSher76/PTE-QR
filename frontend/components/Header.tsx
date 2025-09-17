@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useTheme } from '@/lib/context'
 import { useTranslation } from '@/lib/i18n'
@@ -14,8 +14,14 @@ export function Header() {
   const { user, logout, isAuthenticated } = useUser()
   const [showLoginForm, setShowLoginForm] = useState(false)
 
+  useEffect(() => {
+    if (showLoginForm) {
+      console.log('LoginForm is now visible')
+    }
+  }, [showLoginForm])
+
   return (
-    <header className="border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <header className="border-b border-gray-200 bg-white shadow-sm transition-colors duration-200 dark:border-gray-700 dark:bg-gray-800">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -56,7 +62,7 @@ export function Header() {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              className="text-gray-600 transition-all duration-200 hover:text-gray-900 hover:scale-110 dark:text-gray-300 dark:hover:text-white"
               title={t('settings.theme')}
             >
               {theme === 'light' ? (
@@ -105,7 +111,10 @@ export function Header() {
               </div>
             ) : (
               <button
-                onClick={() => setShowLoginForm(true)}
+                onClick={() => {
+                  console.log('Login button clicked!')
+                  setShowLoginForm(true)
+                }}
                 className="btn-secondary text-sm"
               >
                 {t('auth.login')}

@@ -4,6 +4,7 @@ import './globals.css'
 import { AppProvider } from '@/lib/context'
 import { LanguageProvider } from '@/lib/i18n'
 import { NotificationContainer } from '@/components/NotificationContainer'
+import { ThemeWrapper } from '@/components/ThemeWrapper'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -56,10 +57,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <LanguageProvider>
           <AppProvider>
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-              {children}
-              <NotificationContainer />
-            </div>
+            <ThemeWrapper>
+              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+                {children}
+                <NotificationContainer />
+              </div>
+            </ThemeWrapper>
           </AppProvider>
         </LanguageProvider>
       </body>

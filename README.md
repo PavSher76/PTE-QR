@@ -21,6 +21,9 @@ PTE-QR/
 ├── backend/           # FastAPI backend
 ├── frontend/          # React/Next.js frontend
 ├── docs/             # Документация
+│   ├── USER_GUIDE.md           # Руководство пользователя
+│   ├── INSTALLATION_GUIDE.md   # Руководство по установке
+│   └── ENOVIA_INTEGRATION.md   # Интеграция с ENOVIA
 ├── docker-compose.yml # Локальная разработка
 └── README.md
 ```
@@ -78,6 +81,12 @@ SSO_USERINFO_URL=https://your-oauth2-provider.com/oauth/userinfo
 - **Уведомления**: Система уведомлений для пользователей
 - **Адаптивный дизайн**: Оптимизация для мобильных устройств
 - **SSO интеграция**: Автоматическая аутентификация через SSO
+
+## Документация
+
+- **[Руководство пользователя](docs/USER_GUIDE.md)** - инструкции для пользователей системы
+- **[Руководство по установке](docs/INSTALLATION_GUIDE.md)** - настройка и развертывание системы
+- **[Интеграция с ENOVIA](docs/ENOVIA_INTEGRATION.md)** - настройка и использование интеграции с ENOVIA PLM
 
 ## Лицензия
 

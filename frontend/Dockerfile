@@ -3,11 +3,19 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# Install npm with retry configuration
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5
+
 # Copy package files
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm install
+# Use --no-audit and --no-fund to reduce network calls
+RUN npm install --no-audit --no-fund --prefer-offline || \
+    (sleep 10 && npm install --no-audit --no-fund) || \
+    (sleep 20 && npm install --no-audit --no-fund)
 
 # Copy source code
 COPY . .
@@ -20,11 +28,17 @@ FROM node:18-alpine AS production
 
 WORKDIR /app
 
+# Install npm with retry configuration
+RUN npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 5
+
 # Copy package files
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm install --only=production && npm cache clean --force
+RUN npm install --only=production --no-audit --no-fund --prefer-offline && \
+    npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder /app/.next ./.next

@@ -10,7 +10,12 @@
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100;
+  }
+
+  /* Dark mode styles */
+  .dark {
+    color-scheme: dark;
   }
 }
 
@@ -40,7 +45,7 @@
   }
 
   .card {
-    @apply rounded-lg border border-gray-200 bg-white shadow-md;
+    @apply rounded-lg border border-gray-200 bg-white shadow-md transition-colors duration-200 dark:border-gray-700 dark:bg-gray-800;
   }
 
   .status-indicator {

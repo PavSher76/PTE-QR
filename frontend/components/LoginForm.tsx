@@ -37,10 +37,11 @@ export function LoginForm({ onClose }: LoginFormProps) {
         addNotification({
           type: 'error',
           title: t('auth.loginError'),
-          message: result.error || t('auth.invalidCredentials'),
+          message: typeof result.error === 'string' ? result.error : t('auth.invalidCredentials'),
         })
       }
     } catch (error) {
+      console.error('Login error:', error)
       addNotification({
         type: 'error',
         title: t('auth.loginError'),
@@ -148,10 +149,10 @@ export function LoginForm({ onClose }: LoginFormProps) {
           </p>
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
             <p>
-              <strong>{t('auth.username')}:</strong> testuser
+              <strong>{t('auth.username')}:</strong> test_user
             </p>
             <p>
-              <strong>{t('auth.password')}:</strong> secret
+              <strong>{t('auth.password')}:</strong> test_password
             </p>
           </div>
         </div>

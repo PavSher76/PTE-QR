@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n'
+import jsQR from 'jsqr'
+import { playSuccessSound, playErrorSound, playScanningSound } from '@/lib/sound'
 
 interface QRCodeScannerProps {
   onScan: (data: string) => void
@@ -14,6 +16,78 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
+  const [scanSuccess, setScanSuccess] = useState(false)
+  const [scanAttempts, setScanAttempts] = useState(0)
+  const [isCapturing, setIsCapturing] = useState(false)
+
+  const captureFrame = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current || !isScanning || scanSuccess || isCapturing) return
+
+    setIsCapturing(true)
+    
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+
+    if (!context) {
+      setIsCapturing(false)
+      return
+    }
+
+    // Check if video has valid dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      // Video not ready yet, try again later
+      setIsCapturing(false)
+      setTimeout(() => {
+        if (isScanning && !scanSuccess) {
+          captureFrame()
+        }
+      }, 100)
+      return
+    }
+
+    try {
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+      // Get image data from canvas
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+      
+      // Use jsQR to detect QR code
+      const code = jsQR(imageData.data, imageData.width, imageData.height)
+      
+      if (code) {
+        // Success! QR code detected
+        setScanSuccess(true)
+        playSuccessSound()
+        
+        // Show success animation briefly before calling onScan
+        setTimeout(() => {
+          onScan(code.data)
+        }, 500)
+      } else {
+        // Increment scan attempts for visual feedback
+        setScanAttempts(prev => prev + 1)
+        
+        // Play subtle scanning sound every 10 attempts
+        if (scanAttempts % 10 === 0) {
+          playScanningSound()
+        }
+        
+        // If no QR code found, try again after a short delay
+        setTimeout(() => {
+          if (isScanning && !scanSuccess) {
+            captureFrame()
+          }
+        }, 100)
+      }
+    } catch (error) {
+      console.warn('Canvas processing error:', error)
+    } finally {
+      setIsCapturing(false)
+    }
+  }, [isScanning, onScan, scanSuccess, scanAttempts, isCapturing])
 
   const startCamera = useCallback(async () => {
     try {
@@ -23,14 +97,30 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play()
+        videoRef.current.play().catch((playError) => {
+          console.warn('Video play failed:', playError)
+        })
         setIsScanning(true)
+        setScanSuccess(false)
+        setScanAttempts(0)
+        setIsCapturing(false)
+        
+        // Start automatic scanning when video is ready
+        videoRef.current.onloadedmetadata = () => {
+          // Wait a bit more to ensure video is fully ready
+          setTimeout(() => {
+            if (isScanning && !scanSuccess) {
+              captureFrame()
+            }
+          }, 200)
+        }
       }
     } catch (err) {
       setError(t('error.cameraAccess'))
+      playErrorSound()
       console.error('Camera error:', err)
     }
-  }, [t])
+  }, [t, captureFrame])
 
   useEffect(() => {
     startCamera()
@@ -45,26 +135,6 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
       stream.getTracks().forEach((track) => track.stop())
     }
     setIsScanning(false)
-  }
-
-  const captureFrame = () => {
-    if (!videoRef.current || !canvasRef.current) return
-
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    const context = canvas.getContext('2d')
-
-    if (!context) return
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-
-    // Here you would typically use a QR code library like jsQR
-    // For now, we'll simulate a successful scan
-    setTimeout(() => {
-      onScan('https://qr.pti.ru/r/3D-00001234/B/3?ts=1703123456&t=abc123def456')
-    }, 2000)
   }
 
   const handleCancel = () => {
@@ -111,19 +181,72 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
 
         {/* QR Code overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="h-48 w-48 rounded-lg border-2 border-primary-500 bg-transparent">
-            <div className="absolute left-0 top-0 h-6 w-6 rounded-tl-lg border-l-2 border-t-2 border-primary-500"></div>
-            <div className="absolute right-0 top-0 h-6 w-6 rounded-tr-lg border-r-2 border-t-2 border-primary-500"></div>
-            <div className="absolute bottom-0 left-0 h-6 w-6 rounded-bl-lg border-b-2 border-l-2 border-primary-500"></div>
-            <div className="absolute bottom-0 right-0 h-6 w-6 rounded-br-lg border-b-2 border-r-2 border-primary-500"></div>
+          <div className={`h-48 w-48 rounded-lg border-2 bg-transparent transition-all duration-300 ${
+            scanSuccess 
+              ? 'border-green-500 shadow-lg shadow-green-500/50 scale-105' 
+              : 'border-primary-500'
+          }`}>
+            <div className={`absolute left-0 top-0 h-6 w-6 rounded-tl-lg border-l-2 border-t-2 transition-colors duration-300 ${
+              scanSuccess ? 'border-green-500' : 'border-primary-500'
+            }`}></div>
+            <div className={`absolute right-0 top-0 h-6 w-6 rounded-tr-lg border-r-2 border-t-2 transition-colors duration-300 ${
+              scanSuccess ? 'border-green-500' : 'border-primary-500'
+            }`}></div>
+            <div className={`absolute bottom-0 left-0 h-6 w-6 rounded-bl-lg border-b-2 border-l-2 transition-colors duration-300 ${
+              scanSuccess ? 'border-green-500' : 'border-primary-500'
+            }`}></div>
+            <div className={`absolute bottom-0 right-0 h-6 w-6 rounded-br-lg border-b-2 border-r-2 transition-colors duration-300 ${
+              scanSuccess ? 'border-green-500' : 'border-primary-500'
+            }`}></div>
           </div>
+          
+          {/* Success checkmark animation */}
+          {scanSuccess && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-pulse">
+                <svg 
+                  className="h-16 w-16 text-green-500" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={3} 
+                    d="M5 13l4 4L19 7" 
+                  />
+                </svg>
+              </div>
+            </div>
+          )}
+          
+          {/* Scanning indicator */}
+          {isScanning && !scanSuccess && (
+            <div className="absolute top-4 right-4">
+              <div className="flex space-x-1">
+                <div className="h-2 w-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="h-2 w-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="h-2 w-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="text-center">
-        <p className="mb-4 text-gray-600">{t('scan.cameraInstruction')}</p>
+        <p className={`mb-4 transition-colors duration-300 ${
+          scanSuccess 
+            ? 'text-green-600 font-semibold' 
+            : 'text-gray-600'
+        }`}>
+          {scanSuccess 
+            ? '✅ QR-код успешно отсканирован!' 
+            : t('scan.cameraInstruction')
+          }
+        </p>
 
-        {isScanning && (
+        {isScanning && !scanSuccess && (
           <div className="mb-4 flex items-center justify-center space-x-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-primary-500"></div>
             <div
@@ -137,13 +260,24 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
           </div>
         )}
 
+        {/* Scan attempts counter */}
+        {isScanning && !scanSuccess && scanAttempts > 0 && (
+          <p className="mb-4 text-sm text-gray-500">
+            Попыток сканирования: {scanAttempts}
+          </p>
+        )}
+
         <div className="flex space-x-2">
           <button
             onClick={captureFrame}
-            className="btn-primary flex-1"
-            disabled={!isScanning}
+            className={`flex-1 transition-all duration-300 ${
+              scanSuccess
+                ? 'btn-success'
+                : 'btn-primary'
+            }`}
+            disabled={!isScanning || scanSuccess}
           >
-            {t('scan.scan')}
+            {scanSuccess ? '✓ Отсканировано' : t('scan.scan')}
           </button>
           <button onClick={handleCancel} className="btn-secondary flex-1">
             {t('scan.cancel')}
