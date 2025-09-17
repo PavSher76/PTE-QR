@@ -4,7 +4,6 @@ End-to-end tests for complete workflows
 
 import time
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -180,7 +179,8 @@ class TestFullWorkflow:
 
         # Test document status with special characters
         response = client.get(
-            f"/api/v1/documents/{special_doc_uid}/revisions/{special_revision}/status?page=1"
+            f"/api/v1/documents/{special_doc_uid}/revisions/"
+            f"{special_revision}/status?page=1"
         )
 
         # Should handle special characters in URL

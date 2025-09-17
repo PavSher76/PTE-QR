@@ -4,8 +4,6 @@ Unit tests for HMAC signer utility
 
 import time
 
-import pytest
-
 from app.utils.hmac_signer import HMACSigner
 
 

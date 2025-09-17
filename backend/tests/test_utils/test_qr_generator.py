@@ -3,9 +3,7 @@ Unit tests for QR code generator utility
 """
 
 import base64
-from io import BytesIO
 
-import pytest
 from PIL import Image
 
 from app.models.qr_code import QRCodeStyleEnum
