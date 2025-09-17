@@ -2,7 +2,6 @@
 Integration tests for QR code endpoints
 """
 
-import pytest
 from fastapi.testclient import TestClient
 
 

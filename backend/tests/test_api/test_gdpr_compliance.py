@@ -3,10 +3,8 @@ Tests for GDPR compliance in document status endpoint
 """
 
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
 import jwt
-import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
@@ -16,7 +14,7 @@ class TestGDPRCompliance:
     """Test GDPR compliance requirements for document status endpoint"""
 
     def test_gdpr_data_minimization_principle(self, client: TestClient):
-        """Test that only necessary data is collected and processed (GDPR Article 5(1)(c))."""
+        """Test data minimization principle (GDPR Article 5(1)(c))."""
         response = client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
@@ -50,7 +48,7 @@ class TestGDPRCompliance:
             ), f"Sensitive field {field} should not be exposed without authentication"
 
     def test_gdpr_purpose_limitation_principle(self, client: TestClient):
-        """Test that data is processed for specified purposes only (GDPR Article 5(1)(b))."""
+        """Test purpose limitation principle (GDPR Article 5(1)(b))."""
         response = client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
@@ -141,7 +139,7 @@ class TestGDPRCompliance:
         assert data["metadata"]["access_level"] == "limited"
 
     def test_gdpr_consent_mechanism(self, client: TestClient, test_user):
-        """Test that authentication serves as consent mechanism for extended data access."""
+        """Test authentication as consent mechanism for data access."""
         # Create a valid JWT token (represents user consent)
         token_data = {
             "sub": test_user.username,
@@ -255,7 +253,7 @@ class TestGDPRCompliance:
             ), f"Sensitive data indicator {indicator} found in response"
 
     def test_gdpr_cross_border_transfer_compliance(self, client: TestClient):
-        """Test that data processing complies with cross-border transfer requirements (GDPR Article 44-49)."""
+        """Test cross-border transfer compliance (GDPR Article 44-49)."""
         response = client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
