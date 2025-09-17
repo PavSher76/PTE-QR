@@ -5,8 +5,9 @@ Integration tests for document status endpoint with authentication workflow
 from datetime import datetime, timedelta
 
 import jwt
-from app.core.config import settings
 from fastapi.testclient import TestClient
+
+from app.core.config import settings
 
 
 class TestDocumentStatusIntegration:

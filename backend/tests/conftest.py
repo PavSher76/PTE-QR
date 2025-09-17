@@ -7,13 +7,14 @@ import os
 from typing import Generator
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 from app.core.database import get_db
 from app.main import app
 from app.models.document import Document
 from app.models.user import User
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pte_qr_test"

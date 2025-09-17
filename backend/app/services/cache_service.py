@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import redis.asyncio as redis
 import structlog
+
 from app.core.config import settings
 
 logger = structlog.get_logger()
