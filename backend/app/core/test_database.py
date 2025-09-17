@@ -4,13 +4,12 @@ Test database configuration and session management
 
 import os
 import tempfile
-from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.test_config import test_settings
+# test_settings is not used in this file
 
 # Create a temporary SQLite database for tests
 test_db_path = tempfile.mktemp(suffix=".db")

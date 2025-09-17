@@ -2,7 +2,6 @@
 Test cache service with mocked Redis
 """
 
-import asyncio
 from typing import Any, Optional
 
 import structlog

@@ -4,7 +4,6 @@ Check all required services for the application
 """
 
 import sys
-import time
 from urllib.parse import urlparse
 
 import psycopg2
@@ -53,6 +52,8 @@ def check_redis(redis_url="redis://localhost:6379"):
 
         if attempt < max_retries - 1:
             print(f"⏳ Retrying Redis connection in {retry_delay} seconds...")
+            import time
+
             time.sleep(retry_delay)
 
     print("❌ Redis is not available after all retries")
@@ -85,6 +86,8 @@ def check_postgresql(
 
         if attempt < max_retries - 1:
             print(f"⏳ Retrying PostgreSQL connection in {retry_delay} seconds...")
+            import time
+
             time.sleep(retry_delay)
 
     print("❌ PostgreSQL is not available after all retries")

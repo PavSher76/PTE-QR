@@ -2,18 +2,13 @@
 Pytest configuration and fixtures
 """
 
-import os
-import tempfile
 from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 from app.core.database import get_db
 from app.core.test_cache import test_cache_service
-from app.core.test_config import test_settings
 from app.core.test_database import (
     TestSessionLocal,
     cleanup_test_db,
@@ -108,7 +103,6 @@ def client(db_session) -> Generator:
 @pytest.fixture
 def authenticated_client(db_session, test_user) -> Generator:
     """Create an authenticated test client."""
-    from app.api.dependencies import get_current_user, get_current_user_optional
 
     def mock_get_current_user():
         return test_user
@@ -139,14 +133,13 @@ def unauthenticated_client(db_session) -> Generator:
     """Create an unauthenticated test client that will return 401/403 for protected endpoints."""
     from fastapi import HTTPException
 
-    from app.api.dependencies import get_current_user, get_current_user_optional
-
     def mock_get_current_user():
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     def mock_get_current_user_optional():
         print(
-            "🔍 unauthenticated_client: mock_get_current_user_optional called - returning None"
+            "🔍 unauthenticated_client: mock_get_current_user_optional called - "
+            "returning None"
         )
         return None
 

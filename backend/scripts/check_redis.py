@@ -54,7 +54,8 @@ def test_redis_connection(host="localhost", port=6379, password=None):
             print(f"❌ Redis authentication failed: {e}")
         except redis.ConnectionError as e:
             print(
-                f"❌ Redis connection failed (attempt {attempt + 1}/{max_retries}): {e}"
+                f"❌ Redis connection failed "
+                f"(attempt {attempt + 1}/{max_retries}): {e}"
             )
         except Exception as e:
             print(f"❌ Redis test failed (attempt {attempt + 1}/{max_retries}): {e}")

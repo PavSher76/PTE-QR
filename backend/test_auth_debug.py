@@ -3,7 +3,6 @@
 Debug script to test authentication in tests
 """
 
-import os
 import sys
 
 sys.path.append(".")
@@ -11,7 +10,6 @@ sys.path.append(".")
 import uuid
 
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, get_current_user_optional
 from app.core.test_database import (
