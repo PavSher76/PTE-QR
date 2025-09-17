@@ -22,14 +22,16 @@ class UserRoleEnum(str, enum.Enum):
 user_roles_association = Table(
     'user_user_roles',
     Base.metadata,
-    Column('user_id', UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True),
-    Column('role_id', Integer, ForeignKey('user_roles.id'), primary_key=True)
+    Column('user_id', UUID(as_uuid=True), ForeignKey('pte_qr.users.id'), primary_key=True),
+    Column('role_id', Integer, ForeignKey('pte_qr.user_roles.id'), primary_key=True),
+    schema='pte_qr'
 )
 
 
 class UserRole(Base):
     """User role model"""
     __tablename__ = "user_roles"
+    __table_args__ = {'schema': 'pte_qr'}
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
@@ -47,9 +49,10 @@ class UserRole(Base):
 class User(Base):
     """User model"""
     __tablename__ = "users"
+    __table_args__ = {'schema': 'pte_qr'}
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    username = Column(String(100), unique=True, index=True, nullable=False)
+    username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     full_name = Column(String(255), nullable=True)
     

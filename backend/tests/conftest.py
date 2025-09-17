@@ -41,13 +41,11 @@ def event_loop() -> Generator:
 @pytest.fixture
 def db_session() -> Generator:
     """Create a test database session."""
-    Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
@@ -72,7 +70,8 @@ async def test_user(db_session) -> User:
         username="testuser",
         email="test@example.com",
         hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
-        role="user"
+        is_active=True,
+        is_superuser=False
     )
     db_session.add(user)
     db_session.commit()
@@ -87,7 +86,8 @@ async def test_admin_user(db_session) -> User:
         username="admin",
         email="admin@example.com",
         hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
-        role="admin"
+        is_active=True,
+        is_superuser=True
     )
     db_session.add(user)
     db_session.commit()
@@ -101,8 +101,15 @@ async def test_document(db_session) -> Document:
     document = Document(
         doc_uid="TEST-DOC-001",
         title="Test Document",
-        number="TD-001",
-        enovia_id="12345"
+        description="Test document description",
+        document_type="Drawing",
+        current_revision="A",
+        current_page=1,
+        business_status="APPROVED_FOR_CONSTRUCTION",
+        enovia_state="Released",
+        is_actual=True,
+        released_at="2024-01-01T00:00:00Z",
+        superseded_by=None
     )
     db_session.add(document)
     db_session.commit()

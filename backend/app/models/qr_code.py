@@ -8,6 +8,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 import enum
+import uuid
 
 
 class QRCodeFormatEnum(str, enum.Enum):
@@ -27,25 +28,18 @@ class QRCodeStyleEnum(str, enum.Enum):
 class QRCode(Base):
     """QR Code model"""
     __tablename__ = "qr_codes"
+    __table_args__ = {'schema': 'pte_qr'}
     
-    id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    doc_uid = Column(String(100), nullable=False)
+    revision = Column(String(20), nullable=False)
     page = Column(Integer, nullable=False)
-    format = Column(Enum(QRCodeFormatEnum), nullable=False)
-    style = Column(Enum(QRCodeStyleEnum), nullable=False)
-    dpi = Column(Integer, default=300)
-    
-    # Generated data
-    data_base64 = Column(Text, nullable=False)  # Base64 encoded QR code data
-    url = Column(Text, nullable=False)  # QR code URL
-    
-    # Metadata
-    size_bytes = Column(Integer, nullable=True)
-    generated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    
-    # Timestamps
+    qr_data = Column(Text, nullable=False)
+    hmac_signature = Column(String(255), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True)
     
     # Relationships
     document = relationship("Document", back_populates="qr_codes")
@@ -54,11 +48,12 @@ class QRCode(Base):
 class QRCodeGeneration(Base):
     """QR Code generation log"""
     __tablename__ = "qr_code_generations"
+    __table_args__ = {'schema': 'pte_qr'}
     
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    doc_uid = Column(String(255), nullable=False)
-    revision = Column(String(10), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True)
+    doc_uid = Column(String(100), nullable=False)
+    revision = Column(String(20), nullable=False)
     pages = Column(Text, nullable=False)  # JSON array of page numbers
     style = Column(Enum(QRCodeStyleEnum), nullable=False)
     dpi = Column(Integer, default=300)
