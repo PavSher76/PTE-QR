@@ -95,8 +95,8 @@ const translations = {
     'document.openDocument': 'Открыть документ',
     'document.openLatest': 'Открыть последнюю версию',
     'document.noData': 'Нет данных для отображения',
-    'loading': 'Загрузка...',
-    'error': 'Ошибка',
+    loading: 'Загрузка...',
+    error: 'Ошибка',
     'error.serverError': 'Ошибка сервера',
   },
   en: {
