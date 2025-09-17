@@ -108,3 +108,65 @@ global.MediaStreamTrack = class MediaStreamTrack {
     this.stop = jest.fn()
   }
 }
+
+// Mock fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve(''),
+  })
+)
+
+// Mock Headers
+global.Headers = class Headers {
+  constructor(init) {
+    this.headers = new Map(init)
+  }
+  
+  get(name) {
+    return this.headers.get(name)
+  }
+  
+  set(name, value) {
+    this.headers.set(name, value)
+  }
+  
+  has(name) {
+    return this.headers.has(name)
+  }
+  
+  delete(name) {
+    this.headers.delete(name)
+  }
+}
+
+// Mock Request
+global.Request = class Request {
+  constructor(url, options = {}) {
+    this.url = url
+    this.method = options.method || 'GET'
+    this.headers = new Headers(options.headers)
+    this.body = options.body
+  }
+}
+
+// Mock Response
+global.Response = class Response {
+  constructor(body, options = {}) {
+    this.body = body
+    this.status = options.status || 200
+    this.statusText = options.statusText || 'OK'
+    this.ok = this.status >= 200 && this.status < 300
+    this.headers = new Headers(options.headers)
+  }
+  
+  json() {
+    return Promise.resolve(JSON.parse(this.body))
+  }
+  
+  text() {
+    return Promise.resolve(this.body)
+  }
+}
