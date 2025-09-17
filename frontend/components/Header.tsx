@@ -26,12 +26,6 @@ export function Header() {
 
           <nav className="hidden items-center space-x-6 md:flex">
             <Link
-              href="/"
-              className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              {t('app.title')}
-            </Link>
-            <Link
               href="/about"
               className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             >

@@ -165,3 +165,62 @@ export function useSettings() {
     reset: () => settingsManager.resetSettings(),
   }
 }
+
+export function getSettings(): AppSettings {
+  const stored = localStorage.getItem('pte_qr_settings')
+  if (stored) {
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return getDefaultSettings()
+    }
+  }
+  return getDefaultSettings()
+}
+
+export function setSettings(settings: AppSettings): void {
+  localStorage.setItem('pte_qr_settings', JSON.stringify(settings))
+}
+
+export function resetSettings(): void {
+  localStorage.removeItem('pte_qr_settings')
+}
+
+export function updateSetting(key: string, value: any): void {
+  const settings = getSettings()
+  ;(settings as any)[key] = value
+  setSettings(settings)
+}
+
+export function getSetting(key: string): any {
+  const settings = getSettings()
+  return (settings as any)[key]
+}
+
+export function hasSetting(key: string): boolean {
+  const settings = getSettings()
+  return key in settings
+}
+
+export function removeSetting(key: string): void {
+  const settings = getSettings()
+  delete (settings as any)[key]
+  setSettings(settings)
+}
+
+export function clearSettings(): void {
+  localStorage.clear()
+}
+
+export function exportSettings(): string {
+  return JSON.stringify(getSettings(), null, 2)
+}
+
+export function importSettings(settingsJson: string): void {
+  try {
+    const settings = JSON.parse(settingsJson)
+    setSettings(settings)
+  } catch (error) {
+    console.error('Failed to import settings:', error)
+  }
+}

@@ -214,9 +214,6 @@ export const themes: Record<string, Theme> = {
   dark: darkTheme,
 }
 
-export function getTheme(name: string): Theme {
-  return themes[name] || lightTheme
-}
 
 export function applyTheme(theme: Theme): void {
   const root = document.documentElement
@@ -310,4 +307,38 @@ export function createThemeCSS(theme: Theme): string {
 
 export function generateThemeCSS(): string {
   return Object.values(themes).map(createThemeCSS).join('\n')
+}
+
+export function getTheme(): string {
+  const stored = localStorage.getItem('pte_qr_theme')
+  return stored || 'light'
+}
+
+export function setTheme(theme: string): void {
+  localStorage.setItem('pte_qr_theme', theme)
+}
+
+export function toggleTheme(): string {
+  const current = getTheme()
+  const newTheme = current === 'light' ? 'dark' : 'light'
+  setTheme(newTheme)
+  return newTheme
+}
+
+
+export function isDarkMode(): boolean {
+  return getTheme() === 'dark'
+}
+
+export function getThemeColors(theme: string): any {
+  return themes[theme] || themes.light
+}
+
+
+export function removeTheme(): void {
+  localStorage.removeItem('pte_qr_theme')
+}
+
+export function getThemeCSS(theme: string): string {
+  return createThemeCSS(getThemeColors(theme))
 }

@@ -10,6 +10,57 @@ export interface AppError {
   stack?: string
 }
 
+export class AppError extends Error {
+  public code: string
+  public statusCode: number
+  public details?: any
+  public timestamp: number
+
+  constructor(message: string, code: string, statusCode: number = 500, details?: any) {
+    super(message)
+    this.name = 'AppError'
+    this.code = code
+    this.statusCode = statusCode
+    this.details = details
+    this.timestamp = Date.now()
+  }
+}
+
+export class ValidationError extends AppError {
+  constructor(message: string) {
+    super(message, 'VALIDATION_ERROR', 400)
+    this.name = 'ValidationError'
+  }
+}
+
+export class NetworkError extends AppError {
+  constructor(message: string) {
+    super(message, 'NETWORK_ERROR', 0)
+    this.name = 'NetworkError'
+  }
+}
+
+export class AuthError extends AppError {
+  constructor(message: string) {
+    super(message, 'AUTH_ERROR', 401)
+    this.name = 'AuthError'
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message: string) {
+    super(message, 'NOT_FOUND_ERROR', 404)
+    this.name = 'NotFoundError'
+  }
+}
+
+export class ServerError extends AppError {
+  constructor(message: string) {
+    super(message, 'SERVER_ERROR', 500)
+    this.name = 'ServerError'
+  }
+}
+
 export class PTEQRError extends Error {
   public code: string
   public details?: any
@@ -177,6 +228,15 @@ export function createErrorFromException(
     stack: error.stack,
   })
 }
+
+export function createError(message: string, code: string, statusCode: number = 500): AppError {
+  return new AppError(message, code, statusCode)
+}
+
+export function isAppError(error: any): error is AppError {
+  return error instanceof AppError
+}
+
 
 export async function handleAsyncError<T>(
   operation: () => Promise<T>,

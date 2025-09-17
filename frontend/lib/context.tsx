@@ -10,10 +10,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 const ThemeContext = createContext<{
   theme: 'light' | 'dark'
   toggleTheme: () => void
-}>({
-  theme: 'light',
-  toggleTheme: () => {},
-})
+} | null>(null)
 
 // Notifications context
 const NotificationsContext = createContext<{
@@ -38,12 +35,7 @@ const NotificationsContext = createContext<{
   ) => void
   removeNotification: (id: string) => void
   clearNotifications: () => void
-}>({
-  notifications: [],
-  addNotification: () => {},
-  removeNotification: () => {},
-  clearNotifications: () => {},
-})
+} | null>(null)
 
 // User context
 const UserContext = createContext<{
@@ -54,12 +46,7 @@ const UserContext = createContext<{
   isAuthenticated: boolean
   login: (credentials: any) => void
   logout: () => void
-}>({
-  user: null,
-  isAuthenticated: false,
-  login: () => {},
-  logout: () => {},
-})
+} | null>(null)
 
 // Theme provider
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

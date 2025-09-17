@@ -16,6 +16,8 @@ export interface Notification {
   actions?: NotificationAction[]
 }
 
+export type NotificationType = 'success' | 'error' | 'warning' | 'info'
+
 export interface NotificationAction {
   label: string
   action: () => void
@@ -112,4 +114,29 @@ export function useNotifications() {
     remove: (id: string) => notificationManager.remove(id),
     clear: () => notificationManager.clear(),
   }
+}
+
+export function createNotification(message: string, type: NotificationType, id?: string): Notification {
+  return {
+    id: id || `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    type,
+    title: '',
+    message,
+    timestamp: Date.now(),
+  }
+}
+
+export function showNotification(message: string, type: NotificationType): void {
+  // This would typically use a global notification manager
+  console.log(`Notification [${type}]: ${message}`)
+}
+
+export function hideNotification(id: string): void {
+  // This would typically use a global notification manager
+  console.log(`Hide notification: ${id}`)
+}
+
+export function clearNotifications(): void {
+  // This would typically use a global notification manager
+  console.log('Clear all notifications')
 }

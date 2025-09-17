@@ -153,3 +153,5 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
     </div>
   )
 }
+
+export default QRCodeScanner

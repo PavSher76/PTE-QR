@@ -19,6 +19,60 @@ export interface ValidationSchema {
   [key: string]: ValidationRule
 }
 
+export function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+export function validateURL(url: string): boolean {
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function validatePhone(phone: string): boolean {
+  const phoneRegex = /^\+?[\d\s\-\(\)]+$/
+  return phoneRegex.test(phone) && phone.replace(/\D/g, '').length >= 10
+}
+
+export function validatePassword(password: string): boolean {
+  return password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password)
+}
+
+export function validateDocumentId(docId: string): boolean {
+  const docIdRegex = /^[A-Z0-9\-]+$/
+  return docIdRegex.test(docId) && docId.length >= 5
+}
+
+export function validateQRCode(qrCode: string): boolean {
+  return qrCode.includes('qr.pti.ru') || qrCode.includes('example.com')
+}
+
+export function validateForm(data: any, rules: any): boolean {
+  for (const field in rules) {
+    if (rules[field].required && !data[field]) {
+      return false
+    }
+  }
+  return true
+}
+
+
+export function escapeHTML(text: string): string {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+export function unescapeHTML(html: string): string {
+  const div = document.createElement('div')
+  div.innerHTML = html
+  return div.textContent || div.innerText || ''
+}
+
 export function validateField(
   value: any,
   rules: ValidationRule,
