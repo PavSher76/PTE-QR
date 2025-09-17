@@ -1,33 +1,41 @@
-'use client';
+'use client'
 
-import { useTranslation } from '@/lib/i18n';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useTranslation } from '@/lib/i18n'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export default function TestLocalePage() {
-  const { t, language } = useTranslation();
+  const { t, language } = useTranslation()
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <div className="flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-gray-900">
+      <div className="mx-auto max-w-4xl px-4">
+        <div className="rounded-lg bg-white p-8 shadow-lg dark:bg-gray-800">
+          <div className="mb-8 flex items-center justify-between">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {t('app.title')} - {t('app.description')}
             </h1>
             <LanguageSwitcher />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             {/* App Info */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 App Information
               </h2>
               <div className="space-y-2">
-                <p><strong>Title:</strong> {t('app.title')}</p>
-                <p><strong>Description:</strong> {t('app.description')}</p>
-                <p><strong>Keywords:</strong> {t('app.keywords')}</p>
-                <p><strong>Current Language:</strong> {language}</p>
+                <p>
+                  <strong>Title:</strong> {t('app.title')}
+                </p>
+                <p>
+                  <strong>Description:</strong> {t('app.description')}
+                </p>
+                <p>
+                  <strong>Keywords:</strong> {t('app.keywords')}
+                </p>
+                <p>
+                  <strong>Current Language:</strong> {language}
+                </p>
               </div>
             </div>
 
@@ -37,11 +45,21 @@ export default function TestLocalePage() {
                 Header Translations
               </h2>
               <div className="space-y-2">
-                <p><strong>Title:</strong> {t('header.title')}</p>
-                <p><strong>Scan:</strong> {t('header.scan')}</p>
-                <p><strong>Admin:</strong> {t('header.admin')}</p>
-                <p><strong>Login:</strong> {t('header.login')}</p>
-                <p><strong>Logout:</strong> {t('header.logout')}</p>
+                <p>
+                  <strong>Title:</strong> {t('header.title')}
+                </p>
+                <p>
+                  <strong>Scan:</strong> {t('header.scan')}
+                </p>
+                <p>
+                  <strong>Admin:</strong> {t('header.admin')}
+                </p>
+                <p>
+                  <strong>Login:</strong> {t('header.login')}
+                </p>
+                <p>
+                  <strong>Logout:</strong> {t('header.logout')}
+                </p>
               </div>
             </div>
 
@@ -51,12 +69,24 @@ export default function TestLocalePage() {
                 Document Translations
               </h2>
               <div className="space-y-2">
-                <p><strong>Status:</strong> {t('document.status')}</p>
-                <p><strong>Revision:</strong> {t('document.revision')}</p>
-                <p><strong>Page:</strong> {t('document.page')}</p>
-                <p><strong>Last Modified:</strong> {t('document.lastModified')}</p>
-                <p><strong>Released At:</strong> {t('document.releasedAt')}</p>
-                <p><strong>Superseded By:</strong> {t('document.supersededBy')}</p>
+                <p>
+                  <strong>Status:</strong> {t('document.status')}
+                </p>
+                <p>
+                  <strong>Revision:</strong> {t('document.revision')}
+                </p>
+                <p>
+                  <strong>Page:</strong> {t('document.page')}
+                </p>
+                <p>
+                  <strong>Last Modified:</strong> {t('document.lastModified')}
+                </p>
+                <p>
+                  <strong>Released At:</strong> {t('document.releasedAt')}
+                </p>
+                <p>
+                  <strong>Superseded By:</strong> {t('document.supersededBy')}
+                </p>
               </div>
             </div>
 
@@ -66,13 +96,27 @@ export default function TestLocalePage() {
                 Status Translations
               </h2>
               <div className="space-y-2">
-                <p><strong>Actual:</strong> {t('status.actual')}</p>
-                <p><strong>Outdated:</strong> {t('status.outdated')}</p>
-                <p><strong>Loading:</strong> {t('loading')}</p>
-                <p><strong>Success:</strong> {t('success')}</p>
-                <p><strong>Error:</strong> {t('error')}</p>
-                <p><strong>Warning:</strong> {t('warning')}</p>
-                <p><strong>Info:</strong> {t('info')}</p>
+                <p>
+                  <strong>Actual:</strong> {t('status.actual')}
+                </p>
+                <p>
+                  <strong>Outdated:</strong> {t('status.outdated')}
+                </p>
+                <p>
+                  <strong>Loading:</strong> {t('loading')}
+                </p>
+                <p>
+                  <strong>Success:</strong> {t('success')}
+                </p>
+                <p>
+                  <strong>Error:</strong> {t('error')}
+                </p>
+                <p>
+                  <strong>Warning:</strong> {t('warning')}
+                </p>
+                <p>
+                  <strong>Info:</strong> {t('info')}
+                </p>
               </div>
             </div>
 
@@ -82,8 +126,12 @@ export default function TestLocalePage() {
                 Scan Translations
               </h2>
               <div className="space-y-2">
-                <p><strong>Title:</strong> {t('scan.title')}</p>
-                <p><strong>Instruction:</strong> {t('scan.instruction')}</p>
+                <p>
+                  <strong>Title:</strong> {t('scan.title')}
+                </p>
+                <p>
+                  <strong>Instruction:</strong> {t('scan.instruction')}
+                </p>
               </div>
             </div>
 
@@ -93,39 +141,47 @@ export default function TestLocalePage() {
                 Error Translations
               </h2>
               <div className="space-y-2">
-                <p><strong>Not Found:</strong> {t('error.notFound')}</p>
-                <p><strong>Invalid Params:</strong> {t('error.invalidParams')}</p>
-                <p><strong>Server Error:</strong> {t('error.serverError')}</p>
+                <p>
+                  <strong>Not Found:</strong> {t('error.notFound')}
+                </p>
+                <p>
+                  <strong>Invalid Params:</strong> {t('error.invalidParams')}
+                </p>
+                <p>
+                  <strong>Server Error:</strong> {t('error.serverError')}
+                </p>
               </div>
             </div>
           </div>
 
           {/* Language-specific content */}
-          <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-700 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="mt-8 rounded-lg bg-gray-100 p-6 dark:bg-gray-700">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Language-specific Content
             </h3>
             <div className="space-y-2">
               {language === 'ru' && (
                 <div>
                   <p className="text-gray-700 dark:text-gray-300">
-                    🇷🇺 <strong>Русский язык:</strong> Система полностью локализована на русский язык. 
-                    Все элементы интерфейса переведены и адаптированы для русскоязычных пользователей.
+                    🇷🇺 <strong>Русский язык:</strong> Система полностью
+                    локализована на русский язык. Все элементы интерфейса
+                    переведены и адаптированы для русскоязычных пользователей.
                   </p>
                 </div>
               )}
               {language === 'en' && (
                 <div>
                   <p className="text-gray-700 dark:text-gray-300">
-                    🇺🇸 <strong>English:</strong> The system is fully localized for English. 
-                    All interface elements are translated and adapted for English-speaking users.
+                    🇺🇸 <strong>English:</strong> The system is fully localized
+                    for English. All interface elements are translated and
+                    adapted for English-speaking users.
                   </p>
                 </div>
               )}
               {language === 'zh' && (
                 <div>
                   <p className="text-gray-700 dark:text-gray-300">
-                    🇨🇳 <strong>中文:</strong> 系统已完全本地化为中文。 
+                    🇨🇳 <strong>中文:</strong> 系统已完全本地化为中文。
                     所有界面元素都已翻译并适应中文用户。
                   </p>
                 </div>
@@ -135,5 +191,5 @@ export default function TestLocalePage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

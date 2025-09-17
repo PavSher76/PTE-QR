@@ -9,7 +9,7 @@ export const APP_CONFIG = {
   author: 'PTI Team',
   repository: 'https://github.com/company/pte-qr',
   support: 'support@pti.ru',
-} as const;
+} as const
 
 export const API_CONFIG = {
   baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
@@ -24,7 +24,7 @@ export const API_CONFIG = {
     admin: '/admin',
     auth: '/auth',
   },
-} as const;
+} as const
 
 export const QR_CONFIG = {
   baseUrl: process.env.NEXT_PUBLIC_QR_BASE_URL || 'https://qr.pti.ru',
@@ -36,7 +36,7 @@ export const QR_CONFIG = {
   defaultSize: 200,
   errorCorrectionLevel: 'M' as const,
   quietZone: 4,
-} as const;
+} as const
 
 export const ENOVIA_CONFIG = {
   baseUrl: process.env.NEXT_PUBLIC_ENOVIA_URL || 'https://enovia.pti.ru',
@@ -52,7 +52,7 @@ export const ENOVIA_CONFIG = {
     redirectUri: process.env.NEXT_PUBLIC_ENOVIA_REDIRECT_URI || '',
     scope: 'read:documents read:revisions',
   },
-} as const;
+} as const
 
 export const CACHE_CONFIG = {
   ttl: {
@@ -62,14 +62,14 @@ export const CACHE_CONFIG = {
     statusMapping: 86400, // 24 hours
   },
   keys: {
-    documentStatus: (docUid: string, revision: string, page: number) => 
+    documentStatus: (docUid: string, revision: string, page: number) =>
       `doc:${docUid}:${revision}:${page}`,
-    qrCode: (docUid: string, revision: string, page: number) => 
+    qrCode: (docUid: string, revision: string, page: number) =>
       `qr:${docUid}:${revision}:${page}`,
     userProfile: (userId: string) => `user:${userId}`,
     statusMapping: 'status:mapping',
   },
-} as const;
+} as const
 
 export const SECURITY_CONFIG = {
   jwt: {
@@ -91,7 +91,7 @@ export const SECURITY_CONFIG = {
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
     credentials: true,
   },
-} as const;
+} as const
 
 export const UI_CONFIG = {
   theme: {
@@ -130,7 +130,7 @@ export const UI_CONFIG = {
     popover: 1060,
     tooltip: 1070,
   },
-} as const;
+} as const
 
 export const VALIDATION_CONFIG = {
   patterns: {
@@ -150,7 +150,7 @@ export const VALIDATION_CONFIG = {
     signature: { length: 64 },
     timestamp: { tolerance: 3600 },
   },
-} as const;
+} as const
 
 export const ERROR_CODES = {
   NETWORK_ERROR: 'NETWORK_ERROR',
@@ -175,7 +175,7 @@ export const ERROR_CODES = {
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   OPERATION_FAILED: 'OPERATION_FAILED',
-} as const;
+} as const
 
 export const BUSINESS_STATUSES = {
   ACTUAL: 'Актуальный',
@@ -185,7 +185,7 @@ export const BUSINESS_STATUSES = {
   APPROVED: 'Утвержден',
   REJECTED: 'Отклонен',
   ARCHIVED: 'Архивный',
-} as const;
+} as const
 
 export const ENOVIA_STATES = {
   DRAFT: 'Draft',
@@ -195,19 +195,16 @@ export const ENOVIA_STATES = {
   RELEASED: 'Released',
   OBSOLETE: 'Obsolete',
   ARCHIVED: 'Archived',
-} as const;
+} as const
 
 export const USER_ROLES = {
   GUEST: 'guest',
   EMPLOYEE: 'employee',
   ADMIN: 'admin',
-} as const;
+} as const
 
 export const PERMISSIONS = {
-  [USER_ROLES.GUEST]: [
-    'read:document:status',
-    'scan:qr:code',
-  ],
+  [USER_ROLES.GUEST]: ['read:document:status', 'scan:qr:code'],
   [USER_ROLES.EMPLOYEE]: [
     'read:document:status',
     'scan:qr:code',
@@ -223,28 +220,28 @@ export const PERMISSIONS = {
     'read:audit:log',
     'manage:users',
   ],
-} as const;
+} as const
 
 export const NOTIFICATION_TYPES = {
   SUCCESS: 'success',
   ERROR: 'error',
   WARNING: 'warning',
   INFO: 'info',
-} as const;
+} as const
 
 export const NOTIFICATION_DURATIONS = {
   SHORT: 3000,
   NORMAL: 5000,
   LONG: 10000,
   PERSISTENT: 0,
-} as const;
+} as const
 
 export const FILE_TYPES = {
   PDF: 'application/pdf',
   PNG: 'image/png',
   JPEG: 'image/jpeg',
   SVG: 'image/svg+xml',
-} as const;
+} as const
 
 export const MIME_TYPES = {
   PDF: 'application/pdf',
@@ -254,7 +251,7 @@ export const MIME_TYPES = {
   JSON: 'application/json',
   TEXT: 'text/plain',
   HTML: 'text/html',
-} as const;
+} as const
 
 export const HTTP_STATUS = {
   OK: 200,
@@ -272,7 +269,7 @@ export const HTTP_STATUS = {
   BAD_GATEWAY: 502,
   SERVICE_UNAVAILABLE: 503,
   GATEWAY_TIMEOUT: 504,
-} as const;
+} as const
 
 export const STORAGE_KEYS = {
   THEME: 'pte-qr-theme',
@@ -281,4 +278,4 @@ export const STORAGE_KEYS = {
   TOKEN: 'pte-qr-token',
   SETTINGS: 'pte-qr-settings',
   CACHE: 'pte-qr-cache',
-} as const;
+} as const

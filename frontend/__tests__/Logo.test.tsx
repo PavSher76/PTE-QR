@@ -5,7 +5,7 @@ import { Logo } from '../components/Logo'
 describe('Logo', () => {
   it('renders with default props', () => {
     render(<Logo />)
-    
+
     const logo = screen.getByAltText('PTE QR Logo')
     expect(logo).toBeInTheDocument()
     expect(logo).toHaveAttribute('src', '/images/logo-compact.svg')
@@ -13,7 +13,7 @@ describe('Logo', () => {
 
   it('renders with large size and full variant', () => {
     render(<Logo size="large" variant="full" />)
-    
+
     const logo = screen.getByAltText('PTE QR Logo')
     expect(logo).toBeInTheDocument()
     expect(logo).toHaveAttribute('src', '/images/logo.svg')
@@ -23,7 +23,7 @@ describe('Logo', () => {
 
   it('renders with small size and compact variant', () => {
     render(<Logo size="small" variant="compact" />)
-    
+
     const logo = screen.getByAltText('PTE QR Logo')
     expect(logo).toBeInTheDocument()
     expect(logo).toHaveAttribute('src', '/images/logo-compact.svg')
@@ -33,7 +33,7 @@ describe('Logo', () => {
 
   it('applies custom className', () => {
     render(<Logo className="custom-class" />)
-    
+
     const logoContainer = screen.getByAltText('PTE QR Logo').parentElement
     expect(logoContainer).toHaveClass('custom-class')
   })

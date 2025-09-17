@@ -2,10 +2,14 @@
  * API functions
  */
 
-import { DocumentStatusData } from '@/types/document';
+import { DocumentStatusData } from '@/types/document'
 
 // Placeholder API functions
-export async function fetchDocumentStatus(docUid: string, revision: string, page: string | number): Promise<DocumentStatusData> {
+export async function fetchDocumentStatus(
+  docUid: string,
+  revision: string,
+  page: string | number
+): Promise<DocumentStatusData> {
   // Placeholder implementation
   return {
     doc_uid: docUid,
@@ -17,7 +21,7 @@ export async function fetchDocumentStatus(docUid: string, revision: string, page
     released_at: new Date().toISOString(),
     links: {
       openDocument: '#',
-      openLatest: '#'
-    }
-  };
+      openLatest: '#',
+    },
+  }
 }

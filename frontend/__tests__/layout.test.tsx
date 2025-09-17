@@ -6,14 +6,16 @@ import RootLayout from '../app/layout'
 // Mock Next.js components
 jest.mock('next/font/google', () => ({
   Inter: () => ({
-    className: 'inter-font'
-  })
+    className: 'inter-font',
+  }),
 }))
 
 // Mock NotificationContainer component
 jest.mock('../components/NotificationContainer', () => {
   return function MockNotificationContainer() {
-    return <div data-testid="notification-container">Notification Container</div>
+    return (
+      <div data-testid="notification-container">Notification Container</div>
+    )
   }
 })
 
@@ -21,13 +23,13 @@ jest.mock('../components/NotificationContainer', () => {
 jest.mock('../lib/context', () => ({
   AppProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="app-provider">{children}</div>
-  )
+  ),
 }))
 
 jest.mock('../lib/i18n', () => ({
   LanguageProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="language-provider">{children}</div>
-  )
+  ),
 }))
 
 describe('RootLayout', () => {
@@ -37,7 +39,7 @@ describe('RootLayout', () => {
         <div>Test Content</div>
       </RootLayout>
     )
-    
+
     expect(screen.getByText('Test Content')).toBeInTheDocument()
   })
 
@@ -47,7 +49,7 @@ describe('RootLayout', () => {
         <div>Test Content</div>
       </RootLayout>
     )
-    
+
     const body = document.body
     expect(body).toHaveClass('inter-font')
   })
@@ -58,7 +60,7 @@ describe('RootLayout', () => {
         <div>Test Content</div>
       </RootLayout>
     )
-    
+
     const html = document.documentElement
     expect(html).toHaveAttribute('lang', 'en')
   })
@@ -69,7 +71,7 @@ describe('RootLayout', () => {
         <div>Test Content</div>
       </RootLayout>
     )
-    
+
     expect(screen.getByTestId('language-provider')).toBeInTheDocument()
     expect(screen.getByTestId('app-provider')).toBeInTheDocument()
     expect(screen.getByTestId('notification-container')).toBeInTheDocument()
@@ -81,20 +83,27 @@ describe('RootLayout', () => {
         <div>Test Content</div>
       </RootLayout>
     )
-    
+
     const container = screen.getByText('Test Content').closest('div')
-    expect(container).toHaveClass('min-h-screen', 'bg-gradient-to-br', 'from-blue-50', 'to-indigo-100', 'dark:from-gray-900', 'dark:to-gray-800')
+    expect(container).toHaveClass(
+      'min-h-screen',
+      'bg-gradient-to-br',
+      'from-blue-50',
+      'to-indigo-100',
+      'dark:from-gray-900',
+      'dark:to-gray-800'
+    )
   })
 
   it('renders children correctly', () => {
     const TestChild = () => <div data-testid="test-child">Child Component</div>
-    
+
     render(
       <RootLayout>
         <TestChild />
       </RootLayout>
     )
-    
+
     expect(screen.getByTestId('test-child')).toBeInTheDocument()
     expect(screen.getByText('Child Component')).toBeInTheDocument()
   })
@@ -107,7 +116,7 @@ describe('RootLayout', () => {
         <div data-testid="child-3">Child 3</div>
       </RootLayout>
     )
-    
+
     expect(screen.getByTestId('child-1')).toBeInTheDocument()
     expect(screen.getByTestId('child-2')).toBeInTheDocument()
     expect(screen.getByTestId('child-3')).toBeInTheDocument()
@@ -119,11 +128,11 @@ describe('RootLayout', () => {
         <div data-testid="content">Content</div>
       </RootLayout>
     )
-    
+
     const content = screen.getByTestId('content')
     const languageProvider = screen.getByTestId('language-provider')
     const appProvider = screen.getByTestId('app-provider')
-    
+
     // Check that content is inside both providers
     expect(languageProvider).toContainElement(content)
     expect(appProvider).toContainElement(content)
@@ -135,21 +144,21 @@ describe('RootLayout', () => {
         <div>Main Content</div>
       </RootLayout>
     )
-    
+
     const notificationContainer = screen.getByTestId('notification-container')
     expect(notificationContainer).toBeInTheDocument()
   })
 
   it('handles empty children', () => {
     render(<RootLayout>{null}</RootLayout>)
-    
+
     expect(screen.getByTestId('language-provider')).toBeInTheDocument()
     expect(screen.getByTestId('app-provider')).toBeInTheDocument()
   })
 
   it('handles undefined children', () => {
     render(<RootLayout>{undefined}</RootLayout>)
-    
+
     expect(screen.getByTestId('language-provider')).toBeInTheDocument()
     expect(screen.getByTestId('app-provider')).toBeInTheDocument()
   })

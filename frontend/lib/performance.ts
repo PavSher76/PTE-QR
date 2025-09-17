@@ -3,32 +3,32 @@
  */
 
 export interface PerformanceMetric {
-  name: string;
-  value: number;
-  unit: string;
-  timestamp: number;
-  metadata?: Record<string, any>;
+  name: string
+  value: number
+  unit: string
+  timestamp: number
+  metadata?: Record<string, any>
 }
 
 export interface PerformanceEntry {
-  name: string;
-  entryType: string;
-  startTime: number;
-  duration: number;
-  timestamp: number;
+  name: string
+  entryType: string
+  startTime: number
+  duration: number
+  timestamp: number
 }
 
 export class PerformanceMonitor {
-  private metrics: PerformanceMetric[] = [];
-  private observers: PerformanceObserver[] = [];
+  private metrics: PerformanceMetric[] = []
+  private observers: PerformanceObserver[] = []
 
   constructor() {
-    this.initializeObservers();
+    this.initializeObservers()
   }
 
   private initializeObservers(): void {
     if (typeof window === 'undefined' || !('PerformanceObserver' in window)) {
-      return;
+      return
     }
 
     // Observe navigation timing
@@ -43,13 +43,13 @@ export class PerformanceMonitor {
             metadata: {
               entryType: entry.entryType,
             },
-          });
+          })
         }
-      });
-      navObserver.observe({ entryTypes: ['navigation'] });
-      this.observers.push(navObserver);
+      })
+      navObserver.observe({ entryTypes: ['navigation'] })
+      this.observers.push(navObserver)
     } catch (error) {
-      console.warn('Failed to initialize navigation observer:', error);
+      console.warn('Failed to initialize navigation observer:', error)
     }
 
     // Observe resource timing
@@ -65,13 +65,13 @@ export class PerformanceMonitor {
               entryType: entry.entryType,
               initiatorType: (entry as any).initiatorType,
             },
-          });
+          })
         }
-      });
-      resourceObserver.observe({ entryTypes: ['resource'] });
-      this.observers.push(resourceObserver);
+      })
+      resourceObserver.observe({ entryTypes: ['resource'] })
+      this.observers.push(resourceObserver)
     } catch (error) {
-      console.warn('Failed to initialize resource observer:', error);
+      console.warn('Failed to initialize resource observer:', error)
     }
 
     // Observe paint timing
@@ -86,130 +86,125 @@ export class PerformanceMonitor {
             metadata: {
               entryType: entry.entryType,
             },
-          });
+          })
         }
-      });
-      paintObserver.observe({ entryTypes: ['paint'] });
-      this.observers.push(paintObserver);
+      })
+      paintObserver.observe({ entryTypes: ['paint'] })
+      this.observers.push(paintObserver)
     } catch (error) {
-      console.warn('Failed to initialize paint observer:', error);
+      console.warn('Failed to initialize paint observer:', error)
     }
   }
 
   recordMetric(metric: PerformanceMetric): void {
-    this.metrics.push(metric);
-    
+    this.metrics.push(metric)
+
     // Keep only last 1000 metrics to prevent memory leaks
     if (this.metrics.length > 1000) {
-      this.metrics = this.metrics.slice(-1000);
+      this.metrics = this.metrics.slice(-1000)
     }
   }
 
   getMetrics(name?: string): PerformanceMetric[] {
     if (name) {
-      return this.metrics.filter(metric => metric.name === name);
+      return this.metrics.filter((metric) => metric.name === name)
     }
-    return [...this.metrics];
+    return [...this.metrics]
   }
 
   getAverageMetric(name: string, timeWindow?: number): number | null {
-    const metrics = this.getMetrics(name);
-    
+    const metrics = this.getMetrics(name)
+
     if (metrics.length === 0) {
-      return null;
+      return null
     }
 
-    let filteredMetrics = metrics;
+    let filteredMetrics = metrics
     if (timeWindow) {
-      const cutoff = Date.now() - timeWindow;
-      filteredMetrics = metrics.filter(metric => metric.timestamp >= cutoff);
+      const cutoff = Date.now() - timeWindow
+      filteredMetrics = metrics.filter((metric) => metric.timestamp >= cutoff)
     }
 
     if (filteredMetrics.length === 0) {
-      return null;
+      return null
     }
 
-    const sum = filteredMetrics.reduce((acc, metric) => acc + metric.value, 0);
-    return sum / filteredMetrics.length;
+    const sum = filteredMetrics.reduce((acc, metric) => acc + metric.value, 0)
+    return sum / filteredMetrics.length
   }
 
   getSlowestMetrics(count: number = 10): PerformanceMetric[] {
-    return [...this.metrics]
-      .sort((a, b) => b.value - a.value)
-      .slice(0, count);
+    return [...this.metrics].sort((a, b) => b.value - a.value).slice(0, count)
   }
 
   clearMetrics(): void {
-    this.metrics = [];
+    this.metrics = []
   }
 
   disconnect(): void {
-    this.observers.forEach(observer => observer.disconnect());
-    this.observers = [];
+    this.observers.forEach((observer) => observer.disconnect())
+    this.observers = []
   }
 }
 
-export const performanceMonitor = new PerformanceMonitor();
+export const performanceMonitor = new PerformanceMonitor()
 
 export function measureAsync<T>(
   name: string,
   operation: () => Promise<T>
 ): Promise<T> {
-  const startTime = performance.now();
-  
+  const startTime = performance.now()
+
   return operation().then(
     (result) => {
-      const endTime = performance.now();
+      const endTime = performance.now()
       performanceMonitor.recordMetric({
         name,
         value: endTime - startTime,
         unit: 'ms',
         timestamp: startTime,
         metadata: { success: true },
-      });
-      return result;
+      })
+      return result
     },
     (error) => {
-      const endTime = performance.now();
+      const endTime = performance.now()
       performanceMonitor.recordMetric({
         name,
         value: endTime - startTime,
         unit: 'ms',
         timestamp: startTime,
         metadata: { success: false, error: error.message },
-      });
-      throw error;
+      })
+      throw error
     }
-  );
+  )
 }
 
-export function measureSync<T>(
-  name: string,
-  operation: () => T
-): T {
-  const startTime = performance.now();
-  
+export function measureSync<T>(name: string, operation: () => T): T {
+  const startTime = performance.now()
+
   try {
-    const result = operation();
-    const endTime = performance.now();
+    const result = operation()
+    const endTime = performance.now()
     performanceMonitor.recordMetric({
       name,
       value: endTime - startTime,
       unit: 'ms',
       timestamp: startTime,
       metadata: { success: true },
-    });
-    return result;
+    })
+    return result
   } catch (error) {
-    const endTime = performance.now();
+    const endTime = performance.now()
     performanceMonitor.recordMetric({
       name,
       value: endTime - startTime,
       unit: 'ms',
       timestamp: startTime,
       metadata: { success: false, error: (error as Error).message },
-    });
-    throw error;
+    })
+    throw error
   }
 }
 
@@ -217,34 +212,34 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
-  
+  let timeout: NodeJS.Timeout | null = null
+
   return (...args: Parameters<T>) => {
     if (timeout) {
-      clearTimeout(timeout);
+      clearTimeout(timeout)
     }
-    
+
     timeout = setTimeout(() => {
-      func(...args);
-    }, wait);
-  };
+      func(...args)
+    }, wait)
+  }
 }
 
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
-  let inThrottle: boolean = false;
-  
+  let inThrottle: boolean = false
+
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
-      func(...args);
-      inThrottle = true;
+      func(...args)
+      inThrottle = true
       setTimeout(() => {
-        inThrottle = false;
-      }, limit);
+        inThrottle = false
+      }, limit)
     }
-  };
+  }
 }
 
 export function createImageOptimizer(
@@ -254,47 +249,47 @@ export function createImageOptimizer(
 ): (file: File) => Promise<File> {
   return (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+
       img.onload = () => {
         const { width, height } = calculateDimensions(
           img.width,
           img.height,
           maxWidth,
           maxHeight
-        );
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        ctx?.drawImage(img, 0, 0, width, height);
-        
+        )
+
+        canvas.width = width
+        canvas.height = height
+
+        ctx?.drawImage(img, 0, 0, width, height)
+
         canvas.toBlob(
           (blob) => {
             if (blob) {
               const optimizedFile = new File([blob], file.name, {
                 type: file.type,
                 lastModified: Date.now(),
-              });
-              resolve(optimizedFile);
+              })
+              resolve(optimizedFile)
             } else {
-              reject(new Error('Failed to optimize image'));
+              reject(new Error('Failed to optimize image'))
             }
           },
           file.type,
           quality
-        );
-      };
-      
+        )
+      }
+
       img.onerror = () => {
-        reject(new Error('Failed to load image'));
-      };
-      
-      img.src = URL.createObjectURL(file);
-    });
-  };
+        reject(new Error('Failed to load image'))
+      }
+
+      img.src = URL.createObjectURL(file)
+    })
+  }
 }
 
 function calculateDimensions(
@@ -303,32 +298,32 @@ function calculateDimensions(
   maxWidth: number,
   maxHeight: number
 ): { width: number; height: number } {
-  let { width, height } = { width: originalWidth, height: originalHeight };
-  
+  let { width, height } = { width: originalWidth, height: originalHeight }
+
   if (width > maxWidth) {
-    height = (height * maxWidth) / width;
-    width = maxWidth;
+    height = (height * maxWidth) / width
+    width = maxWidth
   }
-  
+
   if (height > maxHeight) {
-    width = (width * maxHeight) / height;
-    height = maxHeight;
+    width = (width * maxHeight) / height
+    height = maxHeight
   }
-  
-  return { width: Math.round(width), height: Math.round(height) };
+
+  return { width: Math.round(width), height: Math.round(height) }
 }
 
 export function preloadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    img.src = src;
-  });
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+    img.src = src
+  })
 }
 
 export function preloadImages(srcs: string[]): Promise<HTMLImageElement[]> {
-  return Promise.all(srcs.map(preloadImage));
+  return Promise.all(srcs.map(preloadImage))
 }
 
 export function createLazyLoader(
@@ -338,39 +333,41 @@ export function createLazyLoader(
   if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
     return (element: Element, callback: () => void) => {
       // Fallback: load immediately
-      callback();
-    };
+      callback()
+    }
   }
-  
+
   return (element: Element, callback: () => void) => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            callback();
-            observer.unobserve(entry.target);
+            callback()
+            observer.unobserve(entry.target)
           }
-        });
+        })
       },
       { rootMargin, threshold }
-    );
-    
-    observer.observe(element);
-  };
+    )
+
+    observer.observe(element)
+  }
 }
 
 export function getPerformanceReport(): {
-  metrics: PerformanceMetric[];
+  metrics: PerformanceMetric[]
   summary: {
-    totalMetrics: number;
-    averageLoadTime: number | null;
-    slowestOperations: PerformanceMetric[];
-  };
+    totalMetrics: number
+    averageLoadTime: number | null
+    slowestOperations: PerformanceMetric[]
+  }
 } {
-  const metrics = performanceMonitor.getMetrics();
-  const averageLoadTime = performanceMonitor.getAverageMetric('navigation.loadEventEnd');
-  const slowestOperations = performanceMonitor.getSlowestMetrics(5);
-  
+  const metrics = performanceMonitor.getMetrics()
+  const averageLoadTime = performanceMonitor.getAverageMetric(
+    'navigation.loadEventEnd'
+  )
+  const slowestOperations = performanceMonitor.getSlowestMetrics(5)
+
   return {
     metrics,
     summary: {
@@ -378,5 +375,5 @@ export function getPerformanceReport(): {
       averageLoadTime,
       slowestOperations,
     },
-  };
+  }
 }

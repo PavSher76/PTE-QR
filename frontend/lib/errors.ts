@@ -3,24 +3,24 @@
  */
 
 export interface AppError {
-  code: string;
-  message: string;
-  details?: any;
-  timestamp: number;
-  stack?: string;
+  code: string
+  message: string
+  details?: any
+  timestamp: number
+  stack?: string
 }
 
 export class PTEQRError extends Error {
-  public code: string;
-  public details?: any;
-  public timestamp: number;
+  public code: string
+  public details?: any
+  public timestamp: number
 
   constructor(code: string, message: string, details?: any) {
-    super(message);
-    this.name = 'PTEQRError';
-    this.code = code;
-    this.details = details;
-    this.timestamp = Date.now();
+    super(message)
+    this.name = 'PTEQRError'
+    this.code = code
+    this.details = details
+    this.timestamp = Date.now()
   }
 }
 
@@ -47,15 +47,17 @@ export const ERROR_CODES = {
   UNKNOWN_ERROR: 'UNKNOWN_ERROR',
   VALIDATION_FAILED: 'VALIDATION_FAILED',
   OPERATION_FAILED: 'OPERATION_FAILED',
-} as const;
+} as const
 
 export const ERROR_MESSAGES = {
   ru: {
-    [ERROR_CODES.NETWORK_ERROR]: 'Ошибка сети. Проверьте подключение к интернету.',
+    [ERROR_CODES.NETWORK_ERROR]:
+      'Ошибка сети. Проверьте подключение к интернету.',
     [ERROR_CODES.TIMEOUT_ERROR]: 'Превышено время ожидания ответа от сервера.',
     [ERROR_CODES.CONNECTION_ERROR]: 'Ошибка подключения к серверу.',
     [ERROR_CODES.API_ERROR]: 'Ошибка API сервера.',
-    [ERROR_CODES.UNAUTHORIZED]: 'Необходима авторизация для выполнения операции.',
+    [ERROR_CODES.UNAUTHORIZED]:
+      'Необходима авторизация для выполнения операции.',
     [ERROR_CODES.FORBIDDEN]: 'Доступ запрещен.',
     [ERROR_CODES.NOT_FOUND]: 'Запрашиваемый ресурс не найден.',
     [ERROR_CODES.VALIDATION_ERROR]: 'Ошибка валидации данных.',
@@ -75,7 +77,8 @@ export const ERROR_MESSAGES = {
     [ERROR_CODES.OPERATION_FAILED]: 'Операция не выполнена.',
   },
   en: {
-    [ERROR_CODES.NETWORK_ERROR]: 'Network error. Check your internet connection.',
+    [ERROR_CODES.NETWORK_ERROR]:
+      'Network error. Check your internet connection.',
     [ERROR_CODES.TIMEOUT_ERROR]: 'Server response timeout exceeded.',
     [ERROR_CODES.CONNECTION_ERROR]: 'Server connection error.',
     [ERROR_CODES.API_ERROR]: 'API server error.',
@@ -98,69 +101,81 @@ export const ERROR_MESSAGES = {
     [ERROR_CODES.VALIDATION_FAILED]: 'Validation failed.',
     [ERROR_CODES.OPERATION_FAILED]: 'Operation failed.',
   },
-};
-
-export function getErrorMessage(code: string, language: 'ru' | 'en' = 'ru'): string {
-  return ERROR_MESSAGES[language][code as keyof typeof ERROR_MESSAGES[typeof language]] || 
-         ERROR_MESSAGES[language][ERROR_CODES.UNKNOWN_ERROR];
 }
 
-export function createErrorFromResponse(response: Response, language: 'ru' | 'en' = 'ru'): PTEQRError {
-  let code: any = ERROR_CODES.API_ERROR;
-  let message = getErrorMessage(code, language);
+export function getErrorMessage(
+  code: string,
+  language: 'ru' | 'en' = 'ru'
+): string {
+  return (
+    ERROR_MESSAGES[language][
+      code as keyof (typeof ERROR_MESSAGES)[typeof language]
+    ] || ERROR_MESSAGES[language][ERROR_CODES.UNKNOWN_ERROR]
+  )
+}
+
+export function createErrorFromResponse(
+  response: Response,
+  language: 'ru' | 'en' = 'ru'
+): PTEQRError {
+  let code: any = ERROR_CODES.API_ERROR
+  let message = getErrorMessage(code, language)
 
   switch (response.status) {
     case 400:
-      code = ERROR_CODES.VALIDATION_ERROR;
-      break;
+      code = ERROR_CODES.VALIDATION_ERROR
+      break
     case 401:
-      code = ERROR_CODES.UNAUTHORIZED;
-      break;
+      code = ERROR_CODES.UNAUTHORIZED
+      break
     case 403:
-      code = ERROR_CODES.FORBIDDEN;
-      break;
+      code = ERROR_CODES.FORBIDDEN
+      break
     case 404:
-      code = ERROR_CODES.NOT_FOUND;
-      break;
+      code = ERROR_CODES.NOT_FOUND
+      break
     case 500:
-      code = ERROR_CODES.SERVER_ERROR;
-      break;
+      code = ERROR_CODES.SERVER_ERROR
+      break
     default:
-      code = ERROR_CODES.API_ERROR;
+      code = ERROR_CODES.API_ERROR
   }
 
-  message = getErrorMessage(code, language);
+  message = getErrorMessage(code, language)
 
   return new PTEQRError(code, message, {
     status: response.status,
     statusText: response.statusText,
-  });
+  })
 }
 
-export function createErrorFromException(error: any, language: 'ru' | 'en' = 'ru'): PTEQRError {
+export function createErrorFromException(
+  error: any,
+  language: 'ru' | 'en' = 'ru'
+): PTEQRError {
   if (error instanceof PTEQRError) {
-    return error;
+    return error
   }
 
-  let code: any = ERROR_CODES.UNKNOWN_ERROR;
-  let message = getErrorMessage(code, language);
+  let code: any = ERROR_CODES.UNKNOWN_ERROR
+  let message = getErrorMessage(code, language)
 
   if (error.name === 'TypeError' && error.message.includes('fetch')) {
-    code = ERROR_CODES.NETWORK_ERROR;
+    code = ERROR_CODES.NETWORK_ERROR
   } else if (error.name === 'AbortError') {
-    code = ERROR_CODES.TIMEOUT_ERROR;
+    code = ERROR_CODES.TIMEOUT_ERROR
   } else if (error.message.includes('camera')) {
-    code = ERROR_CODES.CAMERA_ERROR;
+    code = ERROR_CODES.CAMERA_ERROR
   } else if (error.message.includes('QR')) {
-    code = ERROR_CODES.QR_SCAN_FAILED;
+    code = ERROR_CODES.QR_SCAN_FAILED
   }
 
-  message = getErrorMessage(code, language);
+  message = getErrorMessage(code, language)
 
   return new PTEQRError(code, message, {
     originalError: error,
     stack: error.stack,
-  });
+  })
 }
 
 export async function handleAsyncError<T>(
@@ -168,9 +183,9 @@ export async function handleAsyncError<T>(
   language: 'ru' | 'en' = 'ru'
 ): Promise<T> {
   try {
-    return await operation();
+    return await operation()
   } catch (error) {
-    throw createErrorFromException(error, language);
+    throw createErrorFromException(error, language)
   }
 }
 
@@ -179,8 +194,8 @@ export function handleSyncError<T>(
   language: 'ru' | 'en' = 'ru'
 ): T {
   try {
-    return operation();
+    return operation()
   } catch (error) {
-    throw createErrorFromException(error, language);
+    throw createErrorFromException(error, language)
   }
 }

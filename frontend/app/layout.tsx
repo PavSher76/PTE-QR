@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { AppProvider } from '@/lib/context';
-import { LanguageProvider } from '@/lib/i18n';
-import { NotificationContainer } from '@/components/NotificationContainer';
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { AppProvider } from '@/lib/context'
+import { LanguageProvider } from '@/lib/i18n'
+import { NotificationContainer } from '@/components/NotificationContainer'
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'] })
 
 // Default metadata - will be overridden by client-side localization
 export const metadata: Metadata = {
@@ -38,12 +38,12 @@ export const metadata: Metadata = {
     description: 'Document status verification system via QR codes',
     images: ['/images/logo.svg'],
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
@@ -58,5 +58,5 @@ export default function RootLayout({
         </LanguageProvider>
       </body>
     </html>
-  );
+  )
 }

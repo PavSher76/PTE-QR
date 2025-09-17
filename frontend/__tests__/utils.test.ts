@@ -1,8 +1,8 @@
-import { 
-  formatDate, 
-  formatFileSize, 
-  debounce, 
-  generateId, 
+import {
+  formatDate,
+  formatFileSize,
+  debounce,
+  generateId,
   formatRelativeTime,
   isValidEmail,
   isValidUrl,
@@ -30,7 +30,7 @@ import {
   groupBy,
   sortBy,
   unique,
-  chunk
+  chunk,
 } from '../lib/utils'
 
 describe('Utils', () => {
@@ -232,7 +232,7 @@ describe('Utils', () => {
     it('clones arrays', () => {
       const original = [1, 2, { a: 3 }]
       const cloned = deepClone(original)
-      
+
       expect(cloned).toEqual(original)
       expect(cloned).not.toBe(original)
       expect(cloned[2]).not.toBe(original[2])
@@ -241,7 +241,7 @@ describe('Utils', () => {
     it('clones objects', () => {
       const original = { a: 1, b: { c: 2 } }
       const cloned = deepClone(original)
-      
+
       expect(cloned).toEqual(original)
       expect(cloned).not.toBe(original)
       expect(cloned.b).not.toBe(original.b)
@@ -250,7 +250,7 @@ describe('Utils', () => {
     it('clones dates', () => {
       const original = new Date('2024-01-15')
       const cloned = deepClone(original)
-      
+
       expect(cloned).toEqual(original)
       expect(cloned).not.toBe(original)
     })
@@ -310,14 +310,18 @@ describe('Utils', () => {
 
   describe('escapeHtml', () => {
     it('escapes HTML characters', () => {
-      expect(escapeHtml('<div>hello</div>')).toBe('&lt;div&gt;hello&lt;/div&gt;')
+      expect(escapeHtml('<div>hello</div>')).toBe(
+        '&lt;div&gt;hello&lt;/div&gt;'
+      )
       expect(escapeHtml('& "quoted"')).toBe('&amp; "quoted"')
     })
   })
 
   describe('unescapeHtml', () => {
     it('unescapes HTML characters', () => {
-      expect(unescapeHtml('&lt;div&gt;hello&lt;/div&gt;')).toBe('<div>hello</div>')
+      expect(unescapeHtml('&lt;div&gt;hello&lt;/div&gt;')).toBe(
+        '<div>hello</div>'
+      )
       expect(unescapeHtml('&amp; &quot;quoted&quot;')).toBe('& "quoted"')
     })
   })
@@ -360,7 +364,7 @@ describe('Utils', () => {
       document.createElement = jest.fn(() => ({
         href: '',
         download: '',
-        click: jest.fn()
+        click: jest.fn(),
       })) as any
       document.body.appendChild = jest.fn()
       document.body.removeChild = jest.fn()
@@ -369,13 +373,13 @@ describe('Utils', () => {
     it('downloads blob data', () => {
       const blob = new Blob(['test data'])
       downloadFile(blob, 'test.txt')
-      
+
       expect(global.URL.createObjectURL).toHaveBeenCalledWith(blob)
     })
 
     it('downloads string data', () => {
       downloadFile('test data', 'test.txt', 'text/plain')
-      
+
       expect(global.URL.createObjectURL).toHaveBeenCalled()
     })
   })
@@ -385,8 +389,8 @@ describe('Utils', () => {
       // Mock clipboard API
       Object.assign(navigator, {
         clipboard: {
-          writeText: jest.fn().mockResolvedValue(undefined)
-        }
+          writeText: jest.fn().mockResolvedValue(undefined),
+        },
       })
       global.window.isSecureContext = true
     })
@@ -401,7 +405,7 @@ describe('Utils', () => {
     it('detects mobile user agents', () => {
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
-        writable: true
+        writable: true,
       })
       expect(isMobile()).toBe(true)
     })
@@ -409,7 +413,7 @@ describe('Utils', () => {
     it('detects non-mobile user agents', () => {
       Object.defineProperty(navigator, 'userAgent', {
         value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        writable: true
+        writable: true,
       })
       expect(isMobile()).toBe(false)
     })
@@ -419,7 +423,7 @@ describe('Utils', () => {
     it('detects touch devices', () => {
       Object.defineProperty(window, 'ontouchstart', {
         value: {},
-        writable: true
+        writable: true,
       })
       expect(isTouchDevice()).toBe(true)
     })
@@ -427,11 +431,11 @@ describe('Utils', () => {
     it('detects non-touch devices', () => {
       Object.defineProperty(window, 'ontouchstart', {
         value: undefined,
-        writable: true
+        writable: true,
       })
       Object.defineProperty(navigator, 'maxTouchPoints', {
         value: 0,
-        writable: true
+        writable: true,
       })
       // Reset the property to ensure it's undefined
       delete (window as any).ontouchstart
@@ -443,7 +447,7 @@ describe('Utils', () => {
     it('detects mobile devices', () => {
       Object.defineProperty(window, 'innerWidth', {
         value: 500,
-        writable: true
+        writable: true,
       })
       expect(getDeviceType()).toBe('mobile')
     })
@@ -451,7 +455,7 @@ describe('Utils', () => {
     it('detects tablet devices', () => {
       Object.defineProperty(window, 'innerWidth', {
         value: 900,
-        writable: true
+        writable: true,
       })
       expect(getDeviceType()).toBe('tablet')
     })
@@ -459,7 +463,7 @@ describe('Utils', () => {
     it('detects desktop devices', () => {
       Object.defineProperty(window, 'innerWidth', {
         value: 1200,
-        writable: true
+        writable: true,
       })
       expect(getDeviceType()).toBe('desktop')
     })
@@ -492,7 +496,7 @@ describe('Utils', () => {
 
     it('fails after max attempts', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('Always fails'))
-      
+
       await expect(retry(fn, 2, 10)).rejects.toThrow('Always fails')
       expect(fn).toHaveBeenCalledTimes(2)
     })
@@ -503,13 +507,16 @@ describe('Utils', () => {
       const items = [
         { category: 'a', value: 1 },
         { category: 'b', value: 2 },
-        { category: 'a', value: 3 }
+        { category: 'a', value: 3 },
       ]
-      
-      const result = groupBy(items, item => item.category)
+
+      const result = groupBy(items, (item) => item.category)
       expect(result).toEqual({
-        a: [{ category: 'a', value: 1 }, { category: 'a', value: 3 }],
-        b: [{ category: 'b', value: 2 }]
+        a: [
+          { category: 'a', value: 1 },
+          { category: 'a', value: 3 },
+        ],
+        b: [{ category: 'b', value: 2 }],
       })
     })
   })
@@ -517,13 +524,13 @@ describe('Utils', () => {
   describe('sortBy', () => {
     it('sorts array by key function ascending', () => {
       const items = [{ value: 3 }, { value: 1 }, { value: 2 }]
-      const result = sortBy(items, item => item.value)
+      const result = sortBy(items, (item) => item.value)
       expect(result).toEqual([{ value: 1 }, { value: 2 }, { value: 3 }])
     })
 
     it('sorts array by key function descending', () => {
       const items = [{ value: 1 }, { value: 3 }, { value: 2 }]
-      const result = sortBy(items, item => item.value, 'desc')
+      const result = sortBy(items, (item) => item.value, 'desc')
       expect(result).toEqual([{ value: 3 }, { value: 2 }, { value: 1 }])
     })
   })
@@ -538,7 +545,10 @@ describe('Utils', () => {
   describe('chunk', () => {
     it('splits array into chunks', () => {
       expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
-      expect(chunk([1, 2, 3, 4], 2)).toEqual([[1, 2], [3, 4]])
+      expect(chunk([1, 2, 3, 4], 2)).toEqual([
+        [1, 2],
+        [3, 4],
+      ])
     })
   })
 })

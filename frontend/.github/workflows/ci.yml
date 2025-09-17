@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 env:
   NODE_VERSION: '18'
@@ -13,7 +13,7 @@ env:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -27,7 +27,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       redis:
         image: redis:7-alpine
         options: >-
@@ -39,100 +39,100 @@ jobs:
           - 6379:6379
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Cache Python dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-    - name: Install Python dependencies
-      working-directory: ./backend
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install Python dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run backend tests
-      working-directory: ./backend
-      env:
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pte_qr_test
-        REDIS_URL: redis://localhost:6379/0
-        ENOVIA_BASE_URL: http://localhost:8000
-        ENOVIA_USERNAME: test
-        ENOVIA_PASSWORD: test
-        JWT_SECRET_KEY: test-secret-key
-        HMAC_SECRET_KEY: test-hmac-key
-      run: |
-        pytest -v --cov=app --cov-report=xml
+      - name: Run backend tests
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pte_qr_test
+          REDIS_URL: redis://localhost:6379/0
+          ENOVIA_BASE_URL: http://localhost:8000
+          ENOVIA_USERNAME: test
+          ENOVIA_PASSWORD: test
+          JWT_SECRET_KEY: test-secret-key
+          HMAC_SECRET_KEY: test-hmac-key
+        run: |
+          pytest -v --cov=app --cov-report=xml
 
   frontend-tests:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-    - name: Install frontend dependencies
-      working-directory: ./frontend
-      run: npm ci
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
 
-    - name: Run frontend linting
-      working-directory: ./frontend
-      run: npm run lint
+      - name: Run frontend linting
+        working-directory: ./frontend
+        run: npm run lint
 
-    - name: Run frontend type checking
-      working-directory: ./frontend
-      run: npm run type-check
+      - name: Run frontend type checking
+        working-directory: ./frontend
+        run: npm run type-check
 
-    - name: Build frontend
-      working-directory: ./frontend
-      run: npm run build
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
 
-    - name: Run frontend tests
-      working-directory: ./frontend
-      run: npm test -- --coverage --watchAll=false
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: npm test -- --coverage --watchAll=false
 
   docker-build:
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build backend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend
-        push: false
-        tags: pte-qr-backend:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: pte-qr-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Build frontend image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        push: false
-        tags: pte-qr-frontend:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: pte-qr-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

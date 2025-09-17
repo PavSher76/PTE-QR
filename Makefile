@@ -1,6 +1,6 @@
 # PTE-QR Project Makefile
 
-.PHONY: help test test-backend test-frontend test-ci setup-db clean-docker
+.PHONY: help test test-backend test-frontend test-ci setup-db clean-docker format format-backend format-frontend lint
 
 help: ## Show this help message
 	@echo "Available commands:"
@@ -48,3 +48,20 @@ build: ## Build all Docker images
 	docker-compose build
 
 rebuild: clean-docker build start ## Clean, build and start all services
+
+format: format-backend format-frontend ## Format all code
+
+format-backend: ## Format backend Python code
+	cd backend && \
+	docker-compose exec backend black . --exclude scripts && \
+	docker-compose exec backend isort . --skip scripts
+
+format-frontend: ## Format frontend code
+	cd frontend && \
+	npm run format 2>/dev/null || echo "No frontend formatter configured"
+
+lint: ## Run linting checks
+	cd backend && \
+	docker-compose exec backend black --check . && \
+	docker-compose exec backend isort --check-only . && \
+	docker-compose exec backend flake8 . || echo "Flake8 not installed"

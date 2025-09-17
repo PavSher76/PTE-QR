@@ -7,7 +7,7 @@ export async function GET() {
       status: 'healthy',
       service: 'PTE-QR Frontend',
       timestamp: new Date().toISOString(),
-      version: '1.0.0'
+      version: '1.0.0',
     }
 
     return NextResponse.json(health, { status: 200 })
@@ -17,7 +17,7 @@ export async function GET() {
         status: 'unhealthy',
         service: 'PTE-QR Frontend',
         error: 'Internal server error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     )

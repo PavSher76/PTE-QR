@@ -3,72 +3,72 @@
  */
 
 export interface Theme {
-  name: string;
+  name: string
   colors: {
-    primary: string;
-    secondary: string;
-    accent: string;
-    background: string;
-    surface: string;
-    text: string;
-    textSecondary: string;
-    border: string;
-    error: string;
-    warning: string;
-    success: string;
-    info: string;
-  };
+    primary: string
+    secondary: string
+    accent: string
+    background: string
+    surface: string
+    text: string
+    textSecondary: string
+    border: string
+    error: string
+    warning: string
+    success: string
+    info: string
+  }
   typography: {
-    fontFamily: string;
+    fontFamily: string
     fontSize: {
-      xs: string;
-      sm: string;
-      base: string;
-      lg: string;
-      xl: string;
-      '2xl': string;
-      '3xl': string;
-    };
+      xs: string
+      sm: string
+      base: string
+      lg: string
+      xl: string
+      '2xl': string
+      '3xl': string
+    }
     fontWeight: {
-      normal: number;
-      medium: number;
-      semibold: number;
-      bold: number;
-    };
+      normal: number
+      medium: number
+      semibold: number
+      bold: number
+    }
     lineHeight: {
-      tight: number;
-      normal: number;
-      relaxed: number;
-    };
-  };
+      tight: number
+      normal: number
+      relaxed: number
+    }
+  }
   spacing: {
-    xs: string;
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-    '2xl': string;
-    '3xl': string;
-  };
+    xs: string
+    sm: string
+    md: string
+    lg: string
+    xl: string
+    '2xl': string
+    '3xl': string
+  }
   borderRadius: {
-    none: string;
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-    full: string;
-  };
+    none: string
+    sm: string
+    md: string
+    lg: string
+    xl: string
+    full: string
+  }
   shadows: {
-    sm: string;
-    md: string;
-    lg: string;
-    xl: string;
-  };
+    sm: string
+    md: string
+    lg: string
+    xl: string
+  }
   breakpoints: {
-    mobile: string;
-    tablet: string;
-    desktop: string;
-  };
+    mobile: string
+    tablet: string
+    desktop: string
+  }
 }
 
 export const lightTheme: Theme = {
@@ -138,7 +138,7 @@ export const lightTheme: Theme = {
     tablet: '1024px',
     desktop: '1200px',
   },
-};
+}
 
 export const darkTheme: Theme = {
   name: 'dark',
@@ -207,70 +207,74 @@ export const darkTheme: Theme = {
     tablet: '1024px',
     desktop: '1200px',
   },
-};
+}
 
 export const themes: Record<string, Theme> = {
   light: lightTheme,
   dark: darkTheme,
-};
+}
 
 export function getTheme(name: string): Theme {
-  return themes[name] || lightTheme;
+  return themes[name] || lightTheme
 }
 
 export function applyTheme(theme: Theme): void {
-  const root = document.documentElement;
-  
+  const root = document.documentElement
+
   // Apply CSS custom properties
   Object.entries(theme.colors).forEach(([key, value]) => {
-    root.style.setProperty(`--color-${key}`, value);
-  });
-  
+    root.style.setProperty(`--color-${key}`, value)
+  })
+
   Object.entries(theme.typography.fontSize).forEach(([key, value]) => {
-    root.style.setProperty(`--font-size-${key}`, value);
-  });
-  
+    root.style.setProperty(`--font-size-${key}`, value)
+  })
+
   Object.entries(theme.spacing).forEach(([key, value]) => {
-    root.style.setProperty(`--spacing-${key}`, value);
-  });
-  
+    root.style.setProperty(`--spacing-${key}`, value)
+  })
+
   Object.entries(theme.borderRadius).forEach(([key, value]) => {
-    root.style.setProperty(`--border-radius-${key}`, value);
-  });
-  
+    root.style.setProperty(`--border-radius-${key}`, value)
+  })
+
   Object.entries(theme.shadows).forEach(([key, value]) => {
-    root.style.setProperty(`--shadow-${key}`, value);
-  });
-  
+    root.style.setProperty(`--shadow-${key}`, value)
+  })
+
   // Apply theme class
-  root.className = root.className.replace(/theme-\w+/g, '');
-  root.classList.add(`theme-${theme.name}`);
+  root.className = root.className.replace(/theme-\w+/g, '')
+  root.classList.add(`theme-${theme.name}`)
 }
 
 export function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') {
-    return 'light';
+    return 'light'
   }
-  
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
 }
 
-export function watchSystemTheme(callback: (theme: 'light' | 'dark') => void): () => void {
+export function watchSystemTheme(
+  callback: (theme: 'light' | 'dark') => void
+): () => void {
   if (typeof window === 'undefined') {
-    return () => {};
+    return () => {}
   }
-  
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  
+
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
   const handleChange = (e: MediaQueryListEvent) => {
-    callback(e.matches ? 'dark' : 'light');
-  };
-  
-  mediaQuery.addEventListener('change', handleChange);
-  
+    callback(e.matches ? 'dark' : 'light')
+  }
+
+  mediaQuery.addEventListener('change', handleChange)
+
   return () => {
-    mediaQuery.removeEventListener('change', handleChange);
-  };
+    mediaQuery.removeEventListener('change', handleChange)
+  }
 }
 
 export function createThemeCSS(theme: Theme): string {
@@ -301,11 +305,9 @@ export function createThemeCSS(theme: Theme): string {
       background-color: var(--color-background);
       color: var(--color-text);
     }
-  `;
+  `
 }
 
 export function generateThemeCSS(): string {
-  return Object.values(themes)
-    .map(createThemeCSS)
-    .join('\n');
+  return Object.values(themes).map(createThemeCSS).join('\n')
 }

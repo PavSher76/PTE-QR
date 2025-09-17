@@ -1,87 +1,95 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { QRCodeScanner } from '@/components/QRCodeScanner';
-import { DocumentStatus } from '@/components/DocumentStatus';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-import { Logo } from '@/components/Logo';
-import { useTranslation } from '@/lib/i18n';
-import { useNotifications } from '@/lib/context';
+import { useState, useEffect } from 'react'
+import { QRCodeScanner } from '@/components/QRCodeScanner'
+import { DocumentStatus } from '@/components/DocumentStatus'
+import { Header } from '@/components/Header'
+import { Footer } from '@/components/Footer'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { Logo } from '@/components/Logo'
+import { useTranslation } from '@/lib/i18n'
+import { useNotifications } from '@/lib/context'
 
 export default function HomePage() {
-  const { t, language } = useTranslation();
-  const { addNotification } = useNotifications();
-  const [scannedData, setScannedData] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
+  const { t, language } = useTranslation()
+  const { addNotification } = useNotifications()
+  const [scannedData, setScannedData] = useState<string | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
 
   // Update document title when language changes
   useEffect(() => {
-    document.title = t('app.title');
-  }, [language, t]);
+    document.title = t('app.title')
+  }, [language, t])
 
   const handleScan = (data: string) => {
-    setScannedData(data);
-    setIsScanning(false);
+    setScannedData(data)
+    setIsScanning(false)
     addNotification({
       type: 'success',
       title: t('scan.title'),
       message: t('document.status') + ': ' + data,
-    });
-  };
+    })
+  }
 
   const handleScanError = (error: string) => {
     addNotification({
       type: 'error',
       title: t('error'),
       message: error,
-    });
-  };
+    })
+  }
 
   const handleReset = () => {
-    setScannedData(null);
-    setIsScanning(false);
-  };
+    setScannedData(null)
+    setIsScanning(false)
+  }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col">
       <Header />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <div className="flex justify-center items-center gap-4 mb-6">
+
+      <main className="container mx-auto flex-1 px-4 py-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-8 text-center">
+            <div className="mb-6 flex items-center justify-center gap-4">
               <Logo size="large" variant="full" />
             </div>
-            <div className="flex justify-center items-center gap-4 mb-4">
+            <div className="mb-4 flex items-center justify-center gap-4">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
                 {t('app.title')}
               </h1>
               <LanguageSwitcher />
             </div>
-            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+            <p className="mb-8 text-xl text-gray-600 dark:text-gray-300">
               {t('app.description')}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* QR Scanner Section */}
             <div className="card p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+              <h2 className="mb-4 text-2xl font-semibold text-gray-900 dark:text-white">
                 {t('scan.title')}
               </h2>
-              
+
               {!isScanning && !scannedData && (
                 <div className="text-center">
                   <div className="mb-4">
-                    <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    <svg
+                      className="mx-auto h-24 w-24 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1}
+                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                      />
                     </svg>
                   </div>
-                  <p className="text-gray-600 mb-4">
-                    {t('scan.instruction')}
-                  </p>
+                  <p className="mb-4 text-gray-600">{t('scan.instruction')}</p>
                   <button
                     onClick={() => setIsScanning(true)}
                     className="btn-primary"
@@ -101,22 +109,27 @@ export default function HomePage() {
               {scannedData && (
                 <div className="text-center">
                   <div className="mb-4">
-                    <svg className="mx-auto h-12 w-12 text-success-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="mx-auto h-12 w-12 text-success-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
-                  <p className="text-gray-600 mb-4">
-                    {t('success')}
-                  </p>
-                  <div className="bg-gray-100 p-3 rounded-md mb-4">
-                    <code className="text-sm text-gray-800 break-all">
+                  <p className="mb-4 text-gray-600">{t('success')}</p>
+                  <div className="mb-4 rounded-md bg-gray-100 p-3">
+                    <code className="break-all text-sm text-gray-800">
                       {scannedData}
                     </code>
                   </div>
-                  <button
-                    onClick={handleReset}
-                    className="btn-secondary mr-2"
-                  >
+                  <button onClick={handleReset} className="btn-secondary mr-2">
                     {t('header.scan')}
                   </button>
                 </div>
@@ -125,10 +138,10 @@ export default function HomePage() {
 
             {/* Document Status Section */}
             <div className="card p-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+              <h2 className="mb-4 text-2xl font-semibold text-gray-900">
                 {t('document.status')}
               </h2>
-              
+
               {scannedData ? (
                 <DocumentStatus qrData={scannedData} />
               ) : (
@@ -140,58 +153,100 @@ export default function HomePage() {
           </div>
 
           {/* Features Section */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="card p-6 text-center">
-              <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100">
+                <svg
+                  className="h-6 w-6 text-primary-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {language === 'ru' ? 'Проверка актуальности' : 
-                 language === 'en' ? 'Status Verification' : 
-                 '状态验证'}
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                {language === 'ru'
+                  ? 'Проверка актуальности'
+                  : language === 'en'
+                  ? 'Status Verification'
+                  : '状态验证'}
               </h3>
               <p className="text-gray-600">
-                {language === 'ru' ? 'Мгновенная проверка актуальности документа и его ревизии' : 
-                 language === 'en' ? 'Instant verification of document status and revision' : 
-                 '即时验证文档状态和修订版'}
+                {language === 'ru'
+                  ? 'Мгновенная проверка актуальности документа и его ревизии'
+                  : language === 'en'
+                  ? 'Instant verification of document status and revision'
+                  : '即时验证文档状态和修订版'}
               </p>
             </div>
 
             <div className="card p-6 text-center">
-              <div className="w-12 h-12 bg-success-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-success-100">
+                <svg
+                  className="h-6 w-6 text-success-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {language === 'ru' ? 'Мобильная версия' : 
-                 language === 'en' ? 'Mobile Version' : 
-                 '移动版本'}
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                {language === 'ru'
+                  ? 'Мобильная версия'
+                  : language === 'en'
+                  ? 'Mobile Version'
+                  : '移动版本'}
               </h3>
               <p className="text-gray-600">
-                {language === 'ru' ? 'Оптимизировано для использования на мобильных устройствах' : 
-                 language === 'en' ? 'Optimized for use on mobile devices' : 
-                 '针对移动设备使用进行了优化'}
+                {language === 'ru'
+                  ? 'Оптимизировано для использования на мобильных устройствах'
+                  : language === 'en'
+                  ? 'Optimized for use on mobile devices'
+                  : '针对移动设备使用进行了优化'}
               </p>
             </div>
 
             <div className="card p-6 text-center">
-              <div className="w-12 h-12 bg-warning-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-warning-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-warning-100">
+                <svg
+                  className="h-6 w-6 text-warning-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {language === 'ru' ? 'Безопасность' : 
-                 language === 'en' ? 'Security' : 
-                 '安全性'}
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                {language === 'ru'
+                  ? 'Безопасность'
+                  : language === 'en'
+                  ? 'Security'
+                  : '安全性'}
               </h3>
               <p className="text-gray-600">
-                {language === 'ru' ? 'HMAC подпись обеспечивает защиту от подделки QR-кодов' : 
-                 language === 'en' ? 'HMAC signature provides protection against QR code forgery' : 
-                 'HMAC签名提供防止二维码伪造的保护'}
+                {language === 'ru'
+                  ? 'HMAC подпись обеспечивает защиту от подделки QR-кодов'
+                  : language === 'en'
+                  ? 'HMAC signature provides protection against QR code forgery'
+                  : 'HMAC签名提供防止二维码伪造的保护'}
               </p>
             </div>
           </div>
@@ -200,5 +255,5 @@ export default function HomePage() {
 
       <Footer />
     </div>
-  );
+  )
 }

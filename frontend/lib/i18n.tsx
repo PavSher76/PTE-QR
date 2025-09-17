@@ -2,9 +2,9 @@
  * Internationalization utilities
  */
 
-'use client';
+'use client'
 
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react'
 
 // Extended translations with all necessary keys
 const translations = {
@@ -36,11 +36,11 @@ const translations = {
     'error.invalidParams': 'Неверные параметры',
     'error.serverError': 'Ошибка сервера',
     'error.cameraAccess': 'Не удалось получить доступ к камере',
-    'loading': 'Загрузка...',
-    'success': 'Успешно',
-    'error': 'Ошибка',
-    'warning': 'Предупреждение',
-    'info': 'Информация',
+    loading: 'Загрузка...',
+    success: 'Успешно',
+    error: 'Ошибка',
+    warning: 'Предупреждение',
+    info: 'Информация',
     'scan.cameraInstruction': 'Наведите камеру на QR-код документа',
     'scan.scan': 'Сканировать',
     'scan.cancel': 'Отмена',
@@ -52,7 +52,8 @@ const translations = {
     'auth.ssoLogin': 'Войти через SSO',
     'notification.dismiss': 'Закрыть уведомление',
     'footer.title': 'PTE QR Система',
-    'footer.description': 'Система проверки актуальности документов через QR-коды с интеграцией в ENOVIA PLM.',
+    'footer.description':
+      'Система проверки актуальности документов через QR-коды с интеграцией в ENOVIA PLM.',
     'footer.product': 'Продукт',
     'footer.support': 'Поддержка',
     'footer.company': 'Компания',
@@ -65,7 +66,7 @@ const translations = {
     'footer.about': 'О нас',
     'footer.privacy': 'Политика конфиденциальности',
     'footer.terms': 'Условия использования',
-    'footer.copyright': '© 2024 ПТИ. Все права защищены.'
+    'footer.copyright': '© 2024 ПТИ. Все права защищены.',
   },
   en: {
     'app.title': 'PTE QR System',
@@ -95,11 +96,11 @@ const translations = {
     'error.invalidParams': 'Invalid parameters',
     'error.serverError': 'Server error',
     'error.cameraAccess': 'Failed to access camera',
-    'loading': 'Loading...',
-    'success': 'Success',
-    'error': 'Error',
-    'warning': 'Warning',
-    'info': 'Information',
+    loading: 'Loading...',
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Information',
     'scan.cameraInstruction': 'Point camera at document QR code',
     'scan.scan': 'Scan',
     'scan.cancel': 'Cancel',
@@ -111,7 +112,8 @@ const translations = {
     'auth.ssoLogin': 'SSO Login',
     'notification.dismiss': 'Dismiss notification',
     'footer.title': 'PTE QR System',
-    'footer.description': 'Document status verification system via QR codes with ENOVIA PLM integration.',
+    'footer.description':
+      'Document status verification system via QR codes with ENOVIA PLM integration.',
     'footer.product': 'Product',
     'footer.support': 'Support',
     'footer.company': 'Company',
@@ -124,7 +126,7 @@ const translations = {
     'footer.about': 'About Us',
     'footer.privacy': 'Privacy Policy',
     'footer.terms': 'Terms of Use',
-    'footer.copyright': '© 2024 PTI. All rights reserved.'
+    'footer.copyright': '© 2024 PTI. All rights reserved.',
   },
   zh: {
     'app.title': 'PTE QR 系统',
@@ -154,11 +156,11 @@ const translations = {
     'error.invalidParams': '参数无效',
     'error.serverError': '服务器错误',
     'error.cameraAccess': '无法访问摄像头',
-    'loading': '加载中...',
-    'success': '成功',
-    'error': '错误',
-    'warning': '警告',
-    'info': '信息',
+    loading: '加载中...',
+    success: '成功',
+    error: '错误',
+    warning: '警告',
+    info: '信息',
     'scan.cameraInstruction': '将摄像头对准文档二维码',
     'scan.scan': '扫描',
     'scan.cancel': '取消',
@@ -183,71 +185,74 @@ const translations = {
     'footer.about': '关于我们',
     'footer.privacy': '隐私政策',
     'footer.terms': '使用条款',
-    'footer.copyright': '© 2024 PTI. 版权所有。'
-  }
-};
+    'footer.copyright': '© 2024 PTI. 版权所有。',
+  },
+}
 
-type Language = keyof typeof translations;
+type Language = keyof typeof translations
 
 // Language context
 const LanguageContext = createContext<{
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  language: Language
+  setLanguage: (lang: Language) => void
+  t: (key: string, params?: Record<string, any>) => string
 }>({
   language: 'ru',
   setLanguage: () => {},
-  t: (key: string) => key
-});
+  t: (key: string) => key,
+})
 
 // Language provider component
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('ru');
+  const [language, setLanguageState] = useState<Language>('ru')
 
   // Load language from localStorage on mount
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('pte-qr-language') as Language;
+    const savedLanguage = localStorage.getItem('pte-qr-language') as Language
     if (savedLanguage && translations[savedLanguage]) {
-      setLanguageState(savedLanguage);
+      setLanguageState(savedLanguage)
     }
-  }, []);
+  }, [])
 
   // Save language to localStorage when changed
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('pte-qr-language', lang);
-  };
+    setLanguageState(lang)
+    localStorage.setItem('pte-qr-language', lang)
+  }
 
   const t = (key: string, params?: Record<string, any>) => {
-    const translation = translations[language]?.[key as keyof typeof translations[typeof language]] || key;
-    
+    const translation =
+      translations[language]?.[
+        key as keyof (typeof translations)[typeof language]
+      ] || key
+
     if (params) {
       return Object.keys(params).reduce((str, param) => {
-        return str.replace(`{{${param}}}`, params[param]);
-      }, translation);
+        return str.replace(`{{${param}}}`, params[param])
+      }, translation)
     }
-    
-    return translation;
-  };
+
+    return translation
+  }
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
       {children}
     </LanguageContext.Provider>
-  );
+  )
 }
 
 // Hook to use translations
 export function useTranslation() {
-  const context = useContext(LanguageContext);
+  const context = useContext(LanguageContext)
   if (!context) {
-    throw new Error('useTranslation must be used within LanguageProvider');
+    throw new Error('useTranslation must be used within LanguageProvider')
   }
-  return context;
+  return context
 }
 
 // Hook to get current language
 export function useLanguage() {
-  const { language, setLanguage } = useTranslation();
-  return { language, setLanguage };
+  const { language, setLanguage } = useTranslation()
+  return { language, setLanguage }
 }

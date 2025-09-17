@@ -1,14 +1,14 @@
-import QRCode from 'qrcode';
+import QRCode from 'qrcode'
 
 export interface QRCodeOptions {
-  width?: number;
-  height?: number;
-  margin?: number;
+  width?: number
+  height?: number
+  margin?: number
   color?: {
-    dark?: string;
-    light?: string;
-  };
-  errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
+    dark?: string
+    light?: string
+  }
+  errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H'
 }
 
 /**
@@ -24,17 +24,17 @@ export async function generateQRCodeDataURL(
     margin: 2,
     color: {
       dark: '#000000',
-      light: '#FFFFFF'
+      light: '#FFFFFF',
     },
     errorCorrectionLevel: 'M' as const,
-    ...options
-  };
+    ...options,
+  }
 
   try {
-    return await QRCode.toDataURL(text, defaultOptions);
+    return await QRCode.toDataURL(text, defaultOptions)
   } catch (error) {
-    console.error('Error generating QR code:', error);
-    throw new Error('Failed to generate QR code');
+    console.error('Error generating QR code:', error)
+    throw new Error('Failed to generate QR code')
   }
 }
 
@@ -51,17 +51,17 @@ export async function generateQRCodeSVG(
     margin: 2,
     color: {
       dark: '#000000',
-      light: '#FFFFFF'
+      light: '#FFFFFF',
     },
     errorCorrectionLevel: 'M' as const,
-    ...options
-  };
+    ...options,
+  }
 
   try {
-    return await QRCode.toString(text, { type: 'svg', ...defaultOptions });
+    return await QRCode.toString(text, { type: 'svg', ...defaultOptions })
   } catch (error) {
-    console.error('Error generating QR code SVG:', error);
-    throw new Error('Failed to generate QR code SVG');
+    console.error('Error generating QR code SVG:', error)
+    throw new Error('Failed to generate QR code SVG')
   }
 }
 
@@ -69,28 +69,28 @@ export async function generateQRCodeSVG(
  * Parse QR URL to extract parameters
  */
 export function parseQRUrl(url: string): {
-  docUid: string;
-  revision: string;
-  page: number;
-  timestamp: number;
-  signature: string;
+  docUid: string
+  revision: string
+  page: number
+  timestamp: number
+  signature: string
 } | null {
   try {
-    const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split('/');
-    
+    const urlObj = new URL(url)
+    const pathParts = urlObj.pathname.split('/')
+
     if (pathParts.length < 5 || pathParts[1] !== 'r') {
-      return null;
+      return null
     }
 
-    const docUid = pathParts[2];
-    const revision = pathParts[3];
-    const page = parseInt(pathParts[4]);
-    const timestamp = parseInt(urlObj.searchParams.get('ts') || '0');
-    const signature = urlObj.searchParams.get('t') || '';
+    const docUid = pathParts[2]
+    const revision = pathParts[3]
+    const page = parseInt(pathParts[4])
+    const timestamp = parseInt(urlObj.searchParams.get('ts') || '0')
+    const signature = urlObj.searchParams.get('t') || ''
 
     if (!docUid || !revision || isNaN(page) || !timestamp || !signature) {
-      return null;
+      return null
     }
 
     return {
@@ -98,11 +98,11 @@ export function parseQRUrl(url: string): {
       revision,
       page,
       timestamp,
-      signature
-    };
+      signature,
+    }
   } catch (error) {
-    console.error('Error parsing QR URL:', error);
-    return null;
+    console.error('Error parsing QR URL:', error)
+    return null
   }
 }
 
@@ -110,7 +110,7 @@ export function parseQRUrl(url: string): {
  * Validate QR URL format
  */
 export function isValidQRUrl(url: string): boolean {
-  return parseQRUrl(url) !== null;
+  return parseQRUrl(url) !== null
 }
 
 /**
@@ -122,9 +122,9 @@ export function generateTestQRUrl(
   page: number,
   baseUrl: string = 'https://qr.pti.ru'
 ): string {
-  const timestamp = Math.floor(Date.now() / 1000);
+  const timestamp = Math.floor(Date.now() / 1000)
   // This is a mock signature for testing
-  const signature = 'test_signature_' + timestamp;
-  
-  return `${baseUrl}/r/${docUid}/${revision}/${page}?ts=${timestamp}&t=${signature}`;
+  const signature = 'test_signature_' + timestamp
+
+  return `${baseUrl}/r/${docUid}/${revision}/${page}?ts=${timestamp}&t=${signature}`
 }

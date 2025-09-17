@@ -2,37 +2,37 @@
  * Application settings management
  */
 
-'use client';
+'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'auto';
-  language: 'ru' | 'en';
+  theme: 'light' | 'dark' | 'auto'
+  language: 'ru' | 'en'
   notifications: {
-    enabled: boolean;
-    sound: boolean;
-    vibration: boolean;
-  };
+    enabled: boolean
+    sound: boolean
+    vibration: boolean
+  }
   qrScanner: {
-    autoFocus: boolean;
-    showOverlay: boolean;
-    flashMode: 'auto' | 'on' | 'off';
-  };
+    autoFocus: boolean
+    showOverlay: boolean
+    flashMode: 'auto' | 'on' | 'off'
+  }
   api: {
-    baseUrl: string;
-    timeout: number;
-    retryAttempts: number;
-  };
+    baseUrl: string
+    timeout: number
+    retryAttempts: number
+  }
   cache: {
-    enabled: boolean;
-    ttl: number;
-  };
+    enabled: boolean
+    ttl: number
+  }
   analytics: {
-    enabled: boolean;
-    trackErrors: boolean;
-    trackPerformance: boolean;
-  };
+    enabled: boolean
+    trackErrors: boolean
+    trackPerformance: boolean
+  }
 }
 
 const defaultSettings: AppSettings = {
@@ -62,102 +62,106 @@ const defaultSettings: AppSettings = {
     trackErrors: true,
     trackPerformance: true,
   },
-};
+}
 
 export class SettingsManager {
-  private settings: AppSettings;
-  private listeners: Array<(settings: AppSettings) => void> = [];
+  private settings: AppSettings
+  private listeners: Array<(settings: AppSettings) => void> = []
 
   constructor() {
-    this.settings = this.loadSettings();
+    this.settings = this.loadSettings()
   }
 
   private loadSettings(): AppSettings {
     if (typeof window === 'undefined') {
-      return defaultSettings;
+      return defaultSettings
     }
 
     try {
-      const stored = localStorage.getItem('pte_qr_settings');
+      const stored = localStorage.getItem('pte_qr_settings')
       if (stored) {
-        const parsed = JSON.parse(stored);
-        return { ...defaultSettings, ...parsed };
+        const parsed = JSON.parse(stored)
+        return { ...defaultSettings, ...parsed }
       }
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error('Failed to load settings:', error)
     }
 
-    return defaultSettings;
+    return defaultSettings
   }
 
   private saveSettings(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return
 
     try {
-      localStorage.setItem('pte_qr_settings', JSON.stringify(this.settings));
+      localStorage.setItem('pte_qr_settings', JSON.stringify(this.settings))
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      console.error('Failed to save settings:', error)
     }
   }
 
   getSettings(): AppSettings {
-    return { ...this.settings };
+    return { ...this.settings }
   }
 
   updateSettings(updates: Partial<AppSettings>): void {
-    this.settings = { ...this.settings, ...updates };
-    this.saveSettings();
-    this.notifyListeners();
+    this.settings = { ...this.settings, ...updates }
+    this.saveSettings()
+    this.notifyListeners()
   }
 
   resetSettings(): void {
-    this.settings = { ...defaultSettings };
-    this.saveSettings();
-    this.notifyListeners();
+    this.settings = { ...defaultSettings }
+    this.saveSettings()
+    this.notifyListeners()
   }
 
   subscribe(listener: (settings: AppSettings) => void): () => void {
-    this.listeners.push(listener);
+    this.listeners.push(listener)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
-    };
+      this.listeners = this.listeners.filter((l) => l !== listener)
+    }
   }
 
   private notifyListeners(): void {
-    this.listeners.forEach(listener => listener(this.getSettings()));
+    this.listeners.forEach((listener) => listener(this.getSettings()))
   }
 
   get<K extends keyof AppSettings>(key: K): AppSettings[K] {
-    return this.settings[key];
+    return this.settings[key]
   }
 
   set<K extends keyof AppSettings>(key: K, value: AppSettings[K]): void {
-    this.updateSettings({ [key]: value } as Partial<AppSettings>);
+    this.updateSettings({ [key]: value } as Partial<AppSettings>)
   }
 }
 
-export const settingsManager = new SettingsManager();
+export const settingsManager = new SettingsManager()
 
 export const settings = {
   get: <K extends keyof AppSettings>(key: K) => settingsManager.get(key),
-  set: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => settingsManager.set(key, value),
+  set: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) =>
+    settingsManager.set(key, value),
   getAll: () => settingsManager.getSettings(),
-  update: (updates: Partial<AppSettings>) => settingsManager.updateSettings(updates),
+  update: (updates: Partial<AppSettings>) =>
+    settingsManager.updateSettings(updates),
   reset: () => settingsManager.resetSettings(),
-  subscribe: (listener: (settings: AppSettings) => void) => settingsManager.subscribe(listener),
-};
+  subscribe: (listener: (settings: AppSettings) => void) =>
+    settingsManager.subscribe(listener),
+}
 
 export function useSettings() {
-  const [settings, setSettings] = useState(settingsManager.getSettings());
+  const [settings, setSettings] = useState(settingsManager.getSettings())
 
   useEffect(() => {
-    const unsubscribe = settingsManager.subscribe(setSettings);
-    return unsubscribe;
-  }, []);
+    const unsubscribe = settingsManager.subscribe(setSettings)
+    return unsubscribe
+  }, [])
 
   return {
     settings,
-    update: (updates: Partial<AppSettings>) => settingsManager.updateSettings(updates),
+    update: (updates: Partial<AppSettings>) =>
+      settingsManager.updateSettings(updates),
     reset: () => settingsManager.resetSettings(),
-  };
+  }
 }

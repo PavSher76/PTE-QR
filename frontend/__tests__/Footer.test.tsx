@@ -12,7 +12,7 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
+
     expect(screen.getByAltText('PTE QR Logo')).toBeInTheDocument()
     expect(screen.getByText('PTE QR Система')).toBeInTheDocument()
   })
@@ -23,8 +23,12 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
-    expect(screen.getByText(/Система проверки актуальности документов через QR-коды с интеграцией в ENOVIA PLM/)).toBeInTheDocument()
+
+    expect(
+      screen.getByText(
+        /Система проверки актуальности документов через QR-коды с интеграцией в ENOVIA PLM/
+      )
+    ).toBeInTheDocument()
   })
 
   it('renders product section', () => {
@@ -33,7 +37,7 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
+
     expect(screen.getByText('Продукт')).toBeInTheDocument()
     expect(screen.getByText('Возможности')).toBeInTheDocument()
     expect(screen.getByText('Интеграция')).toBeInTheDocument()
@@ -46,7 +50,7 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
+
     expect(screen.getByText('Поддержка')).toBeInTheDocument()
     expect(screen.getByText('Документация')).toBeInTheDocument()
     expect(screen.getByText('Помощь')).toBeInTheDocument()
@@ -59,7 +63,7 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
+
     expect(screen.getByText('Компания')).toBeInTheDocument()
     expect(screen.getByText('О нас')).toBeInTheDocument()
     expect(screen.getByText('Политика конфиденциальности')).toBeInTheDocument()
@@ -72,8 +76,10 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
-    expect(screen.getByText('© 2024 ПТИ. Все права защищены.')).toBeInTheDocument()
+
+    expect(
+      screen.getByText('© 2024 ПТИ. Все права защищены.')
+    ).toBeInTheDocument()
   })
 
   it('renders with English language', () => {
@@ -85,16 +91,18 @@ describe('Footer', () => {
         </div>
       </LanguageProvider>
     )
-    
+
     // Change language to English
     const languageSelect = screen.getByRole('combobox')
     fireEvent.change(languageSelect, { target: { value: 'en' } })
-    
+
     expect(screen.getByText('PTE QR System')).toBeInTheDocument()
     expect(screen.getByText('Product')).toBeInTheDocument()
     expect(screen.getByText('Support')).toBeInTheDocument()
     expect(screen.getByText('Company')).toBeInTheDocument()
-    expect(screen.getByText('© 2024 PTI. All rights reserved.')).toBeInTheDocument()
+    expect(
+      screen.getByText('© 2024 PTI. All rights reserved.')
+    ).toBeInTheDocument()
   })
 
   it('renders with Chinese language', () => {
@@ -106,11 +114,11 @@ describe('Footer', () => {
         </div>
       </LanguageProvider>
     )
-    
+
     // Change language to Chinese
     const languageSelect = screen.getByRole('combobox')
     fireEvent.change(languageSelect, { target: { value: 'zh' } })
-    
+
     expect(screen.getByText('PTE QR 系统')).toBeInTheDocument()
     expect(screen.getByText('产品')).toBeInTheDocument()
     expect(screen.getByText('支持')).toBeInTheDocument()
@@ -124,7 +132,7 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
+
     const footer = screen.getByRole('contentinfo')
     expect(footer).toHaveClass('bg-gray-900', 'text-white')
   })
@@ -135,11 +143,11 @@ describe('Footer', () => {
         <Footer />
       </LanguageProvider>
     )
-    
+
     const links = screen.getAllByRole('link')
     expect(links.length).toBeGreaterThan(0)
-    
-    links.forEach(link => {
+
+    links.forEach((link) => {
       expect(link).toHaveAttribute('href', '#')
     })
   })
