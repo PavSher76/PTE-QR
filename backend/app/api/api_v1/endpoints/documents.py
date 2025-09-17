@@ -61,7 +61,11 @@ async def get_document_status(
             raise HTTPException(status_code=404, detail=f"Document {doc_uid} not found")
 
         # Prepare response data based on authentication status
-        logger.info("Document status request", current_user=current_user, has_user=bool(current_user))
+        logger.info(
+            "Document status request",
+            current_user=current_user,
+            has_user=bool(current_user),
+        )
         if current_user:
             # Full response for authenticated users
             response_data = {

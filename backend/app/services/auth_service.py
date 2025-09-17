@@ -254,12 +254,14 @@ class AuthService:
 # Global auth service instance - will be created lazily
 _auth_service_instance = None
 
+
 def get_auth_service() -> AuthService:
     """Get auth service instance (lazy initialization)"""
     global _auth_service_instance
     if _auth_service_instance is None:
         _auth_service_instance = AuthService()
     return _auth_service_instance
+
 
 # For backward compatibility
 auth_service = get_auth_service()

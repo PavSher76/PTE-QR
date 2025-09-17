@@ -44,7 +44,9 @@ class TestDocumentStatusAuth:
         assert "note" in data["metadata"]
         assert "privacy requirements" in data["metadata"]["note"]
 
-    def test_document_status_with_auth_full_info(self, authenticated_client: TestClient, test_user):
+    def test_document_status_with_auth_full_info(
+        self, authenticated_client: TestClient, test_user
+    ):
         """Test document status with authentication returns full information."""
         response = authenticated_client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
@@ -94,7 +96,9 @@ class TestDocumentStatusAuth:
             "exp": datetime.utcnow() - timedelta(minutes=30),  # Expired
         }
         token = jwt.encode(
-            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
+            token_data,
+            test_settings.JWT_SECRET_KEY,
+            algorithm=test_settings.JWT_ALGORITHM,
         )
 
         headers = {"Authorization": f"Bearer {token}"}
@@ -156,7 +160,9 @@ class TestDocumentStatusAuth:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         token = jwt.encode(
-            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
+            token_data,
+            test_settings.JWT_SECRET_KEY,
+            algorithm=test_settings.JWT_ALGORITHM,
         )
 
         headers = {"Authorization": f"Bearer {token}"}

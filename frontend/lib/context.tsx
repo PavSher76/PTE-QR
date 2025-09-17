@@ -140,27 +140,68 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('pte-qr-user')
-    if (savedUser) {
+    const savedToken = localStorage.getItem('pte-qr-token')
+    if (savedUser && savedToken) {
       setUser(JSON.parse(savedUser))
       setIsAuthenticated(true)
     }
   }, [])
 
-  const login = (credentials: any) => {
-    // Mock login - in real app would call API
-    const mockUser = {
-      username: credentials.username || 'demo_user',
-      email: credentials.email || 'demo@example.com',
+  const login = async (credentials: { username: string; password: string }) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Store token in localStorage
+        localStorage.setItem('pte-qr-token', data.access_token)
+        
+        // Create user object
+        const userData = {
+          username: credentials.username,
+          email: `${credentials.username}@example.com`,
+        }
+        
+        setUser(userData)
+        setIsAuthenticated(true)
+        localStorage.setItem('pte-qr-user', JSON.stringify(userData))
+        
+        return { success: true }
+      } else {
+        const errorData = await response.json()
+        return { success: false, error: errorData.detail || 'Login failed' }
+      }
+    } catch (error) {
+      return { success: false, error: 'Network error' }
     }
-    setUser(mockUser)
-    setIsAuthenticated(true)
-    localStorage.setItem('pte-qr-user', JSON.stringify(mockUser))
   }
 
-  const logout = () => {
-    setUser(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem('pte-qr-user')
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem('pte-qr-token')
+      if (token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      }
+    } catch (error) {
+      console.warn('Logout request failed:', error)
+    } finally {
+      setUser(null)
+      setIsAuthenticated(false)
+      localStorage.removeItem('pte-qr-user')
+      localStorage.removeItem('pte-qr-token')
+    }
   }
 
   return (

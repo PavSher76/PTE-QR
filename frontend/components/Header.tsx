@@ -1,15 +1,18 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useTheme } from '@/lib/context'
 import { useTranslation } from '@/lib/i18n'
 import { useUser } from '@/lib/context'
 import { Logo } from './Logo'
+import { LoginForm } from './LoginForm'
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
   const { t, language, setLanguage } = useTranslation()
   const { user, logout, isAuthenticated } = useUser()
+  const [showLoginForm, setShowLoginForm] = useState(false)
 
   return (
     <header className="border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -101,13 +104,21 @@ export function Header() {
                 </button>
               </div>
             ) : (
-              <button className="btn-secondary text-sm">
-                {t('auth.ssoLogin')}
+              <button 
+                onClick={() => setShowLoginForm(true)}
+                className="btn-secondary text-sm"
+              >
+                {t('auth.login')}
               </button>
             )}
           </div>
         </div>
       </div>
+      
+      {/* Login Form Modal */}
+      {showLoginForm && (
+        <LoginForm onClose={() => setShowLoginForm(false)} />
+      )}
     </header>
   )
 }

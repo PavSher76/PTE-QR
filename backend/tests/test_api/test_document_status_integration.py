@@ -14,7 +14,9 @@ from app.core.test_config import test_settings
 class TestDocumentStatusIntegration:
     """Integration tests for document status endpoint with authentication workflow"""
 
-    def test_full_workflow_with_authentication(self, authenticated_client: TestClient, test_user):
+    def test_full_workflow_with_authentication(
+        self, authenticated_client: TestClient, test_user
+    ):
         """Test complete workflow: get document status with full access."""
         # Get document status with authentication
         status_response = authenticated_client.get(
@@ -57,7 +59,9 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() - timedelta(minutes=30),  # Expired
         }
         expired_token = jwt.encode(
-            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
+            token_data,
+            test_settings.JWT_SECRET_KEY,
+            algorithm=test_settings.JWT_ALGORITHM,
         )
 
         headers = {"Authorization": f"Bearer {expired_token}"}
@@ -119,7 +123,9 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         admin_token = jwt.encode(
-            token_data_admin, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
+            token_data_admin,
+            test_settings.JWT_SECRET_KEY,
+            algorithm=test_settings.JWT_ALGORITHM,
         )
 
         admin_response = client.get(
@@ -152,7 +158,9 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         token = jwt.encode(
-            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
+            token_data,
+            test_settings.JWT_SECRET_KEY,
+            algorithm=test_settings.JWT_ALGORITHM,
         )
 
         response_with_auth = client.get(
@@ -161,7 +169,9 @@ class TestDocumentStatusIntegration:
         )
         assert response_with_auth.status_code == 404
 
-    def test_workflow_caching_behavior(self, client: TestClient, authenticated_client: TestClient, test_user):
+    def test_workflow_caching_behavior(
+        self, client: TestClient, authenticated_client: TestClient, test_user
+    ):
         """Test that caching works correctly with different authentication states."""
         # First request without authentication
         response1 = client.get(
@@ -217,7 +227,9 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         token = jwt.encode(
-            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
+            token_data,
+            test_settings.JWT_SECRET_KEY,
+            algorithm=test_settings.JWT_ALGORITHM,
         )
         headers = {"Authorization": f"Bearer {token}"}
 

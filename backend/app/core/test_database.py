@@ -45,7 +45,7 @@ def create_test_tables():
     from app.models.document import Base as DocumentBase
     from app.models.qr_code import Base as QRCodeBase
     from app.models.audit import Base as AuditBase
-    
+
     # Create all tables in correct order (users first, then documents)
     UserBase.metadata.create_all(bind=test_engine)
     DocumentBase.metadata.create_all(bind=test_engine)
@@ -59,7 +59,7 @@ def drop_test_tables():
     from app.models.document import Base as DocumentBase
     from app.models.qr_code import Base as QRCodeBase
     from app.models.audit import Base as AuditBase
-    
+
     # Drop all tables in reverse order
     AuditBase.metadata.drop_all(bind=test_engine)
     QRCodeBase.metadata.drop_all(bind=test_engine)

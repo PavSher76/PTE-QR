@@ -24,7 +24,9 @@ class TestQRCodeEndpoints:
         # Should require authentication
         assert response.status_code in [401, 403]
 
-    def test_generate_qr_codes_invalid_request(self, unauthenticated_client: TestClient):
+    def test_generate_qr_codes_invalid_request(
+        self, unauthenticated_client: TestClient
+    ):
         """Test QR code generation with invalid request data."""
         response = unauthenticated_client.post(
             "/api/v1/qrcodes/",

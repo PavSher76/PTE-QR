@@ -6,6 +6,7 @@ import os
 import tempfile
 from pathlib import Path
 
+
 # Simple test configuration without pydantic
 class TestSettings:
     """Test application settings"""
@@ -81,6 +82,7 @@ test_settings = TestSettings()
 
 # Override main settings with test settings
 from app.core.config import settings
+
 for key, value in test_settings.__dict__.items():
     if not key.startswith("__"):
         setattr(settings, key, value)
@@ -90,4 +92,5 @@ os.environ["TESTING"] = "true"
 
 # Recreate auth service with test settings
 from app.services.auth_service import _auth_service_instance, AuthService
+
 _auth_service_instance = AuthService()

@@ -33,16 +33,20 @@ test_auth_service = AuthService()
 from app.services.auth_service import get_auth_service
 from app.api.dependencies import get_current_user, get_current_user_optional
 
+
 # Mock the auth service
 def mock_get_auth_service():
     return test_auth_service
 
+
 # Override the auth service function
 import app.services.auth_service
+
 app.services.auth_service.get_auth_service = mock_get_auth_service
 
 # Also override the global auth_service instance
 app.services.auth_service._auth_service_instance = test_auth_service
+
 
 # Mock the get_user_by_username method to return test user
 async def mock_get_user_by_username(username: str, db):
@@ -50,6 +54,7 @@ async def mock_get_user_by_username(username: str, db):
     if username == "testuser":
         return db.query(User).filter(User.username == "testuser").first()
     return None
+
 
 # Override the method
 test_auth_service.get_user_by_username = mock_get_user_by_username
@@ -91,10 +96,10 @@ def client(db_session) -> Generator:
     """Create a test client with database session override."""
     # Override database dependency
     fastapi_app.dependency_overrides[get_db] = lambda: TestSessionLocal()
-    
+
     with TestClient(fastapi_app) as test_client:
         yield test_client
-    
+
     # Clean up
     fastapi_app.dependency_overrides.clear()
 
@@ -103,19 +108,21 @@ def client(db_session) -> Generator:
 def authenticated_client(client, test_user) -> Generator:
     """Create an authenticated test client."""
     from app.api.dependencies import get_current_user, get_current_user_optional
-    
+
     def mock_get_current_user():
         return test_user
-    
+
     def mock_get_current_user_optional():
         return test_user
-    
+
     # Override auth dependencies
     fastapi_app.dependency_overrides[get_current_user] = mock_get_current_user
-    fastapi_app.dependency_overrides[get_current_user_optional] = mock_get_current_user_optional
-    
+    fastapi_app.dependency_overrides[get_current_user_optional] = (
+        mock_get_current_user_optional
+    )
+
     yield client
-    
+
     # Clean up
     fastapi_app.dependency_overrides.pop(get_current_user, None)
     fastapi_app.dependency_overrides.pop(get_current_user_optional, None)
@@ -126,19 +133,21 @@ def unauthenticated_client(client) -> Generator:
     """Create an unauthenticated test client that will return 401/403 for protected endpoints."""
     from app.api.dependencies import get_current_user, get_current_user_optional
     from fastapi import HTTPException
-    
+
     def mock_get_current_user():
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     def mock_get_current_user_optional():
         return None
-    
+
     # Override auth dependencies
     fastapi_app.dependency_overrides[get_current_user] = mock_get_current_user
-    fastapi_app.dependency_overrides[get_current_user_optional] = mock_get_current_user_optional
-    
+    fastapi_app.dependency_overrides[get_current_user_optional] = (
+        mock_get_current_user_optional
+    )
+
     yield client
-    
+
     # Clean up
     fastapi_app.dependency_overrides.pop(get_current_user, None)
     fastapi_app.dependency_overrides.pop(get_current_user_optional, None)
@@ -149,6 +158,7 @@ def setup_test_data(db_session):
     """Set up test data for all tests"""
     # Create test user
     from app.models.user import User
+
     test_user = db_session.query(User).filter(User.username == "testuser").first()
     if not test_user:
         test_user = User(
@@ -161,11 +171,14 @@ def setup_test_data(db_session):
         db_session.add(test_user)
         db_session.commit()
         db_session.refresh(test_user)
-    
+
     # Create test document
     from app.models.document import Document
     from datetime import datetime
-    test_document = db_session.query(Document).filter(Document.doc_uid == "TEST-DOC-001").first()
+
+    test_document = (
+        db_session.query(Document).filter(Document.doc_uid == "TEST-DOC-001").first()
+    )
     if not test_document:
         test_document = Document(
             doc_uid="TEST-DOC-001",
@@ -183,9 +196,9 @@ def setup_test_data(db_session):
         db_session.add(test_document)
         db_session.commit()
         db_session.refresh(test_document)
-    
+
     yield
-    
+
     # Clean up after test
     db_session.rollback()
 

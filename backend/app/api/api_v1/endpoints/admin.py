@@ -44,10 +44,7 @@ async def get_system_stats(request: Request, db: Session = Depends(get_db)):
 
         # Get recent activity
         recent_status_checks = (
-            db.query(Document)
-            .order_by(desc(Document.created_at))
-            .limit(10)
-            .all()
+            db.query(Document).order_by(desc(Document.created_at)).limit(10).all()
         )
 
         # Get cache statistics

@@ -19,11 +19,12 @@ class GUID(TypeDecorator):
     """Platform-independent GUID type.
     Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as stringified hex values.
     """
+
     impl = CHAR
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(UUID())
         else:
             return dialect.type_descriptor(CHAR(32))
@@ -31,7 +32,7 @@ class GUID(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return value
-        elif dialect.name == 'postgresql':
+        elif dialect.name == "postgresql":
             return str(value)
         else:
             if not isinstance(value, uuid.UUID):
@@ -75,9 +76,7 @@ class AuditLog(Base):
     action = Column(String(20), nullable=False)
     old_values = Column(JSON, nullable=True)
     new_values = Column(JSON, nullable=True)
-    changed_by = Column(
-        GUID(), ForeignKey("users.id"), nullable=True
-    )
+    changed_by = Column(GUID(), ForeignKey("users.id"), nullable=True)
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
