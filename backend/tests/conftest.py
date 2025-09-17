@@ -17,14 +17,14 @@ from app.models.user import User
 from app.models.document import Document, DocumentRevision
 from app.core.cache import cache_manager
 
-# Test database URL
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+# Test database URL - use PostgreSQL for tests
+SQLALCHEMY_DATABASE_URL = "postgresql://pte_qr:pte_qr_dev@localhost:5432/pte_qr_test"
 
 # Create test engine
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

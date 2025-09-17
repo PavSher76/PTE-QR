@@ -120,8 +120,11 @@ class QRCodeGenerator:
         qr.add_data(url)
         qr.make(fit=True)
         
-        # Create QR code image
+        # Create QR code image in RGB mode
         qr_image = qr.make_image(fill_color="black", back_color="white")
+        # Convert to RGB to ensure compatibility
+        if qr_image.mode != 'RGB':
+            qr_image = qr_image.convert('RGB')
         
         # Resize to target size
         qr_image = qr_image.resize((size_px, size_px), Image.Resampling.LANCZOS)
@@ -132,8 +135,10 @@ class QRCodeGenerator:
         # Convert to different formats
         result = {}
         
-        # PNG format
+        # PNG format - ensure RGB mode
         png_buffer = BytesIO()
+        if styled_image.mode != 'RGB':
+            styled_image = styled_image.convert('RGB')
         styled_image.save(png_buffer, format='PNG', dpi=(dpi, dpi))
         result['png'] = base64.b64encode(png_buffer.getvalue()).decode('utf-8')
         
@@ -221,6 +226,10 @@ class QRCodeGenerator:
         qr_url = self.hmac_signer.generate_qr_url(doc_uid, revision, page)
         qr_data = self._generate_qr_image(qr_url, QRCodeStyleEnum.BLACK, dpi, size_mm)
         
-        # Return PNG image
+        # Return PNG image in RGB mode
         png_data = base64.b64decode(qr_data['png'])
-        return Image.open(BytesIO(png_data))
+        image = Image.open(BytesIO(png_data))
+        # Ensure RGB mode for compatibility
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        return image

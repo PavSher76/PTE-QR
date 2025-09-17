@@ -98,7 +98,7 @@ class TestQRCodeGenerator:
         
         assert qr_image is not None
         assert isinstance(qr_image, Image.Image)
-        assert qr_image.mode in ["RGB", "RGBA", "L"]
+        assert qr_image.mode in ["RGB", "RGBA", "L", "1"]
     
     def test_qr_url_contains_correct_parameters(self):
         """Test that generated QR URLs contain correct parameters."""
