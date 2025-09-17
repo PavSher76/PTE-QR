@@ -1,0 +1,9 @@
+# Ignore init-scripts directory completely
+init-scripts/
+init-scripts/test_auth.py
+init-scripts/auth_test.py
+init-scripts/auth_script.py
+
+# Ignore any other test files outside tests/ directory
+**/test_*.py
+!tests/**/test_*.py
