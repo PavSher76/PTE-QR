@@ -2,7 +2,6 @@
 Cache service for Redis operations
 """
 
-import asyncio
 import json
 from typing import Any, Dict, List, Optional
 

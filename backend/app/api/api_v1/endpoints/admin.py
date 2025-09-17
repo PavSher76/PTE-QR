@@ -10,9 +10,9 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.document import Document
+from app.models.document import Document, DocumentRevision, DocumentStatus
 from app.models.qr_code import QRCode
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.services.cache_service import cache_service
 from app.services.metrics_service import metrics_service
 
@@ -39,7 +39,7 @@ async def get_system_stats(request: Request, db: Session = Depends(get_db)):
         # Get user statistics
         total_users = db.query(func.count(User.id)).scalar() or 0
         active_users = (
-            db.query(func.count(User.id)).filter(User.is_active == True).scalar() or 0
+            db.query(func.count(User.id)).filter(User.is_active.is_(True)).scalar() or 0
         )
 
         # Get recent activity

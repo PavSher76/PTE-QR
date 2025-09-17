@@ -4,7 +4,6 @@ Redis cache management
 
 import asyncio
 import json
-from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
 import redis.asyncio as redis

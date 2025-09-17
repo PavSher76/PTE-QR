@@ -8,8 +8,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import pypdf
 import structlog
 from PIL import Image
-from reportlab.lib.colors import black, white
-from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
@@ -208,7 +206,6 @@ class PDFStamper:
         """Create new PDF with QR codes"""
         try:
             from reportlab.lib.pagesizes import A4
-            from reportlab.lib.units import mm
             from reportlab.pdfgen import canvas
 
             buffer = io.BytesIO()

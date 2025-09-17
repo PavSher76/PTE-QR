@@ -4,7 +4,6 @@ PTE-QR Authentication Test Script
 Скрипт для тестирования аутентификации пользователей
 """
 
-import json
 import sys
 from typing import Any, Dict
 
@@ -76,7 +75,8 @@ def test_protected_endpoint(token: str, username: str) -> bool:
             return True
         else:
             print(
-                f"❌ Protected endpoint access failed for {username} (Status: {response.status_code})"
+                f"❌ Protected endpoint access failed for {username} "
+                f"(Status: {response.status_code})"
             )
             return False
 

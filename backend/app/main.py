@@ -51,7 +51,10 @@ async def lifespan(app: FastAPI):
 logger.info("Initializing PTE-QR Backend API")
 app = FastAPI(
     title="PTE QR/Status API",
-    description="API для генерации QR-кодов и проверки актуальности листов документации (ENOVIA/3DEXPERIENCE)",
+    description=(
+        "API для генерации QR-кодов и проверки актуальности листов "
+        "документации (ENOVIA/3DEXPERIENCE)"
+    ),
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

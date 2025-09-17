@@ -2,15 +2,14 @@
 ENOVIA PLM integration client
 """
 
-import asyncio
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 import structlog
 
 from app.core.config import settings
-from app.models.document import DocumentStatusEnum, EnoviaStateEnum
+from app.models.document import DocumentStatusEnum
 
 logger = structlog.get_logger()
 

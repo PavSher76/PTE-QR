@@ -3,14 +3,12 @@ PDF stamping utilities for embedding QR codes
 """
 
 import io
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 import structlog
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import white
-from reportlab.lib.pagesizes import A4, letter
-from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from app.core.config import settings

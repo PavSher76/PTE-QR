@@ -3,7 +3,6 @@ QR Code generation endpoints
 """
 
 import time
-from typing import List
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request

@@ -7,12 +7,9 @@ import uuid
 
 from sqlalchemy import (
     JSON,
-    Boolean,
     Column,
     DateTime,
-    Enum,
     ForeignKey,
-    Integer,
     String,
     Text,
 )

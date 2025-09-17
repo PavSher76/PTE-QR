@@ -130,9 +130,8 @@ async def detailed_status(db: Session = Depends(get_db)):
             from sqlalchemy import text
 
             db.execute(text("SELECT 1"))
-            db_status = "healthy"
         except Exception as e:
-            db_status = f"unhealthy: {str(e)}"
+            logger.error(f"Database health check failed: {e}")
 
         return {
             "status": "healthy",

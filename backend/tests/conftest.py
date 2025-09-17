@@ -2,22 +2,16 @@
 Pytest configuration and fixtures
 """
 
-import asyncio
-
 # Test database URL - use environment variable or default
 import os
-from typing import AsyncGenerator, Generator
+from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.core.cache import cache_manager
-from app.core.config import settings
-from app.core.database import Base, get_db
-from app.core.test_config import test_settings
+from app.core.database import get_db
 from app.main import app
 from app.models.document import Document
 from app.models.user import User
@@ -39,6 +33,8 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 @pytest.fixture(scope="session")
 def event_loop() -> Generator:
     """Create an instance of the default event loop for the test session."""
+    import asyncio
+
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
@@ -79,7 +75,9 @@ def test_user(db_session) -> User:
         user = User(
             username="testuser",
             email="test@example.com",
-            hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
+            hashed_password=(
+                "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+            ),  # secret
             is_active=True,
             is_superuser=False,
         )
@@ -98,7 +96,9 @@ def test_admin_user(db_session) -> User:
         user = User(
             username="admin",
             email="admin@example.com",
-            hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
+            hashed_password=(
+                "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+            ),  # secret
             is_active=True,
             is_superuser=True,
         )

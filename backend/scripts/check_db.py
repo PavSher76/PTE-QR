@@ -70,7 +70,8 @@ def check_schema_exists():
 
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT schema_name FROM information_schema.schemata WHERE schema_name = 'pte_qr'"
+            "SELECT schema_name FROM information_schema.schemata "
+            "WHERE schema_name = 'pte_qr'"
         )
         result = cursor.fetchone()
 
@@ -120,8 +121,8 @@ def check_tables_exist():
             cursor.execute(
                 """
                 SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'pte_qr' 
+                    SELECT FROM information_schema.tables
+                    WHERE table_schema = 'pte_qr'
                     AND table_name = %s
                 )
             """,
@@ -148,7 +149,7 @@ def check_tables_exist():
 if __name__ == "__main__":
     print("🔍 Checking database setup...")
     print(
-        f"Database URL: {os.getenv('DATABASE_URL', 'postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr')}"
+        f"Database URL: {os.getenv("DATABASE_URL", "postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr")}"
     )
     print()
 

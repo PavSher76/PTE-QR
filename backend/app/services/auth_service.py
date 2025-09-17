@@ -54,7 +54,8 @@ class AuthService:
                 value, (str, int, float, bool, list, dict)
             ):
                 logger.warning(
-                    f"Converting non-serializable value for key '{key}': {type(value)} -> {str(value)}"
+                    f"Converting non-serializable value for key '{key}': "
+                    f"{type(value)} -> {str(value)}"
                 )
                 to_encode[key] = str(value)
 

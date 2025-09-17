@@ -13,7 +13,6 @@ from app.api.dependencies import get_current_user_optional
 from app.core.database import get_db
 from app.models.user import User
 from app.services.cache_service import cache_service
-from app.services.enovia_service import enovia_service
 from app.services.metrics_service import metrics_service
 
 router = APIRouter()
@@ -75,7 +74,9 @@ async def get_document_status(
                 "superseded_by": None,
                 "last_modified": "2024-01-15T10:30:00Z",
                 "links": {
-                    "openDocument": f"https://enovia.pti.ru/3dspace/document/{doc_uid}?rev={rev}",
+                    "openDocument": (
+                        f"https://enovia.pti.ru/3dspace/document/{doc_uid}?rev={rev}"
+                    ),
                     "openLatest": None,
                 },
                 "metadata": {
@@ -93,13 +94,18 @@ async def get_document_status(
                 "is_actual": True,
                 "business_status": "ACTUAL",  # Only essential status info
                 "links": {
-                    "openDocument": f"https://enovia.pti.ru/3dspace/document/{doc_uid}?rev={rev}",
+                    "openDocument": (
+                        f"https://enovia.pti.ru/3dspace/document/{doc_uid}?rev={rev}"
+                    ),
                     "openLatest": None,
                 },
                 "metadata": {
                     "access_level": "limited",
                     "gdpr_compliant": True,
-                    "note": "Limited information due to privacy requirements. Please authenticate for full access.",
+                    "note": (
+                        "Limited information due to privacy requirements. "
+                        "Please authenticate for full access."
+                    ),
                 },
             }
 

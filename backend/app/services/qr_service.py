@@ -4,14 +4,13 @@ QR Code generation service
 
 import base64
 import io
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import qrcode
 import segno
 import structlog
 from PIL import Image, ImageDraw, ImageFont
 
-from app.core.config import settings
 from app.utils.hmac_signer import HMACSigner
 
 logger = structlog.get_logger()
@@ -93,7 +92,7 @@ class QRCodeGenerator:
                 font = ImageFont.truetype(
                     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12
                 )
-            except:
+            except (OSError, IOError):
                 font = ImageFont.load_default()
 
             # Center the text

@@ -11,8 +11,7 @@ import segno
 import structlog
 from PIL import Image, ImageDraw, ImageFont
 
-from app.core.config import settings
-from app.models.qr_code import QRCodeFormatEnum, QRCodeStyleEnum
+from app.models.qr_code import QRCodeStyleEnum
 from app.utils.hmac_signer import HMACSigner
 
 logger = structlog.get_logger()
