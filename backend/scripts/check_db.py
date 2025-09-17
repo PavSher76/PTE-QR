@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 def check_database_connection():
     """Check if we can connect to the database"""
-    database_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pte_qr_test")
+    database_url = os.getenv("DATABASE_URL", "postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr")
     
     try:
         # Parse the database URL
@@ -49,7 +49,7 @@ def check_database_connection():
 
 def check_schema_exists():
     """Check if the pte_qr schema exists"""
-    database_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pte_qr_test")
+    database_url = os.getenv("DATABASE_URL", "postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr")
     
     try:
         parsed = urlparse(database_url)
@@ -81,7 +81,7 @@ def check_schema_exists():
 
 def check_tables_exist():
     """Check if required tables exist"""
-    database_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pte_qr_test")
+    database_url = os.getenv("DATABASE_URL", "postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr")
     
     required_tables = ['users', 'user_roles', 'documents', 'qr_codes', 'qr_code_generations', 'audit_logs']
     
@@ -124,7 +124,7 @@ def check_tables_exist():
 
 if __name__ == "__main__":
     print("🔍 Checking database setup...")
-    print(f"Database URL: {os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/pte_qr_test')}")
+    print(f"Database URL: {os.getenv('DATABASE_URL', 'postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr')}")
     print()
     
     # Check connection

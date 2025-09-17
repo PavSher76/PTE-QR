@@ -81,6 +81,13 @@ jobs:
         cd backend
         PGPASSWORD=postgres psql -h localhost -U postgres -d pte_qr_test -f init_ci_db.sql
     
+    - name: Verify database setup
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pte_qr_test
+      run: |
+        cd backend
+        python scripts/check_db.py
+    
     - name: Run backend tests
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pte_qr_test

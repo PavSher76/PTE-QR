@@ -27,7 +27,9 @@ setup-db: ## Setup test database
 	cd backend && \
 	docker-compose up -d postgres && \
 	sleep 5 && \
-	PGPASSWORD=postgres psql -h localhost -U postgres -d pte_qr_test -f init_ci_db.sql
+	docker-compose exec postgres createdb -U pte_qr pte_qr_test && \
+	docker cp init_ci_db.sql pte-qr-postgres:/tmp/init_ci_db.sql && \
+	docker-compose exec postgres psql -U pte_qr -d pte_qr_test -f /tmp/init_ci_db.sql
 
 clean-docker: ## Clean up Docker containers and volumes
 	docker-compose down -v
