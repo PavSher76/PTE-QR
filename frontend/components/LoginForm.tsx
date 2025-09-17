@@ -25,7 +25,7 @@ export function LoginForm({ onClose }: LoginFormProps) {
 
     try {
       const result = await login(formData)
-      
+
       if (result.success) {
         addNotification({
           type: 'success',
@@ -69,15 +69,28 @@ export function LoginForm({ onClose }: LoginFormProps) {
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               {t('auth.username')}
             </label>
             <input
@@ -93,7 +106,10 @@ export function LoginForm({ onClose }: LoginFormProps) {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               {t('auth.password')}
             </label>
             <input
@@ -131,8 +147,12 @@ export function LoginForm({ onClose }: LoginFormProps) {
             {t('auth.testCredentials')}
           </p>
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-            <p><strong>{t('auth.username')}:</strong> testuser</p>
-            <p><strong>{t('auth.password')}:</strong> secret</p>
+            <p>
+              <strong>{t('auth.username')}:</strong> testuser
+            </p>
+            <p>
+              <strong>{t('auth.password')}:</strong> secret
+            </p>
           </div>
         </div>
       </div>

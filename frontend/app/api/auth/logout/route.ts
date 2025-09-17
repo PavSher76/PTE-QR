@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    
+
     if (!authHeader) {
       return NextResponse.json(
         { detail: 'Authorization header required' },
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
       method: 'POST',
       headers: {
-        'Authorization': authHeader,
+        Authorization: authHeader,
       },
     })
 

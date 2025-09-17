@@ -5,9 +5,10 @@ Check all required services for the application
 
 import sys
 import time
-import redis
-import psycopg2
 from urllib.parse import urlparse
+
+import psycopg2
+import redis
 
 
 def check_redis(redis_url="redis://localhost:6379"):

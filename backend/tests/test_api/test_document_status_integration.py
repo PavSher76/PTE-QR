@@ -176,15 +176,29 @@ class TestDocumentStatusIntegration:
         test_user,
     ):
         """Test that caching works correctly with different authentication states."""
-        # First request without authentication
-        response1 = unauthenticated_client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
-        )
-        assert response1.status_code == 200
-        data1 = response1.json()
-        print(f"DEBUG: First request data: {data1}")
-        print(f"DEBUG: Access level: {data1.get('metadata', {}).get('access_level')}")
-        assert data1["metadata"]["access_level"] == "limited"
+        # Mock get_current_user_optional to return None for unauthenticated requests
+        from app.api.dependencies import get_current_user_optional
+        from app.main import app
+        
+        def mock_get_current_user_optional_none():
+            return None
+        
+        # Override the dependency
+        app.dependency_overrides[get_current_user_optional] = mock_get_current_user_optional_none
+        
+        try:
+            # First request without authentication
+            response1 = unauthenticated_client.get(
+                "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
+            )
+            assert response1.status_code == 200
+            data1 = response1.json()
+            print(f"DEBUG: First request data: {data1}")
+            print(f"DEBUG: Access level: {data1.get('metadata', {}).get('access_level')}")
+            assert data1["metadata"]["access_level"] == "limited"
+        finally:
+            # Clean up the override
+            app.dependency_overrides.pop(get_current_user_optional, None)
 
         # Second request without authentication (should be cached)
         response2 = unauthenticated_client.get(
@@ -193,6 +207,12 @@ class TestDocumentStatusIntegration:
         assert response2.status_code == 200
         data2 = response2.json()
         assert data2["metadata"]["access_level"] == "limited"
+
+        # Restore the original dependency for authenticated requests
+        def mock_get_current_user_optional_auth():
+            return test_user
+        
+        app.dependency_overrides[get_current_user_optional] = mock_get_current_user_optional_auth
 
         # Request with authentication (should get fresh data)
         response3 = authenticated_client.get(

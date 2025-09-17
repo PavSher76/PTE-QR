@@ -88,10 +88,10 @@ describe('Header', () => {
   it('shows login button when user is not authenticated', () => {
     renderWithProviders(<Header />)
 
-    expect(screen.getByText('Войти через SSO')).toBeInTheDocument()
+    expect(screen.getByText('Войти')).toBeInTheDocument()
   })
 
-  it('shows user info and logout when authenticated', () => {
+  it('shows user info and logout when authenticated', async () => {
     // Mock authenticated user
     localStorage.setItem(
       'pte-qr-user',
@@ -100,14 +100,16 @@ describe('Header', () => {
         email: 'test@example.com',
       })
     )
+    localStorage.setItem('pte-qr-token', 'mock-token')
 
     renderWithProviders(<Header />)
 
-    expect(screen.getByText('testuser')).toBeInTheDocument()
+    // Wait for useEffect to run
+    await screen.findByText('testuser')
     expect(screen.getByText('Выйти')).toBeInTheDocument()
   })
 
-  it('logs out user when logout button is clicked', () => {
+  it('logs out user when logout button is clicked', async () => {
     // Mock authenticated user
     localStorage.setItem(
       'pte-qr-user',
@@ -116,14 +118,17 @@ describe('Header', () => {
         email: 'test@example.com',
       })
     )
+    localStorage.setItem('pte-qr-token', 'mock-token')
 
     renderWithProviders(<Header />)
 
+    // Wait for useEffect to run
+    await screen.findByText('testuser')
     const logoutButton = screen.getByText('Выйти')
     fireEvent.click(logoutButton)
 
     // User should be logged out
-    expect(screen.getByText('Войти через SSO')).toBeInTheDocument()
+    expect(screen.getByText('Войти')).toBeInTheDocument()
     expect(screen.queryByText('testuser')).not.toBeInTheDocument()
   })
 

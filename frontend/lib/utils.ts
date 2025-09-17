@@ -56,7 +56,7 @@ export function debounce<T extends (...args: any[]) => any>(
   if (typeof func !== 'function') {
     throw new Error('First argument must be a function')
   }
-  
+
   let timeout: NodeJS.Timeout | null = null
 
   return (...args: Parameters<T>) => {
@@ -81,7 +81,7 @@ export function throttle<T extends (...args: any[]) => any>(
   if (typeof func !== 'function') {
     throw new Error('First argument must be a function')
   }
-  
+
   let inThrottle: boolean = false
 
   return (...args: Parameters<T>) => {
@@ -92,9 +92,12 @@ export function throttle<T extends (...args: any[]) => any>(
         console.error('Error in throttled function:', error)
       }
       inThrottle = true
-      setTimeout(() => {
-        inThrottle = false
-      }, Math.max(0, limit))
+      setTimeout(
+        () => {
+          inThrottle = false
+        },
+        Math.max(0, limit)
+      )
     }
   }
 }
@@ -168,7 +171,10 @@ export function kebabCase(str: string): string {
   if (!str || typeof str !== 'string') {
     return ''
   }
-  return str.replace(/([a-z])([A-Z])/g, '$1-$2').replace(/_/g, '-').toLowerCase()
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/_/g, '-')
+    .toLowerCase()
 }
 
 export function truncate(
@@ -179,7 +185,7 @@ export function truncate(
   if (!str || typeof str !== 'string') {
     return ''
   }
-  
+
   if (str.length <= length) {
     return str
   }
@@ -190,7 +196,7 @@ export function escapeHtml(str: string): string {
   if (!str || typeof str !== 'string') {
     return ''
   }
-  
+
   const div = document.createElement('div')
   div.textContent = str
   return div.innerHTML
@@ -200,7 +206,7 @@ export function unescapeHtml(str: string): string {
   if (!str || typeof str !== 'string') {
     return ''
   }
-  
+
   const div = document.createElement('div')
   div.innerHTML = str
   return div.textContent || div.innerText || ''
@@ -210,7 +216,7 @@ export function parseQueryString(query: string): Record<string, string> {
   if (!query || typeof query !== 'string') {
     return {}
   }
-  
+
   const params: Record<string, string> = {}
   const pairs = query.split('&')
 
@@ -228,13 +234,15 @@ export function buildQueryString(params: Record<string, any>): string {
   if (!params || typeof params !== 'object') {
     return ''
   }
-  
+
   const pairs: string[] = []
 
   for (const [key, value] of Object.entries(params)) {
     if (value !== null && value !== undefined) {
       if (Array.isArray(value)) {
-        pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`)
+        pairs.push(
+          `${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`
+        )
       } else {
         pairs.push(
           `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
@@ -257,15 +265,15 @@ export function formatFileSize(bytes: number): string {
   if (bytes === null || bytes === undefined || isNaN(bytes)) {
     return '0 B'
   }
-  
+
   if (bytes === Infinity) {
     return 'Infinity B'
   }
-  
+
   if (bytes < 0) {
     return formatFileSize(Math.abs(bytes)).replace(/^/, '-')
   }
-  
+
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let size = bytes
   let unitIndex = 0
@@ -353,32 +361,30 @@ export function retry<T>(
   if (typeof fn !== 'function') {
     return Promise.reject(new Error('First argument must be a function'))
   }
-  
+
   if (maxAttempts <= 0) {
     return Promise.reject(new Error('maxAttempts must be greater than 0'))
   }
-  
+
   return new Promise((resolve, reject) => {
     let attempts = 0
 
     const attempt = () => {
       attempts++
       const result = fn()
-      
+
       if (!result || typeof result.then !== 'function') {
         reject(new Error('Function must return a Promise'))
         return
       }
-      
-      result
-        .then(resolve)
-        .catch((error) => {
-          if (attempts >= maxAttempts) {
-            reject(error)
-          } else {
-            setTimeout(attempt, Math.max(0, delay))
-          }
-        })
+
+      result.then(resolve).catch((error) => {
+        if (attempts >= maxAttempts) {
+          reject(error)
+        } else {
+          setTimeout(attempt, Math.max(0, delay))
+        }
+      })
     }
 
     attempt()
@@ -392,7 +398,7 @@ export function groupBy<T, K extends string | number>(
   if (!array || !Array.isArray(array)) {
     return {} as Record<K, T[]>
   }
-  
+
   return array.reduce(
     (groups, item) => {
       const key = keyFn(item)
@@ -414,10 +420,10 @@ export function sortBy<T>(
   if (!array || !Array.isArray(array)) {
     return []
   }
-  
+
   // Normalize direction to valid values
   const normalizedDirection = direction === 'desc' ? 'desc' : 'asc'
-  
+
   return [...array].sort((a, b) => {
     const aVal = keyFn(a)
     const bVal = keyFn(b)
@@ -449,7 +455,7 @@ export function chunk<T>(array: T[], size: number): T[][] {
   if (!array || !Array.isArray(array) || size <= 0) {
     return []
   }
-  
+
   const chunks: T[][] = []
   for (let i = 0; i < array.length; i += size) {
     chunks.push(array.slice(i, i + size))
@@ -462,12 +468,12 @@ export function isValidEmail(email: string): boolean {
   if (!email || typeof email !== 'string') {
     return false
   }
-  
+
   // Check length limit (RFC 5321)
   if (email.length > 254) {
     return false
   }
-  
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
@@ -490,7 +496,7 @@ export function truncateText(
   if (!text || typeof text !== 'string') {
     return ''
   }
-  
+
   if (text.length <= maxLength) {
     return text
   }

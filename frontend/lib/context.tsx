@@ -159,20 +159,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
       if (response.ok) {
         const data = await response.json()
-        
+
         // Store token in localStorage
         localStorage.setItem('pte-qr-token', data.access_token)
-        
+
         // Create user object
         const userData = {
           username: credentials.username,
           email: `${credentials.username}@example.com`,
         }
-        
+
         setUser(userData)
         setIsAuthenticated(true)
         localStorage.setItem('pte-qr-user', JSON.stringify(userData))
-        
+
         return { success: true }
       } else {
         const errorData = await response.json()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n'
 
 interface QRCodeScannerProps {
@@ -15,14 +15,7 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
   const [error, setError] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
 
-  useEffect(() => {
-    startCamera()
-    return () => {
-      stopCamera()
-    }
-  }, [])
-
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
@@ -37,7 +30,14 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
       setError(t('error.cameraAccess'))
       console.error('Camera error:', err)
     }
-  }
+  }, [t])
+
+  useEffect(() => {
+    startCamera()
+    return () => {
+      stopCamera()
+    }
+  }, [startCamera])
 
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {

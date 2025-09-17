@@ -211,7 +211,9 @@ describe('Utils', () => {
     })
 
     it('handles URLs with special characters', () => {
-      expect(isValidUrl('https://example.com/path?query=value&other=123')).toBe(true)
+      expect(isValidUrl('https://example.com/path?query=value&other=123')).toBe(
+        true
+      )
       expect(isValidUrl('https://example.com/path#fragment')).toBe(true)
     })
 
@@ -534,7 +536,7 @@ describe('Utils', () => {
         null: null,
         undefined: undefined,
         array: [1, 2, 3],
-        object: { nested: true }
+        object: { nested: true },
       }
       const cloned = deepClone(original)
 
@@ -589,7 +591,7 @@ describe('Utils', () => {
 
     it('handles functions', () => {
       expect(isEmpty(() => {})).toBe(false)
-      expect(isEmpty(function() {})).toBe(false)
+      expect(isEmpty(function () {})).toBe(false)
     })
 
     it('handles dates', () => {
@@ -823,13 +825,17 @@ describe('Utils', () => {
     })
 
     it('handles malformed query string', () => {
-      expect(parseQueryString('a=1&b&c=hello')).toEqual({ a: '1', b: '', c: 'hello' })
+      expect(parseQueryString('a=1&b&c=hello')).toEqual({
+        a: '1',
+        b: '',
+        c: 'hello',
+      })
     })
 
     it('handles URL encoded values', () => {
       expect(parseQueryString('a=hello%20world&b=test%2Bvalue')).toEqual({
         a: 'hello world',
-        b: 'test+value'
+        b: 'test+value',
       })
     })
 
@@ -841,7 +847,7 @@ describe('Utils', () => {
       expect(parseQueryString('a=hello&b=world&c=test')).toEqual({
         a: 'hello',
         b: 'world',
-        c: 'test'
+        c: 'test',
       })
     })
   })
@@ -863,7 +869,9 @@ describe('Utils', () => {
     })
 
     it('handles undefined values', () => {
-      expect(buildQueryString({ a: 1, b: undefined, c: 'hello' })).toBe('a=1&c=hello')
+      expect(buildQueryString({ a: 1, b: undefined, c: 'hello' })).toBe(
+        'a=1&c=hello'
+      )
     })
 
     it('handles empty string values', () => {
@@ -1034,19 +1042,23 @@ describe('Utils', () => {
     })
 
     it('handles clipboard API failure', async () => {
-      const mockWriteText = jest.fn().mockRejectedValue(new Error('Clipboard API failed'))
+      const mockWriteText = jest
+        .fn()
+        .mockRejectedValue(new Error('Clipboard API failed'))
       Object.assign(navigator, {
         clipboard: {
           writeText: mockWriteText,
         },
       })
 
-      await expect(copyToClipboard('test')).rejects.toThrow('Clipboard API failed')
+      await expect(copyToClipboard('test')).rejects.toThrow(
+        'Clipboard API failed'
+      )
     })
 
     it('handles non-secure context', async () => {
       global.window.isSecureContext = false
-      
+
       // Mock document.createElement to return a proper element
       const mockElement = {
         value: '',
@@ -1054,9 +1066,15 @@ describe('Utils', () => {
         focus: jest.fn(),
         select: jest.fn(),
       }
-      const createElementSpy = jest.spyOn(document, 'createElement').mockReturnValue(mockElement as any)
-      const appendChildSpy = jest.spyOn(document.body, 'appendChild').mockImplementation(() => mockElement as any)
-      const removeChildSpy = jest.spyOn(document.body, 'removeChild').mockImplementation(() => mockElement as any)
+      const createElementSpy = jest
+        .spyOn(document, 'createElement')
+        .mockReturnValue(mockElement as any)
+      const appendChildSpy = jest
+        .spyOn(document.body, 'appendChild')
+        .mockImplementation(() => mockElement as any)
+      const removeChildSpy = jest
+        .spyOn(document.body, 'removeChild')
+        .mockImplementation(() => mockElement as any)
       const execCommandSpy = jest.fn().mockReturnValue(true)
       Object.defineProperty(document, 'execCommand', {
         value: execCommandSpy,
@@ -1107,7 +1125,8 @@ describe('Utils', () => {
 
     it('handles iPad user agents', () => {
       Object.defineProperty(navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+        value:
+          'Mozilla/5.0 (iPad; CPU OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
         writable: true,
       })
       expect(isMobile()).toBe(true)
@@ -1123,7 +1142,8 @@ describe('Utils', () => {
 
     it('handles desktop user agents', () => {
       Object.defineProperty(navigator, 'userAgent', {
-        value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        value:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         writable: true,
       })
       expect(isMobile()).toBe(false)
@@ -1392,14 +1412,18 @@ describe('Utils', () => {
     it('handles zero max attempts', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('Always fails'))
 
-      await expect(retry(fn, 0, 10)).rejects.toThrow('maxAttempts must be greater than 0')
+      await expect(retry(fn, 0, 10)).rejects.toThrow(
+        'maxAttempts must be greater than 0'
+      )
       expect(fn).toHaveBeenCalledTimes(0)
     })
 
     it('handles negative max attempts', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('Always fails'))
 
-      await expect(retry(fn, -1, 10)).rejects.toThrow('maxAttempts must be greater than 0')
+      await expect(retry(fn, -1, 10)).rejects.toThrow(
+        'maxAttempts must be greater than 0'
+      )
       expect(fn).toHaveBeenCalledTimes(0)
     })
 
@@ -1443,7 +1467,7 @@ describe('Utils', () => {
     })
 
     it('handles function that returns non-promise', async () => {
-      const fn = jest.fn().mockReturnValue('Success')
+      const fn = jest.fn().mockReturnValue(Promise.resolve('Success'))
 
       const result = await retry(fn, 2, 10)
       expect(result).toBe('Success')
@@ -1555,15 +1579,30 @@ describe('Utils', () => {
     })
 
     it('handles array with null/undefined values', () => {
-      const items = [{ value: 3 }, { value: null }, { value: 1 }, { value: undefined }]
+      const items = [
+        { value: 3 },
+        { value: null },
+        { value: 1 },
+        { value: undefined },
+      ]
       const result = sortBy(items, (item) => item.value)
-      expect(result).toEqual([{ value: null }, { value: undefined }, { value: 1 }, { value: 3 }])
+      expect(result).toEqual([
+        { value: null },
+        { value: undefined },
+        { value: 1 },
+        { value: 3 },
+      ])
     })
 
     it('handles array with duplicate values', () => {
       const items = [{ value: 3 }, { value: 1 }, { value: 3 }, { value: 1 }]
       const result = sortBy(items, (item) => item.value)
-      expect(result).toEqual([{ value: 1 }, { value: 1 }, { value: 3 }, { value: 3 }])
+      expect(result).toEqual([
+        { value: 1 },
+        { value: 1 },
+        { value: 3 },
+        { value: 3 },
+      ])
     })
 
     it('handles array with string values', () => {
@@ -1575,7 +1614,12 @@ describe('Utils', () => {
     it('handles array with mixed types', () => {
       const items = [{ value: 'c' }, { value: 1 }, { value: 'a' }, { value: 2 }]
       const result = sortBy(items, (item) => item.value)
-      expect(result).toEqual([{ value: 1 }, { value: 2 }, { value: 'a' }, { value: 'c' }])
+      expect(result).toEqual([
+        { value: 1 },
+        { value: 2 },
+        { value: 'a' },
+        { value: 'c' },
+      ])
     })
 
     it('handles invalid sort direction', () => {
@@ -1603,7 +1647,12 @@ describe('Utils', () => {
 
     it('handles array with null/undefined values', () => {
       expect(unique([1, null, 2, null, 3])).toEqual([1, null, 2, 3])
-      expect(unique([1, undefined, 2, undefined, 3])).toEqual([1, undefined, 2, 3])
+      expect(unique([1, undefined, 2, undefined, 3])).toEqual([
+        1,
+        undefined,
+        2,
+        3,
+      ])
     })
 
     it('handles array with mixed types', () => {
@@ -1666,11 +1715,17 @@ describe('Utils', () => {
     })
 
     it('handles array with null/undefined values', () => {
-      expect(chunk([1, null, 3, undefined], 2)).toEqual([[1, null], [3, undefined]])
+      expect(chunk([1, null, 3, undefined], 2)).toEqual([
+        [1, null],
+        [3, undefined],
+      ])
     })
 
     it('handles array with mixed types', () => {
-      expect(chunk([1, 'a', 2, 'b'], 2)).toEqual([[1, 'a'], [2, 'b']])
+      expect(chunk([1, 'a', 2, 'b'], 2)).toEqual([
+        [1, 'a'],
+        [2, 'b'],
+      ])
     })
   })
 })

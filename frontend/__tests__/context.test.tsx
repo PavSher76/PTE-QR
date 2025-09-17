@@ -11,6 +11,9 @@ import {
   useUser,
 } from '../lib/context'
 
+// Mock fetch
+global.fetch = jest.fn()
+
 // Test component that uses all contexts
 function TestComponent() {
   const { theme, toggleTheme } = useTheme()
@@ -210,7 +213,13 @@ describe('Context Providers', () => {
       expect(screen.getByTestId('username')).toHaveTextContent('no user')
     })
 
-    it('logs in user', () => {
+    it('logs in user', async () => {
+      // Mock successful login response
+      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'mock-token' }),
+      })
+
       renderWithProviders(<TestComponent />, [
         ThemeProvider,
         NotificationsProvider,
@@ -220,9 +229,8 @@ describe('Context Providers', () => {
       const loginButton = screen.getByTestId('login')
       fireEvent.click(loginButton)
 
-      expect(screen.getByTestId('user-status')).toHaveTextContent(
-        'authenticated'
-      )
+      // Wait for the user to be logged in
+      await screen.findByText('authenticated')
       expect(screen.getByTestId('username')).toHaveTextContent('testuser')
     })
 
@@ -248,7 +256,13 @@ describe('Context Providers', () => {
       expect(screen.getByTestId('username')).toHaveTextContent('no user')
     })
 
-    it('persists user in localStorage', () => {
+    it('persists user in localStorage', async () => {
+      // Mock successful login response
+      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'mock-token' }),
+      })
+
       renderWithProviders(<TestComponent />, [
         ThemeProvider,
         NotificationsProvider,
@@ -258,12 +272,15 @@ describe('Context Providers', () => {
       const loginButton = screen.getByTestId('login')
       fireEvent.click(loginButton)
 
+      // Wait for the user to be logged in
+      await screen.findByText('authenticated')
       expect(localStorage.getItem('pte-qr-user')).toBeTruthy()
     })
 
-    it('loads user from localStorage on mount', () => {
+    it('loads user from localStorage on mount', async () => {
       const userData = { username: 'saveduser', email: 'saved@example.com' }
       localStorage.setItem('pte-qr-user', JSON.stringify(userData))
+      localStorage.setItem('pte-qr-token', 'mock-token')
 
       renderWithProviders(<TestComponent />, [
         ThemeProvider,
@@ -271,9 +288,8 @@ describe('Context Providers', () => {
         UserProvider,
       ])
 
-      expect(screen.getByTestId('user-status')).toHaveTextContent(
-        'authenticated'
-      )
+      // Wait for the user to be loaded from localStorage
+      await screen.findByText('authenticated')
       expect(screen.getByTestId('username')).toHaveTextContent('saveduser')
     })
   })

@@ -18,7 +18,9 @@ interface DocumentStatusProps {
 function DocumentStatus({ data, qrData }: DocumentStatusProps) {
   const { t } = useTranslation()
   const { addNotification } = useNotifications()
-  const [documentData, setDocumentData] = useState<DocumentStatusData | null>(data || null)
+  const [documentData, setDocumentData] = useState<DocumentStatusData | null>(
+    data || null
+  )
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -30,7 +32,7 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
         const docUid = parts[0]
         const revision = parts[1]
         const page = parts[2]
-        
+
         setIsLoading(true)
         fetchDocumentStatus(docUid, revision, page)
           .then((result) => {
@@ -54,8 +56,10 @@ function DocumentStatus({ data, qrData }: DocumentStatusProps) {
     return (
       <div className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
         <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-          <span className="ml-2 text-gray-600 dark:text-gray-300">{t('loading')}</span>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600"></div>
+          <span className="ml-2 text-gray-600 dark:text-gray-300">
+            {t('loading')}
+          </span>
         </div>
       </div>
     )

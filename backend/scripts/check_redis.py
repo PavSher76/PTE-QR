@@ -5,8 +5,9 @@ Redis health check script
 
 import sys
 import time
-import redis
 from urllib.parse import urlparse
+
+import redis
 
 
 def check_redis(redis_url="redis://localhost:6379", max_retries=30, retry_delay=2):

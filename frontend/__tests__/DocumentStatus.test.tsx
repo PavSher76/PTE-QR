@@ -3,7 +3,13 @@ import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { DocumentStatus } from '../components/DocumentStatus'
 import { LanguageProvider } from '../lib/i18n'
+import { NotificationsProvider } from '../lib/context'
 import { DocumentStatusData } from '../types/document'
+
+// Mock fetchDocumentStatus
+jest.mock('../lib/api', () => ({
+  fetchDocumentStatus: jest.fn(),
+}))
 
 // Mock document data
 const mockDocumentData: DocumentStatusData = {
@@ -34,9 +40,13 @@ const mockOutdatedDocumentData: DocumentStatusData = {
   },
 }
 
-// Helper function to render with LanguageProvider
+// Helper function to render with LanguageProvider and NotificationsProvider
 const renderWithLanguageProvider = (component: React.ReactElement) => {
-  return render(<LanguageProvider>{component}</LanguageProvider>)
+  return render(
+    <LanguageProvider>
+      <NotificationsProvider>{component}</NotificationsProvider>
+    </LanguageProvider>
+  )
 }
 
 describe('DocumentStatus', () => {
@@ -78,7 +88,7 @@ describe('DocumentStatus', () => {
   it('renders ENOVIA state', () => {
     renderWithLanguageProvider(<DocumentStatus data={mockDocumentData} />)
 
-    expect(screen.getByText('Состояние в ENOVIA')).toBeInTheDocument()
+    expect(screen.getByText('Состояние ENOVIA')).toBeInTheDocument()
     expect(screen.getByText('Released')).toBeInTheDocument()
   })
 
@@ -105,14 +115,28 @@ describe('DocumentStatus', () => {
     expect(openLatestLink).toHaveAttribute('href', 'https://example.com/latest')
   })
 
-  it('creates mock data when qrData is provided', () => {
+  it('creates mock data when qrData is provided', async () => {
+    const { fetchDocumentStatus } = require('../lib/api')
+    fetchDocumentStatus.mockResolvedValueOnce({
+      doc_uid: 'Sample-Document',
+      revision: 'A',
+      page: 1,
+      business_status: 'ACTUAL',
+      enovia_state: 'Released',
+      is_actual: true,
+      released_at: '2024-01-01T00:00:00Z',
+      links: {
+        openDocument: 'https://example.com/document',
+        openLatest: 'https://example.com/latest',
+      },
+    })
+
     renderWithLanguageProvider(
-      <DocumentStatus qrData="https://example.com/qr" />
+      <DocumentStatus qrData="Sample-Document:A:1:1234567890:signature" />
     )
 
-    // Используем getAllByText для множественных элементов
-    const statusTitles = screen.getAllByText('Статус документа')
-    expect(statusTitles.length).toBeGreaterThan(0)
+    // Wait for the data to load
+    await screen.findByRole('heading', { name: 'Статус документа' })
     expect(screen.getByText('Sample-Document')).toBeInTheDocument()
     expect(screen.getByText('A')).toBeInTheDocument()
     expect(screen.getByText('1')).toBeInTheDocument()

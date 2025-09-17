@@ -104,7 +104,7 @@ export function Header() {
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => setShowLoginForm(true)}
                 className="btn-secondary text-sm"
               >
@@ -114,11 +114,9 @@ export function Header() {
           </div>
         </div>
       </div>
-      
+
       {/* Login Form Modal */}
-      {showLoginForm && (
-        <LoginForm onClose={() => setShowLoginForm(false)} />
-      )}
+      {showLoginForm && <LoginForm onClose={() => setShowLoginForm(false)} />}
     </header>
   )
 }

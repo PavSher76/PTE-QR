@@ -3,23 +3,25 @@
 Debug script to test authentication in tests
 """
 
-import sys
 import os
+import sys
 
 sys.path.append(".")
 
+import uuid
+
 from fastapi.testclient import TestClient
-from app.main import app
+from sqlalchemy.orm import Session
+
+from app.api.dependencies import get_current_user, get_current_user_optional
 from app.core.test_database import (
     TestSessionLocal,
     create_test_tables,
     drop_test_tables,
 )
-from app.models.user import User
+from app.main import app
 from app.models.document import Document
-from app.api.dependencies import get_current_user, get_current_user_optional
-from sqlalchemy.orm import Session
-import uuid
+from app.models.user import User
 
 
 def test_auth_debug():
