@@ -54,10 +54,12 @@ describe('QRCodeScanner', () => {
     })
   })
 
-  it('renders scanner interface', () => {
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+  it('renders scanner interface', async () => {
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     expect(
       screen.getByText('Наведите камеру на QR-код документа')
@@ -82,13 +84,17 @@ describe('QRCodeScanner', () => {
     })
   })
 
-  it('calls onCancel when cancel button is clicked', () => {
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+  it('calls onCancel when cancel button is clicked', async () => {
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     const cancelButton = screen.getByText('Отмена')
-    fireEvent.click(cancelButton)
+    await act(async () => {
+      fireEvent.click(cancelButton)
+    })
 
     expect(mockOnCancel).toHaveBeenCalledTimes(1)
   })
@@ -109,7 +115,9 @@ describe('QRCodeScanner', () => {
     })
 
     const closeButton = screen.getByText('Закрыть')
-    fireEvent.click(closeButton)
+    await act(async () => {
+      fireEvent.click(closeButton)
+    })
 
     expect(mockOnCancel).toHaveBeenCalledTimes(1)
   })
@@ -136,7 +144,9 @@ describe('QRCodeScanner', () => {
     // Change language to English
     const languageSelects = screen.getAllByRole('combobox')
     const languageSelect = languageSelects[0] // Используем первый селектор
-    fireEvent.change(languageSelect, { target: { value: 'en' } })
+    await act(async () => {
+      fireEvent.change(languageSelect, { target: { value: 'en' } })
+    })
 
     expect(
       screen.getByText('Point camera at document QR code')
@@ -155,7 +165,9 @@ describe('QRCodeScanner', () => {
     // Change language to Chinese
     const languageSelects = screen.getAllByRole('combobox')
     const languageSelect = languageSelects[0] // Используем первый селектор
-    fireEvent.change(languageSelect, { target: { value: 'zh' } })
+    await act(async () => {
+      fireEvent.change(languageSelect, { target: { value: 'zh' } })
+    })
 
     expect(screen.getByText('将摄像头对准文档二维码')).toBeInTheDocument()
     expect(screen.getByText('扫描')).toBeInTheDocument()

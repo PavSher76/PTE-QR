@@ -88,7 +88,7 @@ describe('DocumentStatus', () => {
   it('renders ENOVIA state', () => {
     renderWithLanguageProvider(<DocumentStatus data={mockDocumentData} />)
 
-    expect(screen.getByText('Состояние ENOVIA')).toBeInTheDocument()
+    expect(screen.getByText('Состояние в ENOVIA')).toBeInTheDocument()
     expect(screen.getByText('Released')).toBeInTheDocument()
   })
 
