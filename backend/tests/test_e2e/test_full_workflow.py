@@ -11,14 +11,14 @@ class TestFullWorkflow:
     """Test complete user workflows"""
 
     def test_qr_generation_and_verification_workflow(
-        self, client: TestClient, test_user, test_document
+        self, unauthenticated_client: TestClient, test_user, test_document
     ):
         """Test complete workflow: generate QR codes and verify them."""
         # This test would require authentication setup
         # For now, we'll test the basic flow without auth
 
         # Step 1: Generate QR codes
-        qr_response = client.post(
+        qr_response = unauthenticated_client.post(
             "/api/v1/qrcodes/",
             json={
                 "doc_uid": test_document.doc_uid,
@@ -33,7 +33,7 @@ class TestFullWorkflow:
         assert qr_response.status_code in [401, 403]
 
         # Step 2: Verify QR signature (if we had valid data)
-        verify_response = client.get(
+        verify_response = unauthenticated_client.get(
             "/api/v1/documents/qr/verify",
             params={
                 "doc_uid": test_document.doc_uid,

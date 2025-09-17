@@ -9,8 +9,44 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, T
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.types import TypeDecorator, CHAR
+import uuid
 
 from app.core.database import Base
+
+
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+    Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as stringified hex values.
+    """
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(UUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return "%.32x" % uuid.UUID(value).int
+            else:
+                return "%.32x" % value.int
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(value)
+            else:
+                return value
 
 
 class DocumentStatusEnum(str, enum.Enum):
@@ -39,9 +75,8 @@ class Document(Base):
     """Document model"""
 
     __tablename__ = "documents"
-    __table_args__ = {"schema": "pte_qr"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
     doc_uid = Column(String(100), unique=True, index=True, nullable=False)
     title = Column(String(500), nullable=True)
     description = Column(Text, nullable=True)
@@ -56,10 +91,10 @@ class Document(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     created_by = Column(
-        UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True
+        GUID(), ForeignKey("users.id"), nullable=True
     )
     updated_by = Column(
-        UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True
+        GUID(), ForeignKey("users.id"), nullable=True
     )
 
     # Relationships

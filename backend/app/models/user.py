@@ -18,8 +18,44 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.types import TypeDecorator, CHAR
+import uuid
 
 from app.core.database import Base
+
+
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+    Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as stringified hex values.
+    """
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(UUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return "%.32x" % uuid.UUID(value).int
+            else:
+                return "%.32x" % value.int
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(value)
+            else:
+                return value
 
 
 class UserRoleEnum(str, enum.Enum):
@@ -35,10 +71,9 @@ user_roles_association = Table(
     "user_user_roles",
     Base.metadata,
     Column(
-        "user_id", UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), primary_key=True
+        "user_id", GUID(), ForeignKey("users.id"), primary_key=True
     ),
-    Column("role_id", Integer, ForeignKey("pte_qr.user_roles.id"), primary_key=True),
-    schema="pte_qr",
+    Column("role_id", Integer, ForeignKey("user_roles.id"), primary_key=True),
 )
 
 
@@ -46,7 +81,6 @@ class UserRole(Base):
     """User role model"""
 
     __tablename__ = "user_roles"
-    __table_args__ = {"schema": "pte_qr"}
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
@@ -67,9 +101,8 @@ class User(Base):
     """User model"""
 
     __tablename__ = "users"
-    __table_args__ = {"schema": "pte_qr"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     full_name = Column(String(255), nullable=True)

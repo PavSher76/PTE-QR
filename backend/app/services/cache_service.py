@@ -3,6 +3,7 @@ Cache service for Redis operations
 """
 
 import json
+import os
 from typing import Any, Dict, List, Optional
 
 import redis.asyncio as redis
@@ -11,6 +12,92 @@ import structlog
 from app.core.config import settings
 
 logger = structlog.get_logger()
+
+# Check if we're in test mode
+TESTING = os.getenv("TESTING", "false").lower() == "true"
+
+
+class MockCacheService:
+    """Mock cache service for tests"""
+    
+    def __init__(self):
+        self._cache = {}
+    
+    async def get(self, key: str) -> Optional[Any]:
+        """Get value from cache"""
+        return self._cache.get(key)
+    
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """Set value in cache"""
+        self._cache[key] = value
+        return True
+    
+    async def delete(self, key: str) -> bool:
+        """Delete value from cache"""
+        if key in self._cache:
+            del self._cache[key]
+            return True
+        return False
+    
+    async def exists(self, key: str) -> bool:
+        """Check if key exists"""
+        return key in self._cache
+    
+    async def get_many(self, keys: List[str]) -> Dict[str, Any]:
+        """Get multiple values from cache"""
+        result = {}
+        for key in keys:
+            if key in self._cache:
+                result[key] = self._cache[key]
+        return result
+    
+    async def set_many(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
+        """Set multiple values in cache"""
+        self._cache.update(mapping)
+        return True
+    
+    async def delete_many(self, keys: List[str]) -> int:
+        """Delete multiple keys from cache"""
+        count = 0
+        for key in keys:
+            if key in self._cache:
+                del self._cache[key]
+                count += 1
+        return count
+    
+    async def clear_pattern(self, pattern: str) -> int:
+        """Clear all keys matching pattern"""
+        # Simple pattern matching for tests
+        keys_to_delete = [key for key in self._cache.keys() if pattern in key]
+        for key in keys_to_delete:
+            del self._cache[key]
+        return len(keys_to_delete)
+    
+    async def increment(self, key: str, amount: int = 1) -> Optional[int]:
+        """Increment counter in cache"""
+        current = self._cache.get(key, 0)
+        new_value = current + amount
+        self._cache[key] = new_value
+        return new_value
+    
+    async def decrement(self, key: str, amount: int = 1) -> Optional[int]:
+        """Decrement counter in cache"""
+        current = self._cache.get(key, 0)
+        new_value = current - amount
+        self._cache[key] = new_value
+        return new_value
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Check cache health"""
+        return {
+            "status": "healthy",
+            "type": "mock",
+            "keys_count": len(self._cache)
+        }
+    
+    async def close(self):
+        """Close mock cache"""
+        pass
 
 
 class CacheService:
@@ -194,4 +281,4 @@ class CacheService:
 
 
 # Global cache service instance
-cache_service = CacheService()
+cache_service = MockCacheService() if TESTING else CacheService()

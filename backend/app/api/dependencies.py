@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.user import User
-from app.services.auth_service import auth_service
+from app.services.auth_service import get_auth_service
 
 logger = structlog.get_logger()
 
@@ -30,6 +30,7 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)) -> U
         token = auth_header.split(" ")[1]
 
         # Verify token
+        auth_service = get_auth_service()
         payload = auth_service.verify_token(token)
         if not payload:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
@@ -68,6 +69,7 @@ async def get_current_user_optional(
         token = auth_header.split(" ")[1]
 
         # Verify token
+        auth_service = get_auth_service()
         payload = auth_service.verify_token(token)
         if not payload:
             return None

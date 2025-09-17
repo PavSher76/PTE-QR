@@ -8,6 +8,7 @@ import jwt
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
+from app.core.test_config import test_settings
 
 
 class TestGDPRCompliance:
@@ -138,21 +139,10 @@ class TestGDPRCompliance:
         # Verify that only necessary data is processed
         assert data["metadata"]["access_level"] == "limited"
 
-    def test_gdpr_consent_mechanism(self, client: TestClient, test_user):
+    def test_gdpr_consent_mechanism(self, authenticated_client: TestClient, test_user):
         """Test authentication as consent mechanism for data access."""
-        # Create a valid JWT token (represents user consent)
-        token_data = {
-            "sub": test_user.username,
-            "user_id": str(test_user.id),
-            "exp": datetime.utcnow() + timedelta(minutes=30),
-        }
-        token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-        )
-
-        headers = {"Authorization": f"Bearer {token}"}
-        response = client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1", headers=headers
+        response = authenticated_client.get(
+            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
 
         assert response.status_code == 200

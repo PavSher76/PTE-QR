@@ -8,34 +8,17 @@ import jwt
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
+from app.core.test_config import test_settings
 
 
 class TestDocumentStatusIntegration:
     """Integration tests for document status endpoint with authentication workflow"""
 
-    def test_full_workflow_with_authentication(self, client: TestClient, test_user):
-        """Test complete workflow: login -> get document status with full access."""
-        # Step 1: Login to get authentication token
-        login_response = client.post(
-            "/api/v1/auth/login",
-            json={
-                "username": test_user.username,
-                "password": "secret",  # Default test password
-            },
-        )
-
-        assert login_response.status_code == 200
-        login_data = login_response.json()
-        assert "access_token" in login_data
-        assert "token_type" in login_data
-        assert login_data["token_type"] == "bearer"
-
-        token = login_data["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-
-        # Step 2: Get document status with authentication
-        status_response = client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1", headers=headers
+    def test_full_workflow_with_authentication(self, authenticated_client: TestClient, test_user):
+        """Test complete workflow: get document status with full access."""
+        # Get document status with authentication
+        status_response = authenticated_client.get(
+            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
 
         assert status_response.status_code == 200
@@ -74,7 +57,7 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() - timedelta(minutes=30),  # Expired
         }
         expired_token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
         )
 
         headers = {"Authorization": f"Bearer {expired_token}"}
@@ -117,22 +100,12 @@ class TestDocumentStatusIntegration:
         assert status_data["metadata"]["access_level"] == "limited"
 
     def test_workflow_with_different_users(
-        self, client: TestClient, test_user, test_admin_user
+        self, authenticated_client: TestClient, test_user, test_admin_user
     ):
         """Test that different users get the same full access when authenticated."""
         # Test with regular user
-        token_data_user = {
-            "sub": test_user.username,
-            "user_id": str(test_user.id),
-            "exp": datetime.utcnow() + timedelta(minutes=30),
-        }
-        user_token = jwt.encode(
-            token_data_user, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-        )
-
-        user_response = client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1",
-            headers={"Authorization": f"Bearer {user_token}"},
+        user_response = authenticated_client.get(
+            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
 
         assert user_response.status_code == 200
@@ -146,7 +119,7 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         admin_token = jwt.encode(
-            token_data_admin, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+            token_data_admin, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
         )
 
         admin_response = client.get(
@@ -179,7 +152,7 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
         )
 
         response_with_auth = client.get(
@@ -188,7 +161,7 @@ class TestDocumentStatusIntegration:
         )
         assert response_with_auth.status_code == 404
 
-    def test_workflow_caching_behavior(self, client: TestClient, test_user):
+    def test_workflow_caching_behavior(self, client: TestClient, authenticated_client: TestClient, test_user):
         """Test that caching works correctly with different authentication states."""
         # First request without authentication
         response1 = client.get(
@@ -207,18 +180,8 @@ class TestDocumentStatusIntegration:
         assert data2["metadata"]["access_level"] == "limited"
 
         # Request with authentication (should get fresh data)
-        token_data = {
-            "sub": test_user.username,
-            "user_id": str(test_user.id),
-            "exp": datetime.utcnow() + timedelta(minutes=30),
-        }
-        token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-        )
-
-        response3 = client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1",
-            headers={"Authorization": f"Bearer {token}"},
+        response3 = authenticated_client.get(
+            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
         assert response3.status_code == 200
         data3 = response3.json()
@@ -254,7 +217,7 @@ class TestDocumentStatusIntegration:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
         )
         headers = {"Authorization": f"Bearer {token}"}
 

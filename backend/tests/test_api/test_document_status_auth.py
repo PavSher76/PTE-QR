@@ -8,6 +8,7 @@ import jwt
 from fastapi.testclient import TestClient
 
 from app.core.config import settings
+from app.core.test_config import test_settings
 
 
 class TestDocumentStatusAuth:
@@ -43,21 +44,10 @@ class TestDocumentStatusAuth:
         assert "note" in data["metadata"]
         assert "privacy requirements" in data["metadata"]["note"]
 
-    def test_document_status_with_auth_full_info(self, client: TestClient, test_user):
+    def test_document_status_with_auth_full_info(self, authenticated_client: TestClient, test_user):
         """Test document status with authentication returns full information."""
-        # Create a valid JWT token
-        token_data = {
-            "sub": test_user.username,
-            "user_id": str(test_user.id),
-            "exp": datetime.utcnow() + timedelta(minutes=30),
-        }
-        token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-        )
-
-        headers = {"Authorization": f"Bearer {token}"}
-        response = client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1", headers=headers
+        response = authenticated_client.get(
+            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
 
         assert response.status_code == 200
@@ -104,7 +94,7 @@ class TestDocumentStatusAuth:
             "exp": datetime.utcnow() - timedelta(minutes=30),  # Expired
         }
         token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
         )
 
         headers = {"Authorization": f"Bearer {token}"}
@@ -166,7 +156,7 @@ class TestDocumentStatusAuth:
             "exp": datetime.utcnow() + timedelta(minutes=30),
         }
         token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+            token_data, test_settings.JWT_SECRET_KEY, algorithm=test_settings.JWT_ALGORITHM
         )
 
         headers = {"Authorization": f"Bearer {token}"}
@@ -234,31 +224,20 @@ class TestDocumentStatusAuth:
         assert "authenticate" in note.lower()
 
     def test_document_status_cache_behavior_with_auth(
-        self, client: TestClient, test_user
+        self, authenticated_client: TestClient, test_user
     ):
         """Test that caching works correctly with authentication."""
-        # Create a valid JWT token
-        token_data = {
-            "sub": test_user.username,
-            "user_id": str(test_user.id),
-            "exp": datetime.utcnow() + timedelta(minutes=30),
-        }
-        token = jwt.encode(
-            token_data, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-        )
-        headers = {"Authorization": f"Bearer {token}"}
-
         # First request
-        response1 = client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1", headers=headers
+        response1 = authenticated_client.get(
+            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
         assert response1.status_code == 200
         data1 = response1.json()
         assert data1["metadata"]["access_level"] == "full"
 
         # Second request (should be cached)
-        response2 = client.get(
-            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1", headers=headers
+        response2 = authenticated_client.get(
+            "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
         assert response2.status_code == 200
         data2 = response2.json()

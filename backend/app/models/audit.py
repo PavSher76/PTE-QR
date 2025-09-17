@@ -9,8 +9,44 @@ from sqlalchemy import JSON, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.types import TypeDecorator, CHAR
+import uuid
 
 from app.core.database import Base
+
+
+class GUID(TypeDecorator):
+    """Platform-independent GUID type.
+    Uses PostgreSQL's UUID type, otherwise uses CHAR(32), storing as stringified hex values.
+    """
+    impl = CHAR
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == 'postgresql':
+            return dialect.type_descriptor(UUID())
+        else:
+            return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        elif dialect.name == 'postgresql':
+            return str(value)
+        else:
+            if not isinstance(value, uuid.UUID):
+                return "%.32x" % uuid.UUID(value).int
+            else:
+                return "%.32x" % value.int
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return uuid.UUID(value)
+            else:
+                return value
 
 
 class AuditActionEnum(str, enum.Enum):
@@ -32,16 +68,15 @@ class AuditLog(Base):
     """Audit log model"""
 
     __tablename__ = "audit_logs"
-    __table_args__ = {"schema": "pte_qr"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(GUID(), primary_key=True, default=uuid.uuid4, index=True)
     table_name = Column(String(100), nullable=False)
-    record_id = Column(UUID(as_uuid=True), nullable=False)
+    record_id = Column(GUID(), nullable=False)
     action = Column(String(20), nullable=False)
     old_values = Column(JSON, nullable=True)
     new_values = Column(JSON, nullable=True)
     changed_by = Column(
-        UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True
+        GUID(), ForeignKey("users.id"), nullable=True
     )
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
     ip_address = Column(String(45), nullable=True)

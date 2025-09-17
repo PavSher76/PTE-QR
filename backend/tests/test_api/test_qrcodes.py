@@ -8,9 +8,9 @@ from fastapi.testclient import TestClient
 class TestQRCodeEndpoints:
     """Test QR code generation endpoints"""
 
-    def test_generate_qr_codes_unauthorized(self, client: TestClient):
+    def test_generate_qr_codes_unauthorized(self, unauthenticated_client: TestClient):
         """Test QR code generation without authentication."""
-        response = client.post(
+        response = unauthenticated_client.post(
             "/api/v1/qrcodes/",
             json={
                 "doc_uid": "TEST-DOC-001",
@@ -24,9 +24,9 @@ class TestQRCodeEndpoints:
         # Should require authentication
         assert response.status_code in [401, 403]
 
-    def test_generate_qr_codes_invalid_request(self, client: TestClient):
+    def test_generate_qr_codes_invalid_request(self, unauthenticated_client: TestClient):
         """Test QR code generation with invalid request data."""
-        response = client.post(
+        response = unauthenticated_client.post(
             "/api/v1/qrcodes/",
             json={
                 "doc_uid": "",  # Invalid empty doc_uid
@@ -40,9 +40,9 @@ class TestQRCodeEndpoints:
         # Should require authentication first
         assert response.status_code == 401  # Unauthorized
 
-    def test_generate_qr_codes_missing_fields(self, client: TestClient):
+    def test_generate_qr_codes_missing_fields(self, unauthenticated_client: TestClient):
         """Test QR code generation with missing required fields."""
-        response = client.post(
+        response = unauthenticated_client.post(
             "/api/v1/qrcodes/",
             json={
                 "doc_uid": "TEST-DOC-001",
@@ -53,9 +53,9 @@ class TestQRCodeEndpoints:
         # Should require authentication first
         assert response.status_code == 401  # Unauthorized
 
-    def test_generate_qr_codes_invalid_pages(self, client: TestClient):
+    def test_generate_qr_codes_invalid_pages(self, unauthenticated_client: TestClient):
         """Test QR code generation with invalid page numbers."""
-        response = client.post(
+        response = unauthenticated_client.post(
             "/api/v1/qrcodes/",
             json={
                 "doc_uid": "TEST-DOC-001",
@@ -69,11 +69,11 @@ class TestQRCodeEndpoints:
         # Should require authentication first
         assert response.status_code == 401  # Unauthorized
 
-    def test_generate_qr_codes_large_pages(self, client: TestClient):
+    def test_generate_qr_codes_large_pages(self, unauthenticated_client: TestClient):
         """Test QR code generation with large number of pages."""
         large_pages = list(range(1, 1001))  # 1000 pages
 
-        response = client.post(
+        response = unauthenticated_client.post(
             "/api/v1/qrcodes/",
             json={
                 "doc_uid": "TEST-DOC-001",
