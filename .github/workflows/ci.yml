@@ -54,7 +54,7 @@ jobs:
     - name: Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc g++ libpq-dev
+        sudo apt-get install -y gcc g++ libpq-dev redis-tools
     
     - name: Install Python dependencies
       run: |
@@ -69,12 +69,11 @@ jobs:
           sleep 2
         done
     
-    - name: Wait for Redis
+    - name: Wait for services
       run: |
-        until redis-cli -h localhost -p 6379 ping; do
-          echo "Waiting for Redis..."
-          sleep 2
-        done
+        cd backend
+        echo "Checking all required services..."
+        python scripts/check_services.py redis://localhost:6379 postgresql://postgres:postgres@localhost:5432/pte_qr_test
     
     - name: Set up test database
       run: |
@@ -87,6 +86,12 @@ jobs:
       run: |
         cd backend
         python scripts/check_db.py
+        
+    - name: Final service check
+      run: |
+        cd backend
+        echo "Final check of all services..."
+        python scripts/check_services.py redis://localhost:6379 postgresql://postgres:postgres@localhost:5432/pte_qr_test
     
     - name: Run backend tests
       env:
@@ -95,6 +100,8 @@ jobs:
         JWT_SECRET_KEY: test-jwt-secret-key
         SECRET_KEY: test-secret-key
         QR_HMAC_SECRET: test-qr-hmac-secret
+        TESTING: true
+        PYTHONPATH: .
       run: |
         cd backend
         pytest -v --cov=app --cov-report=xml --cov-report=html
