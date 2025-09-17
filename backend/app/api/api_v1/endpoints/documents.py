@@ -40,8 +40,9 @@ async def get_document_status(
                 status_code=422, detail="Page number must be greater than 0"
             )
 
-        # Check cache first
-        cache_key = f"status:{doc_uid}:{rev}:{page}"
+        # Check cache first (include authentication status in cache key)
+        auth_status = "auth" if current_user is not None else "noauth"
+        cache_key = f"status:{doc_uid}:{rev}:{page}:{auth_status}"
         cached_status = await cache_service.get(cache_key)
 
         if cached_status:
@@ -65,8 +66,10 @@ async def get_document_status(
             "Document status request",
             current_user=current_user,
             has_user=bool(current_user),
+            user_id=getattr(current_user, "id", None) if current_user else None,
+            current_user_type=type(current_user).__name__ if current_user else None,
         )
-        if current_user:
+        if current_user is not None:
             # Full response for authenticated users
             response_data = {
                 "doc_uid": doc_uid,

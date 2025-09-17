@@ -128,7 +128,7 @@ class TestDocumentStatusIntegration:
             algorithm=test_settings.JWT_ALGORITHM,
         )
 
-        admin_response = client.get(
+        admin_response = authenticated_client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1",
             headers={"Authorization": f"Bearer {admin_token}"},
         )
@@ -170,19 +170,24 @@ class TestDocumentStatusIntegration:
         assert response_with_auth.status_code == 404
 
     def test_workflow_caching_behavior(
-        self, client: TestClient, authenticated_client: TestClient, test_user
+        self,
+        unauthenticated_client: TestClient,
+        authenticated_client: TestClient,
+        test_user,
     ):
         """Test that caching works correctly with different authentication states."""
         # First request without authentication
-        response1 = client.get(
+        response1 = unauthenticated_client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
         assert response1.status_code == 200
         data1 = response1.json()
+        print(f"DEBUG: First request data: {data1}")
+        print(f"DEBUG: Access level: {data1.get('metadata', {}).get('access_level')}")
         assert data1["metadata"]["access_level"] == "limited"
 
         # Second request without authentication (should be cached)
-        response2 = client.get(
+        response2 = unauthenticated_client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )
         assert response2.status_code == 200

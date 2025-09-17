@@ -101,12 +101,12 @@ def client(db_session) -> Generator:
     with TestClient(fastapi_app) as test_client:
         yield test_client
 
-    # Clean up
-    fastapi_app.dependency_overrides.clear()
+    # Clean up only database dependency
+    fastapi_app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture
-def authenticated_client(client, test_user) -> Generator:
+def authenticated_client(db_session, test_user) -> Generator:
     """Create an authenticated test client."""
     from app.api.dependencies import get_current_user, get_current_user_optional
 
@@ -116,21 +116,26 @@ def authenticated_client(client, test_user) -> Generator:
     def mock_get_current_user_optional():
         return test_user
 
-    # Override auth dependencies
+    # Store original overrides
+    original_overrides = fastapi_app.dependency_overrides.copy()
+
+    # Override all dependencies
+    fastapi_app.dependency_overrides[get_db] = lambda: TestSessionLocal()
     fastapi_app.dependency_overrides[get_current_user] = mock_get_current_user
     fastapi_app.dependency_overrides[get_current_user_optional] = (
         mock_get_current_user_optional
     )
 
-    yield client
+    with TestClient(fastapi_app) as test_client:
+        yield test_client
 
-    # Clean up
-    fastapi_app.dependency_overrides.pop(get_current_user, None)
-    fastapi_app.dependency_overrides.pop(get_current_user_optional, None)
+    # Restore original overrides
+    fastapi_app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.update(original_overrides)
 
 
 @pytest.fixture
-def unauthenticated_client(client) -> Generator:
+def unauthenticated_client(db_session) -> Generator:
     """Create an unauthenticated test client that will return 401/403 for protected endpoints."""
     from fastapi import HTTPException
 
@@ -140,19 +145,27 @@ def unauthenticated_client(client) -> Generator:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     def mock_get_current_user_optional():
+        print(
+            "🔍 unauthenticated_client: mock_get_current_user_optional called - returning None"
+        )
         return None
 
-    # Override auth dependencies
+    # Store original overrides
+    original_overrides = fastapi_app.dependency_overrides.copy()
+
+    # Override all dependencies
+    fastapi_app.dependency_overrides[get_db] = lambda: TestSessionLocal()
     fastapi_app.dependency_overrides[get_current_user] = mock_get_current_user
     fastapi_app.dependency_overrides[get_current_user_optional] = (
         mock_get_current_user_optional
     )
 
-    yield client
+    with TestClient(fastapi_app) as test_client:
+        yield test_client
 
-    # Clean up
-    fastapi_app.dependency_overrides.pop(get_current_user, None)
-    fastapi_app.dependency_overrides.pop(get_current_user_optional, None)
+    # Restore original overrides
+    fastapi_app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.update(original_overrides)
 
 
 @pytest.fixture(autouse=True)
