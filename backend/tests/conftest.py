@@ -13,12 +13,17 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.core.database import get_db, Base
 from app.core.config import settings
+from app.core.test_config import test_settings
 from app.models.user import User
 from app.models.document import Document
 from app.core.cache import cache_manager
 
-# Test database URL - use PostgreSQL for tests
-SQLALCHEMY_DATABASE_URL = "postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr_test"
+# Test database URL - use environment variable or default
+import os
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://postgres:postgres@localhost:5432/pte_qr_test"
+)
 
 # Create test engine
 engine = create_engine(
