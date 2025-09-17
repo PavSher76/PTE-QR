@@ -1,76 +1,95 @@
 #!/usr/bin/env python3
 """
-Redis health check script
+Simple Redis connection test script
 """
 
 import sys
 import time
-from urllib.parse import urlparse
-
 import redis
 
 
-def check_redis(redis_url="redis://localhost:6379", max_retries=30, retry_delay=2):
-    """Check if Redis is available and responding"""
+def test_redis_connection(host="localhost", port=6379, password=None):
+    """Test Redis connection with retries"""
+    max_retries = 10
+    retry_delay = 2
 
-    try:
-        # Parse Redis URL
-        parsed = urlparse(redis_url)
-        host = parsed.hostname or "localhost"
-        port = parsed.port or 6379
-        password = parsed.password
+    print(f"🔍 Testing Redis connection to {host}:{port}")
 
-        print(f"Checking Redis at {host}:{port}...")
+    for attempt in range(max_retries):
+        try:
+            r = redis.Redis(
+                host=host,
+                port=port,
+                password=password,
+                decode_responses=True,
+                socket_timeout=5,
+                socket_connect_timeout=5,
+            )
 
-        # Create Redis connection
-        r = redis.Redis(host=host, port=port, password=password, decode_responses=True)
+            # Test ping
+            response = r.ping()
+            if response:
+                print("✅ Redis ping successful")
 
-        for attempt in range(max_retries):
-            try:
-                # Try to ping Redis
-                response = r.ping()
-                if response:
-                    print("✅ Redis is ready and responding!")
+                # Test basic operations
+                r.set("test_key", "test_value", ex=10)
+                value = r.get("test_key")
+                if value == "test_value":
+                    print("✅ Redis read/write test successful")
+                    r.delete("test_key")
+                    print("✅ Redis cleanup successful")
+
+                    # Get Redis info
+                    info = r.info("server")
+                    print(f"✅ Redis version: {info['redis_version']}")
+                    print(f"✅ Redis mode: {info['redis_mode']}")
+
                     return True
-            except redis.AuthenticationError as e:
-                print(
-                    f"❌ Redis authentication failed (attempt {attempt + 1}/{max_retries}): {e}"
-                )
-                # For CI, we expect no password, so try without password
-                if attempt == 0 and password:
-                    print("ℹ️  Trying without password (CI mode)...")
-                    r = redis.Redis(host=host, port=port, decode_responses=True)
-                    try:
-                        response = r.ping()
-                        if response:
-                            print(
-                                "✅ Redis is ready and responding (without password)!"
-                            )
-                            return True
-                    except Exception:
-                        pass
-            except redis.ConnectionError as e:
-                print(
-                    f"❌ Redis connection failed (attempt {attempt + 1}/{max_retries}): {e}"
-                )
-            except Exception as e:
-                print(
-                    f"❌ Redis check failed (attempt {attempt + 1}/{max_retries}): {e}"
-                )
+                else:
+                    print("❌ Redis read/write test failed")
+            else:
+                print("❌ Redis ping failed")
 
-            if attempt < max_retries - 1:
-                print(f"⏳ Waiting {retry_delay} seconds before retry...")
-                time.sleep(retry_delay)
+        except redis.AuthenticationError as e:
+            print(f"❌ Redis authentication failed: {e}")
+        except redis.ConnectionError as e:
+            print(
+                f"❌ Redis connection failed (attempt {attempt + 1}/{max_retries}): {e}"
+            )
+        except Exception as e:
+            print(f"❌ Redis test failed (attempt {attempt + 1}/{max_retries}): {e}")
 
-        print("❌ Redis is not available after all retries")
-        return False
+        if attempt < max_retries - 1:
+            print(f"⏳ Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
 
-    except Exception as e:
-        print(f"❌ Failed to check Redis: {e}")
-        return False
+    print("❌ Redis connection test failed after all retries")
+    return False
+
+
+def main():
+    """Main function"""
+    if len(sys.argv) > 1:
+        redis_url = sys.argv[1]
+        if redis_url.startswith("redis://"):
+            # Parse URL
+            from urllib.parse import urlparse
+
+            parsed = urlparse(redis_url)
+            host = parsed.hostname or "localhost"
+            port = parsed.port or 6379
+            password = parsed.password
+        else:
+            print("❌ Invalid Redis URL format. Use: redis://host:port")
+            return 1
+    else:
+        host = "localhost"
+        port = 6379
+        password = None
+
+    success = test_redis_connection(host, port, password)
+    return 0 if success else 1
 
 
 if __name__ == "__main__":
-    redis_url = sys.argv[1] if len(sys.argv) > 1 else "redis://localhost:6379"
-    success = check_redis(redis_url)
-    sys.exit(0 if success else 1)
+    sys.exit(main())
