@@ -5,6 +5,7 @@ Simple Redis connection test script
 
 import sys
 import time
+
 import redis
 
 
