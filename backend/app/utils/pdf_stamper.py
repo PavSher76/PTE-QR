@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.units import mm
 from reportlab.lib.colors import white
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from PIL import Image
 import structlog
 

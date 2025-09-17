@@ -5,6 +5,7 @@ FastAPI application for QR code generation and document status checking
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 import uvicorn
 import structlog
 import time
@@ -32,6 +33,16 @@ structlog.configure(
 
 logger = structlog.get_logger()
 
+# Lifespan context manager
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
+    # Startup
+    logger.info("PTE-QR Backend API starting up", version="1.0.0")
+    yield
+    # Shutdown
+    logger.info("PTE-QR Backend API shutting down")
+
 # Initialize FastAPI app
 logger.info("Initializing PTE-QR Backend API")
 app = FastAPI(
@@ -40,6 +51,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Add CORS middleware
@@ -75,18 +87,6 @@ async def health():
 # Include API v1 router
 logger.info("Including API v1 router", prefix=settings.API_V1_STR)
 app.include_router(api_router, prefix=settings.API_V1_STR)
-
-# Startup event
-@app.on_event("startup")
-async def startup_event():
-    """Application startup event"""
-    logger.info("PTE-QR Backend API starting up", version="1.0.0")
-
-# Shutdown event
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Application shutdown event"""
-    logger.info("PTE-QR Backend API shutting down")
 
 if __name__ == "__main__":
     logger.info("Starting PTE-QR Backend API server", host="0.0.0.0", port=8000)

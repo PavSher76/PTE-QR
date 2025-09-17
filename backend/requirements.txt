@@ -24,7 +24,7 @@ qrcode[pil]==7.4.2
 segno==1.6.6
 
 # PDF processing
-PyPDF2==3.0.1
+pypdf==4.0.1
 reportlab==4.0.7
 
 # HTTP client for ENOVIA integration

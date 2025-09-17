@@ -5,7 +5,7 @@ PDF processing service
 import io
 from typing import List, Dict, Any, Optional, Tuple
 from PIL import Image
-import PyPDF2
+import pypdf
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.units import mm
@@ -35,8 +35,8 @@ class PDFStamper:
         """Stamp PDF with QR codes"""
         try:
             # Read input PDF
-            input_pdf = PyPDF2.PdfReader(io.BytesIO(pdf_data))
-            output_pdf = PyPDF2.PdfWriter()
+            input_pdf = pypdf.PdfReader(io.BytesIO(pdf_data))
+            output_pdf = pypdf.PdfWriter()
             
             # Process each page
             for page_num in range(len(input_pdf.pages)):
@@ -80,7 +80,7 @@ class PDFStamper:
         page_width: float,
         page_height: float,
         dpi: int
-    ) -> PyPDF2.PdfWriter:
+    ) -> pypdf.PdfWriter:
         """Create PDF with QR code stamp"""
         try:
             # Convert QR image to bytes
@@ -125,7 +125,7 @@ class PDFStamper:
             stamp_buffer.seek(0)
             
             # Convert to PyPDF2
-            stamp_pdf = PyPDF2.PdfReader(stamp_buffer)
+            stamp_pdf = pypdf.PdfReader(stamp_buffer)
             return stamp_pdf
             
         except Exception as e:
@@ -135,7 +135,7 @@ class PDFStamper:
     def extract_pdf_info(self, pdf_data: bytes) -> Dict[str, Any]:
         """Extract information from PDF"""
         try:
-            pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_data))
+            pdf_reader = pypdf.PdfReader(io.BytesIO(pdf_data))
             
             info = {
                 "pages": len(pdf_reader.pages),
@@ -157,7 +157,7 @@ class PDFStamper:
     def validate_pdf(self, pdf_data: bytes) -> Tuple[bool, Optional[str]]:
         """Validate PDF file"""
         try:
-            pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_data))
+            pdf_reader = pypdf.PdfReader(io.BytesIO(pdf_data))
             
             # Check if PDF is encrypted
             if pdf_reader.is_encrypted:
