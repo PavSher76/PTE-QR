@@ -2,8 +2,9 @@
 End-to-end tests for complete workflows
 """
 
-import pytest
 import time
+
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -104,8 +105,8 @@ class TestFullWorkflow:
 
     def test_concurrent_requests_workflow(self, client: TestClient):
         """Test handling of concurrent requests."""
-        import threading
         import queue
+        import threading
 
         results = queue.Queue()
 

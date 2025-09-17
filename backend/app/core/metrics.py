@@ -2,17 +2,18 @@
 Prometheus metrics collection
 """
 
+import time
+from typing import Any, Dict
+
+import structlog
 from prometheus_client import (
-    Counter,
-    Histogram,
-    Gauge,
-    Info,
     CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
     generate_latest,
 )
-import time
-from typing import Dict, Any
-import structlog
 
 logger = structlog.get_logger()
 

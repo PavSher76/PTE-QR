@@ -2,18 +2,19 @@
 Admin endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
-import structlog
 import time
 
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.services.metrics_service import metrics_service
-from app.services.cache_service import cache_service
-from app.models.user import User, UserRole
 from app.models.document import Document
 from app.models.qr_code import QRCode
+from app.models.user import User, UserRole
+from app.services.cache_service import cache_service
+from app.services.metrics_service import metrics_service
 
 router = APIRouter()
 logger = structlog.get_logger()

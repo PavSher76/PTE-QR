@@ -2,16 +2,17 @@
 Authentication endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request
-from sqlalchemy.orm import Session
-from typing import Optional
-import structlog
 import time
+from typing import Optional
+
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.models.user import User
 from app.services.auth_service import auth_service
 from app.services.metrics_service import metrics_service
-from app.models.user import User
 
 router = APIRouter()
 logger = structlog.get_logger()

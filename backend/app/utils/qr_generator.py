@@ -2,13 +2,14 @@
 QR Code generation utilities
 """
 
+import base64
+from io import BytesIO
+from typing import Any, Dict, List
+
 import qrcode
 import segno
-from io import BytesIO
-import base64
-from typing import List, Dict, Any
-from PIL import Image, ImageDraw, ImageFont
 import structlog
+from PIL import Image, ImageDraw, ImageFont
 
 from app.core.config import settings
 from app.models.qr_code import QRCodeFormatEnum, QRCodeStyleEnum

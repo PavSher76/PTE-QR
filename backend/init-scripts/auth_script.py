@@ -4,10 +4,11 @@ PTE-QR Authentication Test Script
 Скрипт для тестирования аутентификации пользователей
 """
 
-import requests
 import json
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
+
+import requests
 
 # Configuration
 API_BASE_URL = "http://localhost:8000"

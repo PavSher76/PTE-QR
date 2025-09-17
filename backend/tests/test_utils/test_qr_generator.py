@@ -2,13 +2,14 @@
 Unit tests for QR code generator utility
 """
 
-import pytest
 import base64
-from PIL import Image
 from io import BytesIO
 
-from app.utils.qr_generator import QRCodeGenerator
+import pytest
+from PIL import Image
+
 from app.models.qr_code import QRCodeStyleEnum
+from app.utils.qr_generator import QRCodeGenerator
 
 
 class TestQRCodeGenerator:

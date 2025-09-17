@@ -2,9 +2,9 @@
 Frontend-specific endpoints
 """
 
+import structlog
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-import structlog
 
 router = APIRouter()
 logger = structlog.get_logger()

@@ -5,8 +5,9 @@ Database connection check script for CI/CD
 
 import os
 import sys
-import psycopg2
 from urllib.parse import urlparse
+
+import psycopg2
 
 
 def check_database_connection():

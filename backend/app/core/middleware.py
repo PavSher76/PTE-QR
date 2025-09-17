@@ -5,9 +5,10 @@ FastAPI middleware for metrics and logging
 import time
 import uuid
 from typing import Callable
+
+import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-import structlog
 
 from app.core.metrics import metrics_collector
 

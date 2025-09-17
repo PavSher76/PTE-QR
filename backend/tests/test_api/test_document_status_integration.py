@@ -2,10 +2,12 @@
 Integration tests for document status endpoint with authentication workflow
 """
 
+from datetime import datetime, timedelta
+
+import jwt
 import pytest
 from fastapi.testclient import TestClient
-import jwt
-from datetime import datetime, timedelta
+
 from app.core.config import settings
 
 

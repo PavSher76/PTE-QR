@@ -2,10 +2,11 @@
 HMAC signature utilities for QR code URL validation
 """
 
-import hmac
 import hashlib
+import hmac
 import time
 from typing import Optional
+
 from app.core.config import settings
 
 

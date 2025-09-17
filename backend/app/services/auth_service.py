@@ -2,11 +2,13 @@
 Authentication service
 """
 
-import jwt
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
-from passlib.context import CryptContext
+from typing import Any, Dict, List, Optional
+
+import jwt
 import structlog
+from passlib.context import CryptContext
+
 from app.core.config import settings
 from app.models.user import User, UserRole
 

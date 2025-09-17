@@ -3,12 +3,14 @@ PTE-QR Backend API
 FastAPI application for QR code generation and document status checking
 """
 
+import time
+from contextlib import asynccontextmanager
+
+import structlog
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import uvicorn
-import structlog
-import time
+
 from app.api.api_v1.api import api_router
 from app.core.config import settings
 

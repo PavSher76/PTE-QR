@@ -2,15 +2,17 @@
 QR Code generation service
 """
 
+import base64
+import io
+from typing import Any, Dict, List, Optional
+
 import qrcode
 import segno
-from PIL import Image, ImageDraw, ImageFont
-import io
-import base64
-from typing import List, Dict, Any, Optional
 import structlog
-from app.utils.hmac_signer import HMACSigner
+from PIL import Image, ImageDraw, ImageFont
+
 from app.core.config import settings
+from app.utils.hmac_signer import HMACSigner
 
 logger = structlog.get_logger()
 

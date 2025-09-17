@@ -3,16 +3,18 @@ Metrics collection service
 """
 
 import time
+from typing import Any, Dict, List
+
 import psutil
-from typing import Dict, Any, List
-from prometheus_client import (
-    Counter,
-    Histogram,
-    Gauge,
-    generate_latest,
-    CONTENT_TYPE_LATEST,
-)
 import structlog
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    Counter,
+    Gauge,
+    Histogram,
+    generate_latest,
+)
+
 from app.core.config import settings
 
 logger = structlog.get_logger()

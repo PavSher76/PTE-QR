@@ -2,11 +2,13 @@
 Tests for GDPR compliance in document status endpoint
 """
 
+from datetime import datetime, timedelta
+from unittest.mock import patch
+
+import jwt
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-import jwt
-from datetime import datetime, timedelta
+
 from app.core.config import settings
 
 

@@ -2,11 +2,13 @@
 ENOVIA PLM integration service
 """
 
-import httpx
 import asyncio
-from typing import Dict, List, Optional, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import httpx
 import structlog
+
 from app.core.config import settings
 from app.models.document import DocumentStatusEnum, EnoviaStateEnum
 

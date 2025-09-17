@@ -2,13 +2,15 @@
 SSO authentication module for PTE-QR system
 """
 
-import httpx
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from urllib.parse import urlencode
-from app.core.config import settings
-from app.models.user import User
-from app.core.database import get_db
+
+import httpx
 from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.core.database import get_db
+from app.models.user import User
 
 
 class SSOProvider:

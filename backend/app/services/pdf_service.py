@@ -3,16 +3,18 @@ PDF processing service
 """
 
 import io
-from typing import List, Dict, Any, Optional, Tuple
-from PIL import Image
+from typing import Any, Dict, List, Optional, Tuple
+
 import pypdf
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.lib.units import mm
-from reportlab.lib.colors import black, white
 import structlog
-from app.services.qr_service import qr_service
+from PIL import Image
+from reportlab.lib.colors import black, white
+from reportlab.lib.pagesizes import A4, letter
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+
 from app.core.config import settings
+from app.services.qr_service import qr_service
 
 logger = structlog.get_logger()
 
@@ -205,9 +207,9 @@ class PDFStamper:
     ) -> bytes:
         """Create new PDF with QR codes"""
         try:
-            from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import A4
             from reportlab.lib.units import mm
+            from reportlab.pdfgen import canvas
 
             buffer = io.BytesIO()
             c = canvas.Canvas(buffer, pagesize=A4)

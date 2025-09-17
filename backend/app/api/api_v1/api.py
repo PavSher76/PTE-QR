@@ -3,14 +3,15 @@ API v1 router configuration
 """
 
 from fastapi import APIRouter
+
 from app.api.api_v1.endpoints import (
-    documents,
-    qrcodes,
     admin,
-    health,
-    frontend,
     auth,
+    documents,
+    frontend,
+    health,
     pdf,
+    qrcodes,
 )
 
 api_router = APIRouter()
