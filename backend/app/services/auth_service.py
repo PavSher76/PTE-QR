@@ -7,10 +7,9 @@ from typing import Any, Dict, List, Optional
 
 import jwt
 import structlog
-from passlib.context import CryptContext
-
 from app.core.config import settings
 from app.models.user import User, UserRole
+from passlib.context import CryptContext
 
 logger = structlog.get_logger()
 

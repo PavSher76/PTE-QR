@@ -2,12 +2,12 @@
 Database configuration and session management
 """
 
-import redis
+from app.core.config import settings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.config import settings
+import redis
 
 # PostgreSQL database engine
 engine = create_engine(

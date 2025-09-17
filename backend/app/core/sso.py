@@ -6,10 +6,9 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlencode
 
 import httpx
-from sqlalchemy.orm import Session
-
 from app.core.config import settings
 from app.models.user import User
+from sqlalchemy.orm import Session
 
 
 class SSOProvider:

@@ -4,8 +4,8 @@ Script to run tests with proper setup
 """
 
 import os
-import sys
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
