@@ -48,13 +48,21 @@ class TestFullWorkflow:
     
     def test_document_status_check_workflow(self, client: TestClient, test_document):
         """Test document status checking workflow."""
-        # Step 1: Check document status
+        # Step 1: Check document status for existing document
         status_response = client.get(
             f"/api/v1/documents/{test_document.doc_uid}/revisions/A/status?page=1"
         )
         
-        # Should return 404 for non-existent revision or require ENOVIA integration
-        assert status_response.status_code in [404, 500]
+        # Should return 200 for existing document
+        assert status_response.status_code == 200
+        
+        # Step 2: Check document status for non-existent document
+        status_response = client.get(
+            "/api/v1/documents/NONEXISTENT/revisions/A/status?page=1"
+        )
+        
+        # Should return 404 for non-existent document
+        assert status_response.status_code == 404
     
     def test_health_check_workflow(self, client: TestClient):
         """Test health check workflow."""

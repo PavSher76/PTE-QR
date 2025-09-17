@@ -72,7 +72,6 @@ class User(Base):
     
     # Relationships
     roles = relationship("UserRole", secondary=user_roles_association, back_populates="users")
-    status_checks = relationship("DocumentStatus", back_populates="user")
     # qr_generations = relationship("QRCodeGeneration", back_populates="user")
     # qr_codes = relationship("QRCode", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")

@@ -31,6 +31,7 @@ class QRCode(Base):
     __table_args__ = {'schema': 'pte_qr'}
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("pte_qr.documents.id"), nullable=False)
     doc_uid = Column(String(100), nullable=False)
     revision = Column(String(20), nullable=False)
     page = Column(Integer, nullable=False)

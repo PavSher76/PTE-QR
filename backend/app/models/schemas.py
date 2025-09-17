@@ -35,24 +35,6 @@ class Document(DocumentBase):
     updated_at: Optional[datetime] = None
 
 
-class DocumentRevisionBase(BaseSchema):
-    revision: str = Field(..., description="Revision identifier (A, B, C or 1, 2, 3)")
-    enovia_state: EnoviaStateEnum = Field(..., description="ENOVIA state")
-    business_status: DocumentStatusEnum = Field(..., description="Business status")
-    released_at: Optional[datetime] = Field(None, description="Release date")
-    superseded_by: Optional[str] = Field(None, description="Superseded by revision")
-    last_modified: Optional[datetime] = Field(None, description="Last modification date")
-
-
-class DocumentRevisionCreate(DocumentRevisionBase):
-    document_id: int
-
-
-class DocumentRevision(DocumentRevisionBase):
-    id: int
-    document_id: int
-    created_at: datetime
-    updated_at: Optional[datetime] = None
 
 
 # Status response schema

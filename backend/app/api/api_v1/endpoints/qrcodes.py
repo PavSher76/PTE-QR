@@ -2,13 +2,15 @@
 QR Code generation endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import List
 import structlog
 import time
 
 from app.services.qr_service import qr_service
 from app.services.metrics_service import metrics_service
+from app.api.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -17,7 +19,8 @@ logger = structlog.get_logger()
 @router.post("/")
 async def generate_qr_codes(
     request: dict,
-    http_request: Request
+    http_request: Request,
+    current_user: User = Depends(get_current_user)
 ):
     """
     Generate QR codes for document pages
@@ -117,7 +120,8 @@ async def generate_qr_codes(
 @router.post("/pdf-stamp")
 async def generate_pdf_with_qr_codes(
     request: dict,
-    http_request: Request
+    http_request: Request,
+    current_user: User = Depends(get_current_user)
 ):
     """
     Generate PDF with embedded QR codes

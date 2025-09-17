@@ -38,7 +38,8 @@ class TestQRCodeEndpoints:
             }
         )
         
-        assert response.status_code == 422  # Validation error
+        # Should require authentication first
+        assert response.status_code == 401  # Unauthorized
     
     def test_generate_qr_codes_missing_fields(self, client: TestClient):
         """Test QR code generation with missing required fields."""
@@ -50,7 +51,8 @@ class TestQRCodeEndpoints:
             }
         )
         
-        assert response.status_code == 422  # Validation error
+        # Should require authentication first
+        assert response.status_code == 401  # Unauthorized
     
     def test_generate_qr_codes_invalid_pages(self, client: TestClient):
         """Test QR code generation with invalid page numbers."""
@@ -65,7 +67,8 @@ class TestQRCodeEndpoints:
             }
         )
         
-        assert response.status_code == 422  # Validation error
+        # Should require authentication first
+        assert response.status_code == 401  # Unauthorized
     
     def test_generate_qr_codes_large_pages(self, client: TestClient):
         """Test QR code generation with large number of pages."""
@@ -82,8 +85,8 @@ class TestQRCodeEndpoints:
             }
         )
         
-        # Should either succeed or fail gracefully
-        assert response.status_code in [200, 422, 413]  # OK, validation error, or payload too large
+        # Should require authentication first
+        assert response.status_code == 401  # Unauthorized
     
     def test_generate_qr_codes_different_styles(self, client: TestClient):
         """Test QR code generation with different styles."""

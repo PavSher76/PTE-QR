@@ -54,61 +54,6 @@ class Document(Base):
     updated_by = Column(UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True)
     
     # Relationships
-    revisions = relationship("DocumentRevision", back_populates="document", cascade="all, delete-orphan")
     qr_codes = relationship("QRCode", back_populates="document", cascade="all, delete-orphan")
 
 
-class DocumentRevision(Base):
-    """Document revision model"""
-    __tablename__ = "document_revisions"
-    __table_args__ = {'schema': 'pte_qr'}
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    document_id = Column(UUID(as_uuid=True), ForeignKey("pte_qr.documents.id"), nullable=False)
-    revision = Column(String(20), nullable=False)  # A, B, C or 1, 2, 3
-    enovia_state = Column(String(50), nullable=False)
-    business_status = Column(String(50), nullable=False)
-    
-    # Metadata
-    released_at = Column(DateTime(timezone=True), nullable=True)
-    superseded_by = Column(String(20), nullable=True)
-    last_modified = Column(DateTime(timezone=True), nullable=True)
-    
-    # ENOVIA specific
-    enovia_revision_id = Column(String(255), nullable=True)
-    maturity_state = Column(String(100), nullable=True)
-    
-    # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # Relationships
-    document = relationship("Document", back_populates="revisions")
-    status_checks = relationship("DocumentStatus", back_populates="revision")
-
-
-class DocumentStatus(Base):
-    """Document status check log"""
-    __tablename__ = "document_status_checks"
-    __table_args__ = {'schema': 'pte_qr'}
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    doc_uid = Column(String(100), nullable=False)
-    revision = Column(String(20), nullable=False)
-    page = Column(Integer, nullable=False)
-    
-    # Request info
-    client_ip = Column(String(45), nullable=True)
-    user_agent = Column(Text, nullable=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True)
-    
-    # Response info
-    is_actual = Column(Boolean, nullable=False)
-    business_status = Column(String(50), nullable=False)
-    enovia_state = Column(String(50), nullable=False)
-    
-    # Timestamps
-    checked_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relationships
-    user = relationship("User", back_populates="status_checks")

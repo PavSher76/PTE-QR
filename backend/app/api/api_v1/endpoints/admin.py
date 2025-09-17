@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.services.metrics_service import metrics_service
 from app.services.cache_service import cache_service
 from app.models.user import User, UserRole
-from app.models.document import Document, DocumentRevision, DocumentStatus
+from app.models.document import Document
 from app.models.qr_code import QRCode
 
 router = APIRouter()

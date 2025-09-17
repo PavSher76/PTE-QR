@@ -69,7 +69,9 @@ async def health_check(db: Session = Depends(get_db)):
     return {
         "status": status,
         "timestamp": time.time(),
-        "checks": checks
+        "database": checks.get("database", "unknown"),
+        "redis": checks.get("cache", "unknown"),
+        "enovia": checks.get("enovia", "unknown")
     }
 
 
@@ -81,10 +83,9 @@ async def metrics():
     try:
         from fastapi.responses import Response
         metrics_data = metrics_service.get_metrics_prometheus()
-        from prometheus_client import CONTENT_TYPE_LATEST
         return Response(
             content=metrics_data,
-            media_type=CONTENT_TYPE_LATEST
+            media_type="text/plain; version=0.0.4; charset=utf-8"
         )
     except Exception as e:
         logger.error("Failed to get metrics", error=str(e))
@@ -97,7 +98,11 @@ async def metrics_json():
     Metrics in JSON format
     """
     try:
-        return metrics_service.get_metrics_dict()
+        metrics_data = metrics_service.get_metrics_dict()
+        return {
+            "registry": metrics_data,
+            "timestamp": time.time()
+        }
     except Exception as e:
         logger.error("Failed to get metrics JSON", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to get metrics")
@@ -130,20 +135,17 @@ async def detailed_status(db: Session = Depends(get_db)):
             "status": "healthy",
             "timestamp": time.time(),
             "system": {
-                "cpu_usage_percent": health_metrics["cpu_usage_percent"],
-                "memory_usage_percent": health_metrics["memory_usage_percent"],
-                "disk_usage_percent": health_metrics["disk_usage_percent"],
+                "cpu_percent": health_metrics["cpu_usage_percent"],
+                "memory_percent": health_metrics["memory_usage_percent"],
+                "disk_percent": health_metrics["disk_usage_percent"],
                 "uptime_seconds": health_metrics["uptime_seconds"]
             },
             "application": {
                 "total_requests": health_metrics["total_requests"],
                 "total_qr_codes": health_metrics["total_qr_codes"]
             },
-            "services": {
-                "database": db_status,
-                "cache": cache_health,
-                "enovia": enovia_health
-            }
+            "cache": cache_health,
+            "enovia": enovia_health
         }
         
     except Exception as e:

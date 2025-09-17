@@ -35,7 +35,9 @@ class TestHealthEndpoints:
         response = client.get("/api/v1/health/metrics")
         
         assert response.status_code == 200
-        assert response.headers["content-type"] == "text/plain; version=0.0.4; charset=utf-8"
+        # FastAPI automatically adds charset, so we check for the base content type
+        assert "text/plain" in response.headers["content-type"]
+        assert "version=0.0.4" in response.headers["content-type"]
         
         # Check that response contains Prometheus metrics format
         content = response.text

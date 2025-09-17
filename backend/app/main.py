@@ -82,7 +82,11 @@ async def root():
 async def health():
     """Health check endpoint"""
     logger.info("Health endpoint accessed")
-    return {"status": "healthy", "service": "PTE-QR Backend"}
+    return {
+        "status": "healthy", 
+        "service": "PTE-QR Backend",
+        "timestamp": time.time()
+    }
 
 # Include API v1 router
 logger.info("Including API v1 router", prefix=settings.API_V1_STR)

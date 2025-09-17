@@ -14,7 +14,7 @@ from app.main import app
 from app.core.database import get_db, Base
 from app.core.config import settings
 from app.models.user import User
-from app.models.document import Document, DocumentRevision
+from app.models.document import Document
 from app.core.cache import cache_manager
 
 # Test database URL - use PostgreSQL for tests
@@ -64,77 +64,68 @@ def client(db_session) -> Generator:
 
 
 @pytest.fixture
-async def test_user(db_session) -> User:
-    """Create a test user."""
-    user = User(
-        username="testuser",
-        email="test@example.com",
-        hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
-        is_active=True,
-        is_superuser=False
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
+def test_user(db_session) -> User:
+    """Get or create a test user."""
+    # Try to get existing user first
+    user = db_session.query(User).filter(User.username == "testuser").first()
+    if not user:
+        user = User(
+            username="testuser",
+            email="test@example.com",
+            hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
+            is_active=True,
+            is_superuser=False
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
     return user
 
 
 @pytest.fixture
-async def test_admin_user(db_session) -> User:
-    """Create a test admin user."""
-    user = User(
-        username="admin",
-        email="admin@example.com",
-        hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
-        is_active=True,
-        is_superuser=True
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
+def test_admin_user(db_session) -> User:
+    """Get or create a test admin user."""
+    # Try to get existing admin user first
+    user = db_session.query(User).filter(User.username == "admin").first()
+    if not user:
+        user = User(
+            username="admin",
+            email="admin@example.com",
+            hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
+            is_active=True,
+            is_superuser=True
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
     return user
 
 
 @pytest.fixture
-async def test_document(db_session) -> Document:
-    """Create a test document."""
-    document = Document(
-        doc_uid="TEST-DOC-001",
-        title="Test Document",
-        description="Test document description",
-        document_type="Drawing",
-        current_revision="A",
-        current_page=1,
-        business_status="APPROVED_FOR_CONSTRUCTION",
-        enovia_state="Released",
-        is_actual=True,
-        released_at="2024-01-01T00:00:00Z",
-        superseded_by=None
-    )
-    db_session.add(document)
-    db_session.commit()
-    db_session.refresh(document)
+def test_document(db_session) -> Document:
+    """Get or create a test document."""
+    # Try to get existing document first
+    document = db_session.query(Document).filter(Document.doc_uid == "TEST-DOC-001").first()
+    if not document:
+        document = Document(
+            doc_uid="TEST-DOC-001",
+            title="Test Document",
+            description="Test document description",
+            document_type="Drawing",
+            current_revision="A",
+            current_page=1,
+            business_status="APPROVED_FOR_CONSTRUCTION",
+            enovia_state="Released",
+            is_actual=True,
+            released_at="2024-01-01T00:00:00Z",
+            superseded_by=None
+        )
+        db_session.add(document)
+        db_session.commit()
+        db_session.refresh(document)
     return document
 
 
-@pytest.fixture
-async def test_document_revision(db_session, test_document) -> DocumentRevision:
-    """Create a test document revision."""
-    revision = DocumentRevision(
-        document_id=test_document.id,
-        revision="A",
-        enovia_state="Released",
-        business_status="APPROVED_FOR_CONSTRUCTION",
-        released_at="2024-01-01T00:00:00Z",
-        superseded_by=None,
-        last_modified="2024-01-01T00:00:00Z",
-        enovia_revision_id="12345-A",
-        maturity_state="Released"
-    )
-    db_session.add(revision)
-    db_session.commit()
-    db_session.refresh(revision)
-    return revision
 
 
 @pytest.fixture
