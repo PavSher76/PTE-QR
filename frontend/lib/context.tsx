@@ -44,7 +44,7 @@ const UserContext = createContext<{
     email: string
   } | null
   isAuthenticated: boolean
-  login: (credentials: any) => void
+  login: (credentials: { username: string; password: string }) => Promise<{ success: boolean; error?: string }>
   logout: () => void
 } | null>(null)
 

@@ -45,7 +45,8 @@ def check_redis(redis_url="redis://localhost:6379"):
                     return True
             except Exception as e:
                 print(
-                    f"❌ Redis auth check failed (attempt {attempt + 1}/{max_retries}): {e}"
+                    f"❌ Redis auth check failed "
+                    f"(attempt {attempt + 1}/{max_retries}): {e}"
                 )
         except Exception as e:
             print(f"❌ Redis check failed (attempt {attempt + 1}/{max_retries}): {e}")

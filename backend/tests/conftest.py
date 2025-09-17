@@ -14,20 +14,18 @@ from app.core.test_database import (
     cleanup_test_db,
     create_test_tables,
     drop_test_tables,
-    test_engine,
 )
 from app.main import app as fastapi_app
 from app.models.document import Document
 from app.models.user import User
 from app.services.auth_service import AuthService
+from app.api.dependencies import get_current_user, get_current_user_optional
+import app.services.auth_service
 
 # Create test auth service with test settings
 test_auth_service = AuthService()
 
-from app.api.dependencies import get_current_user, get_current_user_optional
-
 # Override auth service in dependencies
-from app.services.auth_service import get_auth_service
 
 
 # Mock the auth service
@@ -36,7 +34,6 @@ def mock_get_auth_service():
 
 
 # Override the auth service function
-import app.services.auth_service
 
 app.services.auth_service.get_auth_service = mock_get_auth_service
 

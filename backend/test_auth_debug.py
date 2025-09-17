@@ -4,10 +4,9 @@ Debug script to test authentication in tests
 """
 
 import sys
+import uuid
 
 sys.path.append(".")
-
-import uuid
 
 from fastapi.testclient import TestClient
 

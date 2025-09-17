@@ -4,6 +4,9 @@ Test configuration settings for PTE-QR application
 
 import os
 
+from app.core.config import settings
+from app.services.auth_service import AuthService
+
 
 # Simple test configuration without pydantic
 class TestSettings:
@@ -79,8 +82,6 @@ class TestSettings:
 test_settings = TestSettings()
 
 # Override main settings with test settings
-from app.core.config import settings
-
 for key, value in test_settings.__dict__.items():
     if not key.startswith("__"):
         setattr(settings, key, value)
@@ -89,6 +90,4 @@ for key, value in test_settings.__dict__.items():
 os.environ["TESTING"] = "true"
 
 # Recreate auth service with test settings
-from app.services.auth_service import AuthService
-
 _auth_service_instance = AuthService()

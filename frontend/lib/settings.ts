@@ -172,10 +172,10 @@ export function getSettings(): AppSettings {
     try {
       return JSON.parse(stored)
     } catch {
-      return getDefaultSettings()
+      return defaultSettings
     }
   }
-  return getDefaultSettings()
+  return defaultSettings
 }
 
 export function setSettings(settings: AppSettings): void {

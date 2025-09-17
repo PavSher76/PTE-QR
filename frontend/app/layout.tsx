@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AppProvider } from '@/lib/context'
@@ -7,13 +7,19 @@ import { NotificationContainer } from '@/components/NotificationContainer'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// Viewport configuration
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
+
 // Default metadata - will be overridden by client-side localization
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: 'PTE QR System',
   description: 'Document status verification system via QR codes',
   keywords: ['PTE', 'QR', 'documents', 'status', 'ENOVIA'],
   authors: [{ name: 'PTI' }],
-  viewport: 'width=device-width, initial-scale=1',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
