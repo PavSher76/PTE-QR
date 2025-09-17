@@ -149,7 +149,7 @@ def check_tables_exist():
 if __name__ == "__main__":
     print("🔍 Checking database setup...")
     print(
-        f"Database URL: {os.getenv("DATABASE_URL", "postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr")}"
+        f"Database URL: {os.getenv('DATABASE_URL', 'postgresql://pte_qr:pte_qr_dev@postgres:5432/pte_qr')}"
     )
     print()
 
