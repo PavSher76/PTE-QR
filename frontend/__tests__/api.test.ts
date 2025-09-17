@@ -29,26 +29,28 @@ describe('API Functions', () => {
     }
 
     const result = await fetchDocumentStatus('test-doc', 'A', 1)
-    
-    expect(result).toEqual(expect.objectContaining({
-      doc_uid: 'test-doc',
-      revision: 'A',
-      page: 1,
-      business_status: 'APPROVED_FOR_CONSTRUCTION',
-      enovia_state: 'Released',
-      is_actual: true,
-    }))
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        doc_uid: 'test-doc',
+        revision: 'A',
+        page: 1,
+        business_status: 'APPROVED_FOR_CONSTRUCTION',
+        enovia_state: 'Released',
+        is_actual: true,
+      })
+    )
   })
 
   it('should handle string page parameter', async () => {
     const result = await fetchDocumentStatus('test-doc', 'A', '1')
-    
+
     expect(result.page).toBe(1)
   })
 
   it('should handle number page parameter', async () => {
     const result = await fetchDocumentStatus('test-doc', 'A', 2)
-    
+
     expect(result.page).toBe(2)
   })
 })

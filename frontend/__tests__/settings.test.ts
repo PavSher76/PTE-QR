@@ -1,14 +1,14 @@
-import { 
-  getSettings, 
-  setSettings, 
-  resetSettings, 
+import {
+  getSettings,
+  setSettings,
+  resetSettings,
   updateSetting,
   getSetting,
   hasSetting,
   removeSetting,
   clearSettings,
   exportSettings,
-  importSettings
+  importSettings,
 } from '../lib/settings'
 
 // Mock localStorage
@@ -93,7 +93,9 @@ describe('Settings Functions', () => {
   })
 
   it('should handle removeSetting', () => {
-    localStorageMock.getItem.mockReturnValue('{"theme": "dark", "language": "ru"}')
+    localStorageMock.getItem.mockReturnValue(
+      '{"theme": "dark", "language": "ru"}'
+    )
     removeSetting('theme')
     expect(localStorageMock.setItem).toHaveBeenCalled()
   })
@@ -113,6 +115,9 @@ describe('Settings Functions', () => {
   it('should handle importSettings', () => {
     const settings = '{"theme": "dark", "language": "ru"}'
     importSettings(settings)
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('pte_qr_settings', '{"theme":"dark","language":"ru"}')
+    expect(localStorageMock.setItem).toHaveBeenCalledWith(
+      'pte_qr_settings',
+      '{"theme":"dark","language":"ru"}'
+    )
   })
 })

@@ -39,7 +39,12 @@ export function validatePhone(phone: string): boolean {
 }
 
 export function validatePassword(password: string): boolean {
-  return password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password)
+  return (
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /\d/.test(password)
+  )
 }
 
 export function validateDocumentId(docId: string): boolean {
@@ -59,7 +64,6 @@ export function validateForm(data: any, rules: any): boolean {
   }
   return true
 }
-
 
 export function escapeHTML(text: string): string {
   const div = document.createElement('div')

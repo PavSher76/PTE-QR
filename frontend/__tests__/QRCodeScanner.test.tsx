@@ -183,7 +183,9 @@ describe('QRCodeScanner', () => {
 
     // Check for QR code overlay elements - use more specific selector
     const overlays = screen.getAllByRole('generic')
-    const overlay = overlays.find(el => el.querySelector('.border-primary-500'))
+    const overlay = overlays.find((el) =>
+      el.querySelector('.border-primary-500')
+    )
     expect(overlay).toBeInTheDocument()
   })
 
@@ -207,7 +209,7 @@ describe('QRCodeScanner', () => {
     // Проверяем, что компонент рендерится без ошибок - используем китайский текст
     expect(screen.getByText('扫描')).toBeInTheDocument()
     expect(screen.getByText('取消')).toBeInTheDocument()
-    
+
     // Проверяем, что unmount работает без ошибок
     expect(() => unmount()).not.toThrow()
   })

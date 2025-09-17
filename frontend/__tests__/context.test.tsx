@@ -86,13 +86,21 @@ describe('Context Providers', () => {
 
   describe('ThemeProvider', () => {
     it('provides default light theme', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       expect(screen.getByTestId('theme')).toHaveTextContent('light')
     })
 
     it('toggles theme between light and dark', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const toggleButton = screen.getByTestId('toggle-theme')
 
@@ -106,7 +114,11 @@ describe('Context Providers', () => {
     })
 
     it('persists theme in localStorage', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const toggleButton = screen.getByTestId('toggle-theme')
       fireEvent.click(toggleButton)
@@ -117,7 +129,11 @@ describe('Context Providers', () => {
     it('loads theme from localStorage on mount', () => {
       localStorage.setItem('pte-qr-theme', 'dark')
 
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       expect(screen.getByTestId('theme')).toHaveTextContent('dark')
     })
@@ -125,13 +141,21 @@ describe('Context Providers', () => {
 
   describe('NotificationsProvider', () => {
     it('provides empty notifications array initially', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       expect(screen.getByTestId('notifications-count')).toHaveTextContent('0')
     })
 
     it('adds notifications', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const addButton = screen.getByTestId('add-notification')
       fireEvent.click(addButton)
@@ -140,7 +164,11 @@ describe('Context Providers', () => {
     })
 
     it('clears all notifications', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const addButton = screen.getByTestId('add-notification')
       const clearButton = screen.getByTestId('clear-notifications')
@@ -154,7 +182,11 @@ describe('Context Providers', () => {
     })
 
     it('adds notification with correct properties', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const addButton = screen.getByTestId('add-notification')
       fireEvent.click(addButton)
@@ -166,7 +198,11 @@ describe('Context Providers', () => {
 
   describe('UserProvider', () => {
     it('provides unauthenticated state initially', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       expect(screen.getByTestId('user-status')).toHaveTextContent(
         'not authenticated'
@@ -175,7 +211,11 @@ describe('Context Providers', () => {
     })
 
     it('logs in user', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const loginButton = screen.getByTestId('login')
       fireEvent.click(loginButton)
@@ -187,7 +227,11 @@ describe('Context Providers', () => {
     })
 
     it('logs out user', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const loginButton = screen.getByTestId('login')
       const logoutButton = screen.getByTestId('logout')
@@ -205,7 +249,11 @@ describe('Context Providers', () => {
     })
 
     it('persists user in localStorage', () => {
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       const loginButton = screen.getByTestId('login')
       fireEvent.click(loginButton)
@@ -217,7 +265,11 @@ describe('Context Providers', () => {
       const userData = { username: 'saveduser', email: 'saved@example.com' }
       localStorage.setItem('pte-qr-user', JSON.stringify(userData))
 
-      renderWithProviders(<TestComponent />, [ThemeProvider, NotificationsProvider, UserProvider])
+      renderWithProviders(<TestComponent />, [
+        ThemeProvider,
+        NotificationsProvider,
+        UserProvider,
+      ])
 
       expect(screen.getByTestId('user-status')).toHaveTextContent(
         'authenticated'
@@ -280,7 +332,9 @@ describe('Context Providers', () => {
 
       function NotificationsTestComponent() {
         const { notifications } = useNotifications()
-        return <div data-testid="notifications-count">{notifications.length}</div>
+        return (
+          <div data-testid="notifications-count">{notifications.length}</div>
+        )
       }
 
       expect(() => {
@@ -297,7 +351,11 @@ describe('Context Providers', () => {
 
       function UserTestComponent() {
         const { user } = useUser()
-        return <div data-testid="user-status">{user ? 'authenticated' : 'not authenticated'}</div>
+        return (
+          <div data-testid="user-status">
+            {user ? 'authenticated' : 'not authenticated'}
+          </div>
+        )
       }
 
       expect(() => {

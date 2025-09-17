@@ -116,9 +116,15 @@ export function useNotifications() {
   }
 }
 
-export function createNotification(message: string, type: NotificationType, id?: string): Notification {
+export function createNotification(
+  message: string,
+  type: NotificationType,
+  id?: string
+): Notification {
   return {
-    id: id || `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id:
+      id ||
+      `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type,
     title: '',
     message,
@@ -126,7 +132,10 @@ export function createNotification(message: string, type: NotificationType, id?:
   }
 }
 
-export function showNotification(message: string, type: NotificationType): void {
+export function showNotification(
+  message: string,
+  type: NotificationType
+): void {
   // This would typically use a global notification manager
   console.log(`Notification [${type}]: ${message}`)
 }

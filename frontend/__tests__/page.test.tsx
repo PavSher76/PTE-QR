@@ -74,7 +74,9 @@ describe('HomePage', () => {
 
     expect(screen.getByText('Сканировать QR')).toBeInTheDocument()
     // Используем более специфичный селектор для текста
-    const instructionTexts = screen.getAllByText('Отсканируйте QR-код для проверки статуса документа')
+    const instructionTexts = screen.getAllByText(
+      'Отсканируйте QR-код для проверки статуса документа'
+    )
     expect(instructionTexts[0]).toBeInTheDocument()
   })
 
@@ -159,7 +161,9 @@ describe('HomePage', () => {
     fireEvent.change(languageSelect, { target: { value: 'en' } })
 
     // Используем более специфичный селектор для заголовка - h1 элемент
-    expect(screen.getByRole('heading', { level: 1, name: 'PTE QR System' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'PTE QR System' })
+    ).toBeInTheDocument()
     expect(
       screen.getByText('Document status verification system via QR codes')
     ).toBeInTheDocument()
@@ -178,7 +182,9 @@ describe('HomePage', () => {
     fireEvent.change(languageSelect, { target: { value: 'zh' } })
 
     // Используем более специфичный селектор для заголовка - h1 элемент
-    expect(screen.getByRole('heading', { level: 1, name: 'PTE QR 系统' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'PTE QR 系统' })
+    ).toBeInTheDocument()
     expect(screen.getByText('通过二维码验证文档状态的系统')).toBeInTheDocument()
     expect(screen.getByText('二维码扫描')).toBeInTheDocument()
     expect(screen.getByText('文档状态')).toBeInTheDocument()
@@ -204,7 +210,10 @@ describe('HomePage', () => {
     renderWithProviders(<HomePage />)
 
     // Используем более специфичный селектор для заголовка - h1 элемент
-    const mainTitle = screen.getByRole('heading', { level: 1, name: 'PTE QR Система' })
+    const mainTitle = screen.getByRole('heading', {
+      level: 1,
+      name: 'PTE QR Система',
+    })
     expect(mainTitle).toHaveClass('dark:text-white')
   })
 
@@ -214,7 +223,7 @@ describe('HomePage', () => {
     // Используем более специфичные селекторы
     const logos = screen.getAllByAltText('PTE QR Logo')
     expect(logos[0]).toBeInTheDocument() // Проверяем первый логотип
-    
+
     const languageSelects = screen.getAllByRole('combobox')
     expect(languageSelects[0]).toBeInTheDocument() // Проверяем первый селектор
   })

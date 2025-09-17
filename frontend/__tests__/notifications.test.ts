@@ -1,10 +1,10 @@
-import { 
-  createNotification, 
-  showNotification, 
-  hideNotification, 
+import {
+  createNotification,
+  showNotification,
+  hideNotification,
   clearNotifications,
   NotificationType,
-  Notification
+  Notification,
 } from '../lib/notifications'
 
 // Mock the context
@@ -48,7 +48,11 @@ describe('Notification Functions', () => {
   })
 
   it('should create notification with custom id', () => {
-    const notification = createNotification('Test message', 'error', 'custom-id')
+    const notification = createNotification(
+      'Test message',
+      'error',
+      'custom-id'
+    )
     expect(notification.id).toBe('custom-id')
   })
 
@@ -88,7 +92,7 @@ describe('Notification Functions', () => {
   it('should generate unique ids', () => {
     const notification1 = createNotification('Test 1', 'success')
     const notification2 = createNotification('Test 2', 'success')
-    
+
     expect(notification1.id).not.toBe(notification2.id)
   })
 })

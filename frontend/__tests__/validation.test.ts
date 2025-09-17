@@ -1,13 +1,13 @@
-import { 
-  validateEmail, 
-  validateURL, 
-  validatePhone, 
+import {
+  validateEmail,
+  validateURL,
+  validatePhone,
   validateDocumentId,
   validateQRCode,
   validateForm,
   sanitizeInput,
   escapeHTML,
-  unescapeHTML
+  unescapeHTML,
 } from '../lib/validation'
 
 describe('Validation Functions', () => {
@@ -50,7 +50,6 @@ describe('Validation Functions', () => {
     expect(validatePhone('invalid-phone')).toBe(false)
   })
 
-
   it('should validate document ID', () => {
     expect(validateDocumentId('3D-00001234')).toBe(true)
     expect(validateDocumentId('invalid-id')).toBe(false)
@@ -68,7 +67,9 @@ describe('Validation Functions', () => {
   })
 
   it('should sanitize input', () => {
-    expect(sanitizeInput('<script>alert("xss")</script>')).toBe('scriptalert(xss)/script')
+    expect(sanitizeInput('<script>alert("xss")</script>')).toBe(
+      'scriptalert(xss)/script'
+    )
   })
 
   it('should escape HTML', () => {

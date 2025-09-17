@@ -214,7 +214,6 @@ export const themes: Record<string, Theme> = {
   dark: darkTheme,
 }
 
-
 export function applyTheme(theme: Theme): void {
   const root = document.documentElement
 
@@ -325,7 +324,6 @@ export function toggleTheme(): string {
   return newTheme
 }
 
-
 export function isDarkMode(): boolean {
   return getTheme() === 'dark'
 }
@@ -333,7 +331,6 @@ export function isDarkMode(): boolean {
 export function getThemeColors(theme: string): any {
   return themes[theme] || themes.light
 }
-
 
 export function removeTheme(): void {
   localStorage.removeItem('pte_qr_theme')

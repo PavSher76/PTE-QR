@@ -441,7 +441,7 @@ describe('Utils', () => {
       delete (window as any).ontouchstart
       delete (window as any).ontouchend
       delete (window as any).ontouchmove
-      
+
       // Force re-evaluation by calling the function
       const result = isTouchDevice()
       // In JSDOM environment, the function might still return true due to other touch detection methods

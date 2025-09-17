@@ -16,7 +16,12 @@ export class AppError extends Error {
   public details?: any
   public timestamp: number
 
-  constructor(message: string, code: string, statusCode: number = 500, details?: any) {
+  constructor(
+    message: string,
+    code: string,
+    statusCode: number = 500,
+    details?: any
+  ) {
     super(message)
     this.name = 'AppError'
     this.code = code
@@ -229,14 +234,17 @@ export function createErrorFromException(
   })
 }
 
-export function createError(message: string, code: string, statusCode: number = 500): AppError {
+export function createError(
+  message: string,
+  code: string,
+  statusCode: number = 500
+): AppError {
   return new AppError(message, code, statusCode)
 }
 
 export function isAppError(error: any): error is AppError {
   return error instanceof AppError
 }
-
 
 export async function handleAsyncError<T>(
   operation: () => Promise<T>,

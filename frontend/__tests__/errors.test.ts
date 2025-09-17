@@ -1,12 +1,12 @@
 import {
   AppError,
-  ValidationError, 
-  NetworkError, 
-  AuthError, 
-  NotFoundError, 
+  ValidationError,
+  NetworkError,
+  AuthError,
+  NotFoundError,
   ServerError,
   createError,
-  isAppError
+  isAppError,
 } from '../lib/errors'
 
 describe('Error Classes', () => {
@@ -71,7 +71,7 @@ describe('Error Utilities', () => {
   it('should check if error is AppError', () => {
     const appError = new AppError('Test', 'TEST', 400)
     const regularError = new Error('Test')
-    
+
     expect(isAppError(appError)).toBe(true)
     expect(isAppError(regularError)).toBe(false)
   })
@@ -80,7 +80,7 @@ describe('Error Utilities', () => {
     const appError = new AppError('Test error', 'TEST', 400)
     const regularError = new Error('Regular error')
     const stringError = 'String error'
-    
+
     expect(appError.message).toBe('Test error')
     expect(regularError.message).toBe('Regular error')
     expect(stringError).toBe('String error')
