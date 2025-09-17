@@ -2,7 +2,16 @@
 Document-related database models
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey, Enum
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Boolean,
+    Text,
+    ForeignKey,
+    Enum,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -13,6 +22,7 @@ import uuid
 
 class DocumentStatusEnum(str, enum.Enum):
     """Business status enumeration"""
+
     APPROVED_FOR_CONSTRUCTION = "APPROVED_FOR_CONSTRUCTION"
     ACCEPTED_BY_CUSTOMER = "ACCEPTED_BY_CUSTOMER"
     CHANGES_INTRODUCED_GET_NEW = "CHANGES_INTRODUCED_GET_NEW"
@@ -21,6 +31,7 @@ class DocumentStatusEnum(str, enum.Enum):
 
 class EnoviaStateEnum(str, enum.Enum):
     """ENOVIA state enumeration"""
+
     RELEASED = "Released"
     AFC = "AFC"
     ACCEPTED = "Accepted"
@@ -33,9 +44,10 @@ class EnoviaStateEnum(str, enum.Enum):
 
 class Document(Base):
     """Document model"""
+
     __tablename__ = "documents"
-    __table_args__ = {'schema': 'pte_qr'}
-    
+    __table_args__ = {"schema": "pte_qr"}
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     doc_uid = Column(String(100), unique=True, index=True, nullable=False)
     title = Column(String(500), nullable=True)
@@ -50,10 +62,14 @@ class Document(Base):
     superseded_by = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    created_by = Column(UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True)
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True)
-    
+    created_by = Column(
+        UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True
+    )
+    updated_by = Column(
+        UUID(as_uuid=True), ForeignKey("pte_qr.users.id"), nullable=True
+    )
+
     # Relationships
-    qr_codes = relationship("QRCode", back_populates="document", cascade="all, delete-orphan")
-
-
+    qr_codes = relationship(
+        "QRCode", back_populates="document", cascade="all, delete-orphan"
+    )

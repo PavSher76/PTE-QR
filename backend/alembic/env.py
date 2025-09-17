@@ -20,6 +20,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.models import Base
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -30,10 +31,7 @@ target_metadata = Base.metadata
 
 def get_url():
     """Get database URL from environment or config."""
-    return (
-        os.getenv("DATABASE_URL") or
-        config.get_main_option("sqlalchemy.url")
-    )
+    return os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
 
 
 def run_migrations_offline() -> None:
@@ -77,7 +75,7 @@ async def run_async_migrations() -> None:
     """Run migrations in async mode."""
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
-    
+
     connectable = async_engine_from_config(
         configuration,
         prefix="sqlalchemy.",

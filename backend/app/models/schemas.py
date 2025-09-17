@@ -13,6 +13,7 @@ from app.models.user import UserRoleEnum
 # Base schemas
 class BaseSchema(BaseModel):
     """Base schema with common configuration"""
+
     class Config:
         from_attributes = True
 
@@ -35,8 +36,6 @@ class Document(DocumentBase):
     updated_at: Optional[datetime] = None
 
 
-
-
 # Status response schema
 class StatusResponse(BaseSchema):
     doc_uid: str
@@ -55,9 +54,13 @@ class QRCodeRequest(BaseSchema):
     doc_uid: str = Field(..., description="Document UID")
     revision: str = Field(..., description="Revision")
     pages: List[int] = Field(..., description="List of page numbers", min_items=1)
-    style: QRCodeStyleEnum = Field(default=QRCodeStyleEnum.BLACK, description="QR style")
+    style: QRCodeStyleEnum = Field(
+        default=QRCodeStyleEnum.BLACK, description="QR style"
+    )
     dpi: int = Field(default=300, ge=96, le=1200, description="DPI for QR generation")
-    mode: str = Field(default="images", description="Generation mode: images or pdf-stamp")
+    mode: str = Field(
+        default="images", description="Generation mode: images or pdf-stamp"
+    )
 
 
 class QRCodeItem(BaseSchema):
@@ -93,7 +96,9 @@ class UserBase(BaseSchema):
 
 
 class UserCreate(UserBase):
-    password: Optional[str] = Field(None, min_length=8, description="Password for local auth")
+    password: Optional[str] = Field(
+        None, min_length=8, description="Password for local auth"
+    )
 
 
 class UserUpdate(BaseSchema):

@@ -16,5 +16,5 @@ __all__ = [
     "User",
     "UserRole",
     "UserRoleEnum",
-    "AuditLog"
+    "AuditLog",
 ]

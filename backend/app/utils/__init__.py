@@ -7,9 +7,4 @@ from .hmac_signer import HMACSigner
 from .pdf_stamper import PDFStamper
 from .enovia_client import ENOVIAClient
 
-__all__ = [
-    "QRCodeGenerator",
-    "HMACSigner", 
-    "PDFStamper",
-    "ENOVIAClient"
-]
+__all__ = ["QRCodeGenerator", "HMACSigner", "PDFStamper", "ENOVIAClient"]

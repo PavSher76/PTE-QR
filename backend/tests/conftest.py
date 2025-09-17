@@ -20,9 +20,9 @@ from app.core.cache import cache_manager
 
 # Test database URL - use environment variable or default
 import os
+
 SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:postgres@localhost:5432/pte_qr_test"
+    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pte_qr_test"
 )
 
 # Create test engine
@@ -56,6 +56,7 @@ def db_session() -> Generator:
 @pytest.fixture
 def client(db_session) -> Generator:
     """Create a test client with database session override."""
+
     def override_get_db():
         try:
             yield db_session
@@ -79,7 +80,7 @@ def test_user(db_session) -> User:
             email="test@example.com",
             hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
             is_active=True,
-            is_superuser=False
+            is_superuser=False,
         )
         db_session.add(user)
         db_session.commit()
@@ -98,7 +99,7 @@ def test_admin_user(db_session) -> User:
             email="admin@example.com",
             hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
             is_active=True,
-            is_superuser=True
+            is_superuser=True,
         )
         db_session.add(user)
         db_session.commit()
@@ -110,7 +111,9 @@ def test_admin_user(db_session) -> User:
 def test_document(db_session) -> Document:
     """Get or create a test document."""
     # Try to get existing document first
-    document = db_session.query(Document).filter(Document.doc_uid == "TEST-DOC-001").first()
+    document = (
+        db_session.query(Document).filter(Document.doc_uid == "TEST-DOC-001").first()
+    )
     if not document:
         document = Document(
             doc_uid="TEST-DOC-001",
@@ -123,14 +126,12 @@ def test_document(db_session) -> Document:
             enovia_state="Released",
             is_actual=True,
             released_at="2024-01-01T00:00:00Z",
-            superseded_by=None
+            superseded_by=None,
         )
         db_session.add(document)
         db_session.commit()
         db_session.refresh(document)
     return document
-
-
 
 
 @pytest.fixture
@@ -147,7 +148,7 @@ def sample_qr_data():
         "doc_uid": "TEST-DOC-001",
         "revision": "A",
         "page": 1,
-        "url": "https://qr.pti.ru/r/TEST-DOC-001/A/1?t=signature&ts=1234567890"
+        "url": "https://qr.pti.ru/r/TEST-DOC-001/A/1?t=signature&ts=1234567890",
     }
 
 
@@ -165,6 +166,6 @@ def sample_document_status():
         "superseded_by": None,
         "links": {
             "openDocument": "https://enovia.pti.ru/3dspace/document/TEST-DOC-001?rev=A",
-            "openLatest": None
-        }
+            "openLatest": None,
+        },
     }

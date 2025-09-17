@@ -23,7 +23,7 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
-        structlog.processors.JSONRenderer()
+        structlog.processors.JSONRenderer(),
     ],
     context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),
@@ -32,6 +32,7 @@ structlog.configure(
 )
 
 logger = structlog.get_logger()
+
 
 # Lifespan context manager
 @asynccontextmanager
@@ -42,6 +43,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown
     logger.info("PTE-QR Backend API shutting down")
+
 
 # Initialize FastAPI app
 logger.info("Initializing PTE-QR Backend API")
@@ -64,6 +66,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -74,19 +77,17 @@ async def root():
         "version": "1.0.0",
         "description": "API для генерации QR-кодов и проверки актуальности документов",
         "docs": "/docs",
-        "health": "/health"
+        "health": "/health",
     }
+
 
 # Health check endpoint
 @app.get("/health")
 async def health():
     """Health check endpoint"""
     logger.info("Health endpoint accessed")
-    return {
-        "status": "healthy", 
-        "service": "PTE-QR Backend",
-        "timestamp": time.time()
-    }
+    return {"status": "healthy", "service": "PTE-QR Backend", "timestamp": time.time()}
+
 
 # Include API v1 router
 logger.info("Including API v1 router", prefix=settings.API_V1_STR)
