@@ -12,26 +12,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.database import get_db
-from app.core.test_database import (
-    test_engine,
-    TestSessionLocal,
-    create_test_tables,
-    drop_test_tables,
-    cleanup_test_db,
-)
 from app.core.test_cache import test_cache_service
 from app.core.test_config import test_settings
-from app.services.auth_service import AuthService
+from app.core.test_database import (
+    TestSessionLocal,
+    cleanup_test_db,
+    create_test_tables,
+    drop_test_tables,
+    test_engine,
+)
 from app.main import app as fastapi_app
 from app.models.document import Document
 from app.models.user import User
+from app.services.auth_service import AuthService
 
 # Create test auth service with test settings
 test_auth_service = AuthService()
 
+from app.api.dependencies import get_current_user, get_current_user_optional
+
 # Override auth service in dependencies
 from app.services.auth_service import get_auth_service
-from app.api.dependencies import get_current_user, get_current_user_optional
 
 
 # Mock the auth service
@@ -131,8 +132,9 @@ def authenticated_client(client, test_user) -> Generator:
 @pytest.fixture
 def unauthenticated_client(client) -> Generator:
     """Create an unauthenticated test client that will return 401/403 for protected endpoints."""
-    from app.api.dependencies import get_current_user, get_current_user_optional
     from fastapi import HTTPException
+
+    from app.api.dependencies import get_current_user, get_current_user_optional
 
     def mock_get_current_user():
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -173,8 +175,9 @@ def setup_test_data(db_session):
         db_session.refresh(test_user)
 
     # Create test document
-    from app.models.document import Document
     from datetime import datetime
+
+    from app.models.document import Document
 
     test_document = (
         db_session.query(Document).filter(Document.doc_uid == "TEST-DOC-001").first()

@@ -91,6 +91,6 @@ for key, value in test_settings.__dict__.items():
 os.environ["TESTING"] = "true"
 
 # Recreate auth service with test settings
-from app.services.auth_service import _auth_service_instance, AuthService
+from app.services.auth_service import AuthService, _auth_service_instance
 
 _auth_service_instance = AuthService()

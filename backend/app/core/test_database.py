@@ -5,6 +5,7 @@ Test database configuration and session management
 import os
 import tempfile
 from pathlib import Path
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -41,10 +42,10 @@ def get_test_db():
 
 def create_test_tables():
     """Create test tables"""
-    from app.models.user import Base as UserBase
+    from app.models.audit import Base as AuditBase
     from app.models.document import Base as DocumentBase
     from app.models.qr_code import Base as QRCodeBase
-    from app.models.audit import Base as AuditBase
+    from app.models.user import Base as UserBase
 
     # Create all tables in correct order (users first, then documents)
     UserBase.metadata.create_all(bind=test_engine)
@@ -55,10 +56,10 @@ def create_test_tables():
 
 def drop_test_tables():
     """Drop test tables"""
-    from app.models.user import Base as UserBase
+    from app.models.audit import Base as AuditBase
     from app.models.document import Base as DocumentBase
     from app.models.qr_code import Base as QRCodeBase
-    from app.models.audit import Base as AuditBase
+    from app.models.user import Base as UserBase
 
     # Drop all tables in reverse order
     AuditBase.metadata.drop_all(bind=test_engine)

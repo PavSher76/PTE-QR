@@ -4,6 +4,7 @@ Test cache service with mocked Redis
 
 import asyncio
 from typing import Any, Optional
+
 import structlog
 
 from app.core.test_config import test_settings
