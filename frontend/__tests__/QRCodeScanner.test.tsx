@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { QRCodeScanner } from '../components/QRCodeScanner'
 import { LanguageProvider } from '../lib/i18n'
@@ -17,7 +17,7 @@ Object.defineProperty(navigator, 'mediaDevices', {
 // Mock HTMLVideoElement
 const mockVideo = {
   srcObject: null,
-  play: jest.fn(),
+  play: jest.fn().mockResolvedValue(undefined),
   videoWidth: 640,
   videoHeight: 480,
 }
@@ -69,9 +69,11 @@ describe('QRCodeScanner', () => {
   it('shows error when camera access fails', async () => {
     mockGetUserMedia.mockRejectedValue(new Error('Camera access denied'))
 
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     await waitFor(() => {
       expect(
@@ -94,9 +96,11 @@ describe('QRCodeScanner', () => {
   it('calls onCancel when close button is clicked in error state', async () => {
     mockGetUserMedia.mockRejectedValue(new Error('Camera access denied'))
 
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     await waitFor(() => {
       expect(
@@ -111,19 +115,23 @@ describe('QRCodeScanner', () => {
   })
 
   it('simulates QR code scan after delay', async () => {
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     // Проверяем, что компонент рендерится без ошибок
     expect(screen.getByText('Сканировать')).toBeInTheDocument()
     expect(screen.getByText('Отмена')).toBeInTheDocument()
   })
 
-  it('renders with English language', () => {
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+  it('renders with English language', async () => {
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     // Change language to English
     const languageSelects = screen.getAllByRole('combobox')
@@ -137,10 +145,12 @@ describe('QRCodeScanner', () => {
     expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 
-  it('renders with Chinese language', () => {
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+  it('renders with Chinese language', async () => {
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     // Change language to Chinese
     const languageSelects = screen.getAllByRole('combobox')
@@ -152,22 +162,26 @@ describe('QRCodeScanner', () => {
     expect(screen.getByText('取消')).toBeInTheDocument()
   })
 
-  it('shows scanning animation when scanning', () => {
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+  it('shows scanning animation when scanning', async () => {
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     // Проверяем, что компонент рендерится без ошибок - используем китайский текст
     expect(screen.getByText('扫描')).toBeInTheDocument()
     expect(screen.getByText('取消')).toBeInTheDocument()
   })
 
-  it('disables scan button when not scanning', () => {
+  it('disables scan button when not scanning', async () => {
     mockGetUserMedia.mockRejectedValue(new Error('Camera access denied'))
 
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     // In error state, scan button should be disabled
     const scanButton = screen.queryByText('Сканировать')
@@ -176,10 +190,12 @@ describe('QRCodeScanner', () => {
     }
   })
 
-  it('renders QR code overlay', () => {
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+  it('renders QR code overlay', async () => {
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     // Check for QR code overlay elements - use more specific selector
     const overlays = screen.getAllByRole('generic')
@@ -191,20 +207,26 @@ describe('QRCodeScanner', () => {
 
   it('handles video element setup', async () => {
     // Упрощенный тест без сложных моков
-    renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+    await act(async () => {
+      renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+    })
 
     // Проверяем, что компонент рендерится без ошибок - используем более гибкий поиск
     const instructionText = screen.getByText(/将摄像头对准文档二维码/i)
     expect(instructionText).toBeInTheDocument()
   })
 
-  it('stops camera on unmount', () => {
+  it('stops camera on unmount', async () => {
     // Упрощенный тест без сложных моков
-    const { unmount } = renderWithLanguageProvider(
-      <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
-    )
+    let unmount: () => void
+    await act(async () => {
+      const result = renderWithLanguageProvider(
+        <QRCodeScanner onScan={mockOnScan} onCancel={mockOnCancel} />
+      )
+      unmount = result.unmount
+    })
 
     // Проверяем, что компонент рендерится без ошибок - используем китайский текст
     expect(screen.getByText('扫描')).toBeInTheDocument()

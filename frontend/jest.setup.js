@@ -75,3 +75,36 @@ global.IntersectionObserver = class IntersectionObserver {
   observe() {}
   unobserve() {}
 }
+
+// Mock HTMLMediaElement.play() method
+Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+  writable: true,
+  value: jest.fn().mockImplementation(() => {
+    return Promise.resolve()
+  }),
+})
+
+// Mock HTMLVideoElement specific properties
+Object.defineProperty(HTMLVideoElement.prototype, 'videoWidth', {
+  writable: true,
+  value: 640,
+})
+
+Object.defineProperty(HTMLVideoElement.prototype, 'videoHeight', {
+  writable: true,
+  value: 480,
+})
+
+// Mock MediaStream
+global.MediaStream = class MediaStream {
+  constructor() {
+    this.getTracks = jest.fn(() => [])
+  }
+}
+
+// Mock MediaStreamTrack
+global.MediaStreamTrack = class MediaStreamTrack {
+  constructor() {
+    this.stop = jest.fn()
+  }
+}
