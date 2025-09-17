@@ -7,12 +7,7 @@ from typing import Any, Dict
 
 import psutil
 import structlog
-from prometheus_client import (
-    Counter,
-    Gauge,
-    Histogram,
-    generate_latest,
-)
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 logger = structlog.get_logger()
 

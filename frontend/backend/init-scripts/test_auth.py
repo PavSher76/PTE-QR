@@ -3,9 +3,10 @@
 PTE-QR Authentication Test Script
 """
 
-import requests
 import json
 import sys
+
+import requests
 
 API_BASE_URL = "http://localhost:8000"
 TEST_USERS = [

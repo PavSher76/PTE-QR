@@ -7,10 +7,9 @@ import uuid
 from typing import Callable
 
 import structlog
+from app.core.metrics import metrics_collector
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-
-from app.core.metrics import metrics_collector
 
 logger = structlog.get_logger()
 

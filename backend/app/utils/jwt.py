@@ -5,9 +5,8 @@ JWT token utilities
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
-from jose import JWTError, jwt
-
 from app.core.config import settings
+from jose import JWTError, jwt
 
 
 def create_access_token(

@@ -5,13 +5,12 @@ Health check endpoints
 import time
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-
 from app.core.database import get_db
 from app.services.cache_service import cache_service
 from app.services.enovia_service import enovia_service
 from app.services.metrics_service import metrics_service
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 logger = structlog.get_logger()
 router = APIRouter()

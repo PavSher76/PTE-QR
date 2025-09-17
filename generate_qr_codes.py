@@ -4,13 +4,14 @@
 Сохраняет сгенерированные QR-коды в папку test_results
 """
 
-import requests
 import base64
-import os
 import json
+import os
 import time
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+
+import requests
 
 # Конфигурация API
 API_BASE_URL = "http://localhost:8000/api/v1"

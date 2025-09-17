@@ -5,12 +5,11 @@ API dependencies for authentication and authorization
 from typing import Optional
 
 import structlog
-from fastapi import Depends, HTTPException, Request
-from sqlalchemy.orm import Session
-
 from app.core.database import get_db
 from app.models.user import User
 from app.services.auth_service import auth_service
+from fastapi import Depends, HTTPException, Request
+from sqlalchemy.orm import Session
 
 logger = structlog.get_logger()
 

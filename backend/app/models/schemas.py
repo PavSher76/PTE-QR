@@ -5,11 +5,10 @@ Pydantic schemas for API requests and responses
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
-
 from app.models.document import DocumentStatusEnum, EnoviaStateEnum
 from app.models.qr_code import QRCodeFormatEnum, QRCodeStyleEnum
 from app.models.user import UserRoleEnum
+from pydantic import BaseModel, Field
 
 
 # Base schemas

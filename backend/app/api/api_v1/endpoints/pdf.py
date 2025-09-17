@@ -5,13 +5,12 @@ PDF processing endpoints
 import time
 
 import structlog
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from sqlalchemy.orm import Session
-
 from app.core.database import get_db
 from app.models.document import Document
 from app.services.metrics_service import metrics_service
 from app.services.pdf_service import pdf_service
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from sqlalchemy.orm import Session
 
 router = APIRouter()
 logger = structlog.get_logger()

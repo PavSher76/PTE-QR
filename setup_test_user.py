@@ -3,9 +3,10 @@
 Скрипт для создания тестового пользователя в системе PTE-QR
 """
 
-import requests
 import json
-from typing import Dict, Any
+from typing import Any, Dict
+
+import requests
 
 # Конфигурация API
 API_BASE_URL = "http://localhost:8000/api/v1"

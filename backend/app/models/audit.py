@@ -5,19 +5,11 @@ Audit log database models
 import enum
 import uuid
 
-from sqlalchemy import (
-    JSON,
-    Column,
-    DateTime,
-    ForeignKey,
-    String,
-    Text,
-)
+from app.core.database import Base
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-
-from app.core.database import Base
 
 
 class AuditActionEnum(str, enum.Enum):

@@ -4,9 +4,9 @@
 Выполняет настройку пользователя и генерацию QR-кодов в одном скрипте
 """
 
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 
