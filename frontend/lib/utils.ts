@@ -53,6 +53,10 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
+  if (typeof func !== 'function') {
+    throw new Error('First argument must be a function')
+  }
+  
   let timeout: NodeJS.Timeout | null = null
 
   return (...args: Parameters<T>) => {
@@ -61,7 +65,11 @@ export function debounce<T extends (...args: any[]) => any>(
     }
 
     timeout = setTimeout(() => {
-      func(...args)
+      try {
+        func(...args)
+      } catch (error) {
+        console.error('Error in debounced function:', error)
+      }
     }, wait)
   }
 }
@@ -70,15 +78,23 @@ export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
+  if (typeof func !== 'function') {
+    throw new Error('First argument must be a function')
+  }
+  
   let inThrottle: boolean = false
 
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
-      func(...args)
+      try {
+        func(...args)
+      } catch (error) {
+        console.error('Error in throttled function:', error)
+      }
       inThrottle = true
       setTimeout(() => {
         inThrottle = false
-      }, limit)
+      }, Math.max(0, limit))
     }
   }
 }
@@ -122,6 +138,11 @@ export function isEmpty(value: any): boolean {
     return value.length === 0
   }
 
+  // Handle Date objects
+  if (value instanceof Date) {
+    return false
+  }
+
   if (typeof value === 'object') {
     return Object.keys(value).length === 0
   }
@@ -130,15 +151,24 @@ export function isEmpty(value: any): boolean {
 }
 
 export function capitalize(str: string): string {
+  if (!str || typeof str !== 'string') {
+    return ''
+  }
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
 }
 
 export function camelCase(str: string): string {
-  return str.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+  if (!str || typeof str !== 'string') {
+    return ''
+  }
+  return str.replace(/[-_]([a-z])/g, (g) => g[1].toUpperCase())
 }
 
 export function kebabCase(str: string): string {
-  return str.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
+  if (!str || typeof str !== 'string') {
+    return ''
+  }
+  return str.replace(/([a-z])([A-Z])/g, '$1-$2').replace(/_/g, '-').toLowerCase()
 }
 
 export function truncate(
@@ -146,6 +176,10 @@ export function truncate(
   length: number,
   suffix: string = '...'
 ): string {
+  if (!str || typeof str !== 'string') {
+    return ''
+  }
+  
   if (str.length <= length) {
     return str
   }
@@ -153,18 +187,30 @@ export function truncate(
 }
 
 export function escapeHtml(str: string): string {
+  if (!str || typeof str !== 'string') {
+    return ''
+  }
+  
   const div = document.createElement('div')
   div.textContent = str
   return div.innerHTML
 }
 
 export function unescapeHtml(str: string): string {
+  if (!str || typeof str !== 'string') {
+    return ''
+  }
+  
   const div = document.createElement('div')
   div.innerHTML = str
   return div.textContent || div.innerText || ''
 }
 
 export function parseQueryString(query: string): Record<string, string> {
+  if (!query || typeof query !== 'string') {
+    return {}
+  }
+  
   const params: Record<string, string> = {}
   const pairs = query.split('&')
 
@@ -179,13 +225,21 @@ export function parseQueryString(query: string): Record<string, string> {
 }
 
 export function buildQueryString(params: Record<string, any>): string {
+  if (!params || typeof params !== 'object') {
+    return ''
+  }
+  
   const pairs: string[] = []
 
   for (const [key, value] of Object.entries(params)) {
     if (value !== null && value !== undefined) {
-      pairs.push(
-        `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
-      )
+      if (Array.isArray(value)) {
+        pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(value.join(','))}`)
+      } else {
+        pairs.push(
+          `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
+        )
+      }
     }
   }
 
@@ -193,10 +247,25 @@ export function buildQueryString(params: Record<string, any>): string {
 }
 
 export function getFileExtension(filename: string): string {
+  if (!filename || typeof filename !== 'string') {
+    return ''
+  }
   return filename.split('.').pop()?.toLowerCase() || ''
 }
 
 export function formatFileSize(bytes: number): string {
+  if (bytes === null || bytes === undefined || isNaN(bytes)) {
+    return '0 B'
+  }
+  
+  if (bytes === Infinity) {
+    return 'Infinity B'
+  }
+  
+  if (bytes < 0) {
+    return formatFileSize(Math.abs(bytes)).replace(/^/, '-')
+  }
+  
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let size = bytes
   let unitIndex = 0
@@ -232,11 +301,11 @@ export function downloadFile(
 
 export function copyToClipboard(text: string): Promise<void> {
   if (navigator.clipboard && window.isSecureContext) {
-    return navigator.clipboard.writeText(text)
+    return navigator.clipboard.writeText(text || '')
   } else {
     // Fallback for older browsers
     const textArea = document.createElement('textarea')
-    textArea.value = text
+    textArea.value = text || ''
     textArea.style.position = 'fixed'
     textArea.style.left = '-999999px'
     textArea.style.top = '-999999px'
@@ -281,18 +350,33 @@ export function retry<T>(
   maxAttempts: number = 3,
   delay: number = 1000
 ): Promise<T> {
+  if (typeof fn !== 'function') {
+    return Promise.reject(new Error('First argument must be a function'))
+  }
+  
+  if (maxAttempts <= 0) {
+    return Promise.reject(new Error('maxAttempts must be greater than 0'))
+  }
+  
   return new Promise((resolve, reject) => {
     let attempts = 0
 
     const attempt = () => {
       attempts++
-      fn()
+      const result = fn()
+      
+      if (!result || typeof result.then !== 'function') {
+        reject(new Error('Function must return a Promise'))
+        return
+      }
+      
+      result
         .then(resolve)
         .catch((error) => {
           if (attempts >= maxAttempts) {
             reject(error)
           } else {
-            setTimeout(attempt, delay)
+            setTimeout(attempt, Math.max(0, delay))
           }
         })
     }
@@ -305,6 +389,10 @@ export function groupBy<T, K extends string | number>(
   array: T[],
   keyFn: (item: T) => K
 ): Record<K, T[]> {
+  if (!array || !Array.isArray(array)) {
+    return {} as Record<K, T[]>
+  }
+  
   return array.reduce(
     (groups, item) => {
       const key = keyFn(item)
@@ -323,12 +411,32 @@ export function sortBy<T>(
   keyFn: (item: T) => string | number,
   direction: 'asc' | 'desc' = 'asc'
 ): T[] {
+  if (!array || !Array.isArray(array)) {
+    return []
+  }
+  
+  // Normalize direction to valid values
+  const normalizedDirection = direction === 'desc' ? 'desc' : 'asc'
+  
   return [...array].sort((a, b) => {
     const aVal = keyFn(a)
     const bVal = keyFn(b)
 
-    if (aVal < bVal) return direction === 'asc' ? -1 : 1
-    if (aVal > bVal) return direction === 'asc' ? 1 : -1
+    // Handle null/undefined values
+    if (aVal == null && bVal == null) return 0
+    if (aVal == null) return normalizedDirection === 'asc' ? -1 : 1
+    if (bVal == null) return normalizedDirection === 'asc' ? 1 : -1
+
+    // Handle mixed types
+    if (typeof aVal !== typeof bVal) {
+      const aType = typeof aVal
+      const bType = typeof bVal
+      if (aType < bType) return normalizedDirection === 'asc' ? -1 : 1
+      if (aType > bType) return normalizedDirection === 'asc' ? 1 : -1
+    }
+
+    if (aVal < bVal) return normalizedDirection === 'asc' ? -1 : 1
+    if (aVal > bVal) return normalizedDirection === 'asc' ? 1 : -1
     return 0
   })
 }
@@ -338,6 +446,10 @@ export function unique<T>(array: T[]): T[] {
 }
 
 export function chunk<T>(array: T[], size: number): T[][] {
+  if (!array || !Array.isArray(array) || size <= 0) {
+    return []
+  }
+  
   const chunks: T[][] = []
   for (let i = 0; i < array.length; i += size) {
     chunks.push(array.slice(i, i + size))
@@ -347,6 +459,15 @@ export function chunk<T>(array: T[], size: number): T[][] {
 
 // Validation functions
 export function isValidEmail(email: string): boolean {
+  if (!email || typeof email !== 'string') {
+    return false
+  }
+  
+  // Check length limit (RFC 5321)
+  if (email.length > 254) {
+    return false
+  }
+  
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
@@ -366,6 +487,10 @@ export function truncateText(
   maxLength: number,
   suffix: string = '...'
 ): string {
+  if (!text || typeof text !== 'string') {
+    return ''
+  }
+  
   if (text.length <= maxLength) {
     return text
   }
@@ -373,6 +498,6 @@ export function truncateText(
 }
 
 export function capitalizeFirst(text: string): string {
-  if (!text) return text
+  if (!text || typeof text !== 'string') return ''
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
