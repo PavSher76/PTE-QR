@@ -51,18 +51,33 @@ const UserContext = createContext<{
 // Theme provider
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('pte-qr-theme') as 'light' | 'dark'
-    if (savedTheme) {
-      setTheme(savedTheme)
+    setMounted(true)
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('pte-qr-theme') as 'light' | 'dark'
+      if (savedTheme) {
+        setTheme(savedTheme)
+      }
     }
   }, [])
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
-    localStorage.setItem('pte-qr-theme', newTheme)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pte-qr-theme', newTheme)
+    }
+  }
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return (
+      <ThemeContext.Provider value={{ theme: 'light', toggleTheme }}>
+        {children}
+      </ThemeContext.Provider>
+    )
   }
 
   return (

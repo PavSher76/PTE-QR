@@ -8,9 +8,11 @@ export function ThemeWrapper({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Apply theme class to document element
-    const root = document.documentElement
-    root.classList.remove('light', 'dark')
-    root.classList.add(theme)
+    if (typeof window !== 'undefined') {
+      const root = document.documentElement
+      root.classList.remove('light', 'dark')
+      root.classList.add(theme)
+    }
   }, [theme])
 
   return <>{children}</>

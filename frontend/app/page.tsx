@@ -55,12 +55,12 @@ export default function HomePage() {
               <Logo size="large" variant="full" />
             </div>
             <div className="mb-4 flex items-center justify-center gap-4">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                {t('app.title')}
-              </h1>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 via-accent-600 to-primary-600 bg-clip-text text-transparent dark:from-primary-400 dark:via-accent-400 dark:to-primary-400 animate-pulse-slow">
+              {t('app.title')}
+            </h1>
               <LanguageSwitcher />
             </div>
-            <p className="mb-8 text-xl text-gray-600 dark:text-gray-300">
+            <p className="mb-8 text-xl text-secondary-600 dark:text-secondary-300 animate-fade-in">
               {t('app.description')}
             </p>
           </div>
@@ -68,7 +68,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* QR Scanner Section */}
             <div className="card p-6">
-              <h2 className="mb-4 text-2xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="mb-4 text-2xl font-semibold text-primary-700 dark:text-primary-300 animate-slide-up">
                 {t('scan.title')}
               </h2>
 
@@ -138,7 +138,7 @@ export default function HomePage() {
 
             {/* Document Status Section */}
             <div className="card p-6">
-              <h2 className="mb-4 text-2xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="mb-4 text-2xl font-semibold text-primary-700 dark:text-primary-300 animate-slide-up">
                 {t('document.status')}
               </h2>
 
@@ -198,23 +198,23 @@ export default function HomePage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
               </div>
               <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
                 {language === 'ru'
-                  ? 'Мобильная версия'
+                  ? 'Веб-интерфейс'
                   : language === 'en'
-                  ? 'Mobile Version'
-                  : '移动版本'}
+                  ? 'Web Interface'
+                  : '网络界面'}
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
                 {language === 'ru'
-                  ? 'Оптимизировано для использования на мобильных устройствах'
+                  ? 'Современный веб-интерфейс для работы с документами'
                   : language === 'en'
-                  ? 'Optimized for use on mobile devices'
-                  : '针对移动设备使用进行了优化'}
+                  ? 'Modern web interface for document management'
+                  : '用于文档管理的现代网络界面'}
               </p>
             </div>
 

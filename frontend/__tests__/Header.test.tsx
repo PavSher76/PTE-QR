@@ -146,7 +146,7 @@ describe('Header', () => {
     renderWithProviders(<Header />)
 
     const header = screen.getByRole('banner')
-    expect(header).toHaveClass('dark:bg-gray-800')
+    expect(header).toHaveClass('dark:bg-nk-900/80')
   })
 
   it('applies correct CSS classes for light theme', () => {
@@ -156,7 +156,7 @@ describe('Header', () => {
     renderWithProviders(<Header />)
 
     const header = screen.getByRole('banner')
-    expect(header).toHaveClass('bg-white')
+    expect(header).toHaveClass('bg-white/80')
   })
 
   it('renders with different language texts', () => {

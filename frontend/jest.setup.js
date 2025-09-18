@@ -170,3 +170,33 @@ global.Response = class Response {
     return Promise.resolve(this.body)
   }
 }
+
+// Mock AudioContext
+global.AudioContext = class AudioContext {
+  constructor() {
+    this.currentTime = 0
+    this.destination = {}
+  }
+  
+  createOscillator() {
+    return {
+      connect: jest.fn(),
+      disconnect: jest.fn(),
+      start: jest.fn(),
+      stop: jest.fn(),
+      frequency: { value: 440 },
+      type: 'sine'
+    }
+  }
+  
+  createGain() {
+    return {
+      connect: jest.fn(),
+      disconnect: jest.fn(),
+      gain: { value: 1 }
+    }
+  }
+}
+
+// Mock webkitAudioContext
+global.webkitAudioContext = global.AudioContext

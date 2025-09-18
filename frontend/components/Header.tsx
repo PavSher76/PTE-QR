@@ -21,13 +21,13 @@ export function Header() {
   }, [showLoginForm])
 
   return (
-    <header className="border-b border-gray-200 bg-white shadow-sm transition-colors duration-200 dark:border-gray-700 dark:bg-gray-800">
+    <header className="border-b border-white/20 bg-white/80 backdrop-blur-md shadow-lg transition-all duration-300 dark:border-white/10 dark:bg-nk-900/80">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center space-x-3">
               <Logo size="medium" variant="compact" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">
+              <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent dark:from-primary-400 dark:to-accent-400">
                 {t('app.title')}
               </span>
             </Link>
@@ -36,7 +36,7 @@ export function Header() {
           <nav className="hidden items-center space-x-6 md:flex">
             <Link
               href="/about"
-              className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              className="text-secondary-600 transition-all duration-200 hover:text-primary-600 hover:scale-105 dark:text-secondary-300 dark:hover:text-primary-400"
             >
               {t('settings.about')}
             </Link>
@@ -104,7 +104,7 @@ export function Header() {
                 </span>
                 <button
                   onClick={logout}
-                  className="text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  className="text-secondary-600 transition-all duration-200 hover:text-primary-600 hover:scale-105 dark:text-secondary-300 dark:hover:text-primary-400"
                 >
                   {t('auth.logout')}
                 </button>

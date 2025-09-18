@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from '@/lib/i18n'
 import jsQR from 'jsqr'
-import { playSuccessSound, playErrorSound, playScanningSound } from '@/lib/sound'
 
 interface QRCodeScannerProps {
   onScan: (data: string) => void
@@ -60,7 +59,6 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
       if (code) {
         // Success! QR code detected
         setScanSuccess(true)
-        playSuccessSound()
         
         // Show success animation briefly before calling onScan
         setTimeout(() => {
@@ -69,11 +67,6 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
       } else {
         // Increment scan attempts for visual feedback
         setScanAttempts(prev => prev + 1)
-        
-        // Play subtle scanning sound every 10 attempts
-        if (scanAttempts % 10 === 0) {
-          playScanningSound()
-        }
         
         // If no QR code found, try again after a short delay
         setTimeout(() => {
@@ -117,7 +110,6 @@ export function QRCodeScanner({ onScan, onCancel }: QRCodeScannerProps) {
       }
     } catch (err) {
       setError(t('error.cameraAccess'))
-      playErrorSound()
       console.error('Camera error:', err)
     }
   }, [t, captureFrame])

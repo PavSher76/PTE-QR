@@ -130,10 +130,10 @@ describe('HomePage', () => {
       )
     ).toBeInTheDocument()
 
-    expect(screen.getByText('Мобильная версия')).toBeInTheDocument()
+    expect(screen.getByText('Веб-интерфейс')).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Оптимизировано для использования на мобильных устройствах'
+        'Современный веб-интерфейс для работы с документами'
       )
     ).toBeInTheDocument()
 
@@ -170,7 +170,7 @@ describe('HomePage', () => {
     expect(screen.getByText('QR Code Scanning')).toBeInTheDocument()
     expect(screen.getByText('Document Status')).toBeInTheDocument()
     expect(screen.getByText('Status Verification')).toBeInTheDocument()
-    expect(screen.getByText('Mobile Version')).toBeInTheDocument()
+    expect(screen.getByText('Web Interface')).toBeInTheDocument()
     expect(screen.getByText('Security')).toBeInTheDocument()
   })
 
@@ -189,7 +189,7 @@ describe('HomePage', () => {
     expect(screen.getByText('二维码扫描')).toBeInTheDocument()
     expect(screen.getByText('文档状态')).toBeInTheDocument()
     expect(screen.getByText('状态验证')).toBeInTheDocument()
-    expect(screen.getByText('移动版本')).toBeInTheDocument()
+    expect(screen.getByText('网络界面')).toBeInTheDocument()
     expect(screen.getByText('安全性')).toBeInTheDocument()
   })
 
@@ -214,7 +214,7 @@ describe('HomePage', () => {
       level: 1,
       name: 'PTE QR Система',
     })
-    expect(mainTitle).toHaveClass('dark:text-white')
+    expect(mainTitle).toHaveClass('bg-gradient-to-r', 'from-primary-600', 'via-accent-600', 'to-primary-600', 'bg-clip-text', 'text-transparent')
   })
 
   it('renders logo and language switcher', () => {

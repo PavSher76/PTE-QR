@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 // Viewport configuration
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: 1200,
   initialScale: 1,
 }
 
@@ -58,7 +58,7 @@ export default function RootLayout({
         <LanguageProvider>
           <AppProvider>
             <ThemeWrapper>
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+              <div className="min-h-screen bg-gradient-to-br from-ai-50 via-primary-50 to-accent-50 dark:from-nk-900 dark:via-secondary-900 dark:to-nk-800">
                 {children}
                 <NotificationContainer />
               </div>

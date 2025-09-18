@@ -38,7 +38,7 @@ export default function TestScannerPage() {
           <ul className="space-y-2 text-gray-700">
             <li className="flex items-center">
               <span className="text-green-500 mr-2">✓</span>
-              Звуковой сигнал при успешном сканировании
+              Визуальная обратная связь при успешном сканировании
             </li>
             <li className="flex items-center">
               <span className="text-green-500 mr-2">✓</span>
@@ -54,11 +54,11 @@ export default function TestScannerPage() {
             </li>
             <li className="flex items-center">
               <span className="text-green-500 mr-2">✓</span>
-              Звуковой сигнал при ошибке доступа к камере
+              Визуальная обратная связь при ошибке доступа к камере
             </li>
             <li className="flex items-center">
               <span className="text-green-500 mr-2">✓</span>
-              Тонкие звуковые сигналы во время сканирования
+              Счетчик попыток сканирования для обратной связи
             </li>
           </ul>
         </div>
