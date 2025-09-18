@@ -8,10 +8,11 @@ from contextlib import asynccontextmanager
 
 import structlog
 import uvicorn
-from app.api.api_v1.api import api_router
-from app.core.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.api_v1.api import api_router
+from app.core.config import settings
 
 # Configure structured logging
 structlog.configure(

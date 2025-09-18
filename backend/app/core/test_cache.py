@@ -5,6 +5,7 @@ Test cache service with mocked Redis
 from typing import Any, Optional
 
 import structlog
+
 from app.core.test_config import test_settings
 
 logger = structlog.get_logger()

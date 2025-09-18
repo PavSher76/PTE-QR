@@ -9,8 +9,9 @@ from typing import Any, Dict, List
 import qrcode
 import segno
 import structlog
-from app.utils.hmac_signer import HMACSigner
 from PIL import Image, ImageDraw, ImageFont
+
+from app.utils.hmac_signer import HMACSigner
 
 logger = structlog.get_logger()
 

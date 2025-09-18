@@ -5,11 +5,12 @@ QR Code generation endpoints
 import time
 
 import structlog
+from fastapi import APIRouter, Depends, HTTPException, Request
+
 from app.api.dependencies import get_current_user
 from app.models.user import User
 from app.services.metrics_service import metrics_service
 from app.services.qr_service import qr_service
-from fastapi import APIRouter, Depends, HTTPException, Request
 
 router = APIRouter()
 logger = structlog.get_logger()

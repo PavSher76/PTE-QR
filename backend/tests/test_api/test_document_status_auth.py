@@ -5,8 +5,9 @@ Tests for document status endpoint with authentication and GDPR compliance
 from datetime import datetime, timedelta
 
 import jwt
-from app.core.test_config import test_settings
 from fastapi.testclient import TestClient
+
+from app.core.test_config import test_settings
 
 
 class TestDocumentStatusAuth:

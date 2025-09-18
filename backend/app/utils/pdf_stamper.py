@@ -6,12 +6,13 @@ import io
 from typing import List, Tuple
 
 import structlog
-from app.core.config import settings
-from app.utils.qr_generator import QRCodeGenerator
 from PIL import Image
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib.colors import white
 from reportlab.pdfgen import canvas
+
+from app.core.config import settings
+from app.utils.qr_generator import QRCodeGenerator
 
 logger = structlog.get_logger()
 

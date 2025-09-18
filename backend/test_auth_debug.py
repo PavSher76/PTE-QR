@@ -8,6 +8,8 @@ import uuid
 
 sys.path.append(".")
 
+from fastapi.testclient import TestClient
+
 from app.api.dependencies import get_current_user, get_current_user_optional
 from app.core.test_database import (
     TestSessionLocal,
@@ -17,7 +19,6 @@ from app.core.test_database import (
 from app.main import app
 from app.models.document import Document
 from app.models.user import User
-from fastapi.testclient import TestClient
 
 
 def test_auth_debug():

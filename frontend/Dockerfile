@@ -1,5 +1,5 @@
 # Multi-stage build for production
-FROM node:18-alpine AS builder
+FROM node:18-alpine as builder
 
 WORKDIR /app
 
@@ -21,10 +21,13 @@ RUN npm install --no-audit --no-fund --prefer-offline || \
 COPY . .
 
 # Build the application
+# Disable SWC for ARM64 compatibility
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_SWC_DISABLED=1
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:18-alpine as production
 
 WORKDIR /app
 
@@ -37,8 +40,7 @@ RUN npm config set fetch-retry-mintimeout 20000 && \
 COPY package*.json ./
 
 # Install only production dependencies
-RUN npm install --only=production --no-audit --no-fund --prefer-offline && \
-    npm cache clean --force
+RUN npm ci --only=production --no-audit --no-fund
 
 # Copy built application from builder stage
 COPY --from=builder /app/.next ./.next

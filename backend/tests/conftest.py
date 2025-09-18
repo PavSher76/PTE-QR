@@ -4,8 +4,10 @@ Pytest configuration and fixtures
 
 from typing import Generator
 
-import app.services.auth_service
 import pytest
+from fastapi.testclient import TestClient
+
+import app.services.auth_service
 from app.api.dependencies import get_current_user, get_current_user_optional
 from app.core.database import get_db
 from app.core.test_cache import test_cache_service
@@ -19,7 +21,6 @@ from app.main import app as fastapi_app
 from app.models.document import Document
 from app.models.user import User
 from app.services.auth_service import AuthService
-from fastapi.testclient import TestClient
 
 # Create test auth service with test settings
 test_auth_service = AuthService()

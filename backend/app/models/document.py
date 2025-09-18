@@ -5,12 +5,13 @@ Document-related database models
 import enum
 import uuid
 
-from app.core.database import Base
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.types import CHAR, TypeDecorator
+
+from app.core.database import Base
 
 
 class GUID(TypeDecorator):

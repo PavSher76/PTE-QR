@@ -7,11 +7,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pypdf
 import structlog
-from app.core.config import settings
-from app.services.qr_service import qr_service
 from PIL import Image
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
+
+from app.core.config import settings
+from app.services.qr_service import qr_service
 
 logger = structlog.get_logger()
 
