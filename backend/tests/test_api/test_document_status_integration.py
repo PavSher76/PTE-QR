@@ -143,7 +143,7 @@ class TestDocumentStatusIntegration:
         )
 
     def test_workflow_with_nonexistent_document(self, client: TestClient, test_user):
-        """Test workflow with non-existent document returns 404 regardless of authentication."""
+        """Test workflow with non-existent document."""
         # Test without authentication
         response_no_auth = client.get(
             "/api/v1/documents/NONEXISTENT/revisions/A/status?page=1"

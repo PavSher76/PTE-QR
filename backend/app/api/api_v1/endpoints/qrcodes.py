@@ -16,6 +16,59 @@ router = APIRouter()
 logger = structlog.get_logger()
 
 
+def _validate_qr_request(request: dict) -> tuple[str, str, list, str, int, str]:
+    """Validate QR code generation request"""
+    doc_uid = request.get("doc_uid")
+    revision = request.get("revision")
+    pages = request.get("pages", [])
+    style = request.get("style", "BLACK")
+    dpi = request.get("dpi", 300)
+    mode = request.get("mode", "qr-only")
+
+    if not doc_uid:
+        raise HTTPException(status_code=422, detail="doc_uid is required")
+    if not revision:
+        raise HTTPException(status_code=422, detail="revision is required")
+    if not pages:
+        raise HTTPException(status_code=422, detail="pages is required")
+    if not isinstance(pages, list):
+        raise HTTPException(status_code=422, detail="pages must be a list")
+    if any(page <= 0 for page in pages):
+        raise HTTPException(
+            status_code=422, detail="Page numbers must be greater than 0"
+        )
+    if len(pages) > 1000:
+        raise HTTPException(status_code=422, detail="Too many pages (max 1000)")
+
+    return doc_uid, revision, pages, style, dpi, mode
+
+
+def _prepare_qr_response_items(qr_results: list) -> list:
+    """Prepare QR code response items"""
+    items = []
+    for qr_result in qr_results:
+        # Add PNG format
+        items.append(
+            {
+                "page": qr_result["page"],
+                "format": "PNG",
+                "data_base64": qr_result["data"]["png"],
+                "url": qr_result["url"],
+            }
+        )
+
+        # Add SVG format
+        items.append(
+            {
+                "page": qr_result["page"],
+                "format": "SVG",
+                "data_base64": qr_result["data"]["svg"],
+                "url": qr_result["url"],
+            }
+        )
+    return items
+
+
 @router.post("/")
 async def generate_qr_codes(
     request: dict, http_request: Request, current_user: User = Depends(get_current_user)
@@ -27,27 +80,7 @@ async def generate_qr_codes(
 
     try:
         # Validate request
-        doc_uid = request.get("doc_uid")
-        revision = request.get("revision")
-        pages = request.get("pages", [])
-        style = request.get("style", "BLACK")
-        dpi = request.get("dpi", 300)
-        mode = request.get("mode", "qr-only")
-
-        if not doc_uid:
-            raise HTTPException(status_code=422, detail="doc_uid is required")
-        if not revision:
-            raise HTTPException(status_code=422, detail="revision is required")
-        if not pages:
-            raise HTTPException(status_code=422, detail="pages is required")
-        if not isinstance(pages, list):
-            raise HTTPException(status_code=422, detail="pages must be a list")
-        if any(page <= 0 for page in pages):
-            raise HTTPException(
-                status_code=422, detail="Page numbers must be greater than 0"
-            )
-        if len(pages) > 1000:
-            raise HTTPException(status_code=422, detail="Too many pages (max 1000)")
+        doc_uid, revision, pages, style, dpi, mode = _validate_qr_request(request)
 
         # Generate QR codes
         qr_results = qr_service.generate_qr_codes(
@@ -55,27 +88,7 @@ async def generate_qr_codes(
         )
 
         # Prepare response items
-        items = []
-        for qr_result in qr_results:
-            # Add PNG format
-            items.append(
-                {
-                    "page": qr_result["page"],
-                    "format": "PNG",
-                    "data_base64": qr_result["data"]["png"],
-                    "url": qr_result["url"],
-                }
-            )
-
-            # Add SVG format
-            items.append(
-                {
-                    "page": qr_result["page"],
-                    "format": "SVG",
-                    "data_base64": qr_result["data"]["svg"],
-                    "url": qr_result["url"],
-                }
-            )
+        items = _prepare_qr_response_items(qr_results)
 
         # Record metrics
         for page in pages:

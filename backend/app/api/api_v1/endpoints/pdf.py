@@ -17,6 +17,33 @@ router = APIRouter()
 logger = structlog.get_logger()
 
 
+def _validate_pdf_file(file: UploadFile) -> None:
+    """Validate PDF file"""
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="File must be a PDF")
+
+
+def _parse_pages_parameter(pages: str, pdf_data: bytes) -> list[int]:
+    """Parse pages parameter and return page list"""
+    if pages:
+        try:
+            return [int(p.strip()) for p in pages.split(",")]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid pages format")
+    else:
+        # Get all pages from PDF
+        pdf_info = pdf_service.extract_pdf_info(pdf_data)
+        return list(range(1, pdf_info["pages"] + 1))
+
+
+def _validate_document_exists(doc_uid: str, db: Session) -> None:
+    """Validate document exists in database"""
+    if doc_uid:
+        document = db.query(Document).filter(Document.doc_uid == doc_uid).first()
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+
 @router.post("/stamp")
 async def stamp_pdf_with_qr(
     file: UploadFile = File(...),
@@ -33,8 +60,7 @@ async def stamp_pdf_with_qr(
 
     try:
         # Validate file
-        if not file.filename.endswith(".pdf"):
-            raise HTTPException(status_code=400, detail="File must be a PDF")
+        _validate_pdf_file(file)
 
         # Read file content
         pdf_data = await file.read()
@@ -45,31 +71,22 @@ async def stamp_pdf_with_qr(
             raise HTTPException(status_code=400, detail=error_msg)
 
         # Parse pages parameter
-        if pages:
-            try:
-                page_list = [int(p.strip()) for p in pages.split(",")]
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid pages format")
-        else:
-            # Get all pages from PDF
-            pdf_info = pdf_service.extract_pdf_info(pdf_data)
-            page_list = list(range(1, pdf_info["pages"] + 1))
+        page_list = _parse_pages_parameter(pages, pdf_data)
 
         # Validate document exists if doc_uid provided
-        if doc_uid:
-            document = db.query(Document).filter(Document.doc_uid == doc_uid).first()
-            if not document:
-                raise HTTPException(status_code=404, detail="Document not found")
-        else:
-            # Use default values
+        _validate_document_exists(doc_uid, db)
+
+        # Use default values if not provided
+        if not doc_uid:
             doc_uid = "UNKNOWN"
+        if not revision:
             revision = "A"
 
         # Stamp PDF with QR codes
         stamped_pdf = pdf_service.stamp_pdf_with_qr(
             pdf_data=pdf_data,
             doc_uid=doc_uid,
-            revision=revision or "A",
+            revision=revision,
             pages=page_list,
         )
 
@@ -93,7 +110,7 @@ async def stamp_pdf_with_qr(
         return {
             "filename": file.filename,
             "doc_uid": doc_uid,
-            "revision": revision or "A",
+            "revision": revision,
             "pages": page_list,
             "pdf_data_base64": pdf_base64,
             "size_bytes": len(stamped_pdf),

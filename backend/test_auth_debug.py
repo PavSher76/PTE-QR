@@ -6,8 +6,6 @@ Debug script to test authentication in tests
 import sys
 import uuid
 
-sys.path.append(".")
-
 from fastapi.testclient import TestClient
 
 from app.api.dependencies import get_current_user, get_current_user_optional
@@ -21,8 +19,11 @@ from app.models.document import Document
 from app.models.user import User
 
 
+
+
 def test_auth_debug():
     """Debug authentication in tests"""
+    sys.path.append(".")
 
     # Setup test database
     create_test_tables()

@@ -14,7 +14,7 @@ class TestDocumentStatusAuth:
     """Test document status endpoint with authentication and GDPR compliance"""
 
     def test_document_status_without_auth_limited_info(self, client: TestClient):
-        """Test document status without authentication returns limited information (GDPR compliance)."""
+        """Test document status without authentication returns limited info."""
         response = client.get(
             "/api/v1/documents/TEST-DOC-001/revisions/A/status?page=1"
         )

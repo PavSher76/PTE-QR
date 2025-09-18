@@ -127,17 +127,14 @@ def authenticated_client(db_session, test_user) -> Generator:
 
 @pytest.fixture
 def unauthenticated_client(db_session) -> Generator:
-    """Create an unauthenticated test client that will return 401/403 for protected endpoints."""
+    """Create an unauthenticated test client."""
     from fastapi import HTTPException
 
     def mock_get_current_user():
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     def mock_get_current_user_optional():
-        print(
-            "🔍 unauthenticated_client: mock_get_current_user_optional called - "
-            "returning None"
-        )
+        print("🔍 unauthenticated_client: mock_get_current_user_optional called")
         return None
 
     # Store original overrides
@@ -169,7 +166,9 @@ def setup_test_data(db_session):
         test_user = User(
             username="testuser",
             email="test@example.com",
-            hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # secret
+            hashed_password=(
+                "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+            ),  # secret
             is_active=True,
             is_superuser=False,
         )
