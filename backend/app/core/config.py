@@ -16,7 +16,7 @@ class Settings:
     SECRET_KEY: str = "your-secret-key-change-in-production"
     JWT_SECRET_KEY: str = "your-jwt-secret-key-change-in-production"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours
 
     # HMAC for QR signature
     QR_HMAC_SECRET: str = "your-qr-hmac-secret-change-in-production"
@@ -37,7 +37,11 @@ class Settings:
     ENOVIA_CLIENT_SECRET: str = ""
 
     # Logging
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = "DEBUG"
+    LOG_FORMAT: str = "json"  # json or text
+    LOG_FILE: str = "logs/app.log"  # Relative path for local development
+    LOG_MAX_SIZE: int = 10 * 1024 * 1024  # 10MB
+    LOG_BACKUP_COUNT: int = 5
 
     # QR Code settings
     QR_CODE_SIZE: int = 200

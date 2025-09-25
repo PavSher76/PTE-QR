@@ -47,6 +47,7 @@ class PDFStamper:
             Stamped PDF as bytes
         """
         try:
+            logger.debug("Stamping PDF with QR codes", pdf_path=pdf_path, doc_uid=doc_uid, revision=revision, pages=pages, position=position, margin_mm=margin_mm)
             # Read input PDF
             with open(pdf_path, "rb") as file:
                 pdf_reader = PdfReader(file)
@@ -114,6 +115,7 @@ class PDFStamper:
         Returns:
             PDF writer with stamp
         """
+        logger.debug("Creating QR stamp", qr_image=qr_image, position=position, margin_mm=margin_mm, page_width=page_width, page_height=page_height)
         # Convert QR image to bytes
         qr_buffer = io.BytesIO()
         qr_image.save(qr_buffer, format="PNG")
@@ -185,6 +187,7 @@ class PDFStamper:
         Returns:
             List of (x, y) positions in points
         """
+        logger.debug("Getting QR stamp positions", page_width=page_width, page_height=page_height, position=position, margin_mm=margin_mm)
         qr_size_mm = settings.QR_SIZE_MM
         qr_size_points = qr_size_mm * 72 / 25.4
         margin_points = margin_mm * 72 / 25.4

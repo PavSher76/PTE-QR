@@ -5,7 +5,7 @@ Pydantic schemas for API requests and responses
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, RootModel
 
 from app.models.document import DocumentStatusEnum, EnoviaStateEnum
 from app.models.qr_code import QRCodeFormatEnum, QRCodeStyleEnum
@@ -85,8 +85,8 @@ class StatusMappingItem(BaseSchema):
     action_label: str = Field(..., description="Action button label")
 
 
-class StatusMapping(BaseSchema):
-    __root__: Dict[str, StatusMappingItem]
+class StatusMapping(RootModel[Dict[str, StatusMappingItem]]):
+    root: Dict[str, StatusMappingItem]
 
 
 # User schemas

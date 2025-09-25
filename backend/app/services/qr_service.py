@@ -1,209 +1,321 @@
 """
-QR Code generation service
+Service for QR code generation
 """
 
-import base64
-import io
-from typing import Any, Dict, List
-
 import qrcode
-import segno
+import hmac
+import hashlib
+import json
+from typing import Dict, Any
+from io import BytesIO
+from PIL import Image
 import structlog
-from PIL import Image, ImageDraw, ImageFont
 
-from app.utils.hmac_signer import HMACSigner
+from app.core.config import settings
+from app.core.logging import DebugLogger, log_function_call, log_function_result
 
 logger = structlog.get_logger()
+debug_logger = DebugLogger(__name__)
 
-
-class QRCodeGenerator:
-    """QR Code generator service"""
+class QRService:
+    """Service for QR code generation and validation"""
 
     def __init__(self):
-        self.hmac_signer = HMACSigner()
-        self.base_url = "https://pte-qr.pti.ru"
-
-    def _generate_qr_url(self, doc_uid: str, revision: str, page: int) -> str:
-        """Generate QR code URL with HMAC signature"""
-        return self.hmac_signer.generate_qr_url(doc_uid, revision, page)
-
-    def _create_qr_image(
-        self,
-        data: str,
-        size: int = 200,
-        border: int = 4,
-        error_correction: str = "M",
-        style: str = "BLACK",
-    ) -> Image.Image:
-        """Create QR code image"""
-        # Create QR code
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=getattr(
-                qrcode.constants, f"ERROR_CORRECT_{error_correction}"
-            ),
-            box_size=size // 25,  # Adjust box size based on total size
-            border=border,
+        log_function_call("QRService.__init__")
+        self.hmac_secret = settings.QR_HMAC_SECRET
+        self.qr_size = settings.QR_CODE_SIZE
+        self.qr_border = settings.QR_CODE_BORDER
+        self.error_correction = settings.QR_CODE_ERROR_CORRECTION
+        
+        debug_logger.info(
+            "QRService initialized",
+            qr_size=self.qr_size,
+            qr_border=self.qr_border,
+            error_correction=self.error_correction
         )
-        qr.add_data(data)
-        qr.make(fit=True)
+        log_function_result("QRService.__init__", qr_size=self.qr_size)
 
-        # Create image
-        if style == "BLACK":
-            fill_color = "black"
-            back_color = "white"
-        elif style == "INVERTED":
-            fill_color = "white"
-            back_color = "black"
-        else:
-            fill_color = "black"
-            back_color = "white"
-
-        img = qr.make_image(fill_color=fill_color, back_color=back_color)
-
-        # Resize to exact size
-        img = img.resize((size, size), Image.Resampling.LANCZOS)
-
-        return img
-
-    def _create_qr_with_label(
-        self,
-        data: str,
-        label: str,
-        size: int = 200,
-        border: int = 4,
-        error_correction: str = "M",
-    ) -> Image.Image:
-        """Create QR code with label"""
-        # Create base QR code
-        qr_img = self._create_qr_image(data, size - 40, border, error_correction)
-
-        # Create image with space for label
-        final_img = Image.new("RGB", (size, size + 30), "white")
-
-        # Paste QR code
-        final_img.paste(qr_img, (20, 0))
-
-        # Add label
+    def generate_qr_data(
+        self, 
+        enovia_id: str, 
+        revision: str, 
+        page_number: int,
+        url_prefix: str = None
+    ) -> str:
+        """
+        Generate QR code data with HMAC signature
+        """
+        log_function_call(
+            "QRService.generate_qr_data",
+            enovia_id=enovia_id,
+            revision=revision,
+            page_number=page_number,
+            url_prefix=url_prefix
+        )
+        
         try:
-            draw = ImageDraw.Draw(final_img)
-            # Try to use a system font
-            try:
-                font = ImageFont.truetype(
-                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12
-                )
-            except (OSError, IOError):
-                font = ImageFont.load_default()
-
-            # Center the text
-            bbox = draw.textbbox((0, 0), label, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_x = (size - text_width) // 2
-
-            draw.text((text_x, size - 25), label, fill="black", font=font)
+            debug_logger.debug(
+                "Generating QR code data",
+                enovia_id=enovia_id,
+                revision=revision,
+                page_number=page_number
+            )
+            
+            # Get URL prefix from settings or use default
+            if not url_prefix:
+                url_prefix = "https://pte-qr.example.com"
+            
+            # Create the base URL
+            base_url = f"{url_prefix}/r/{enovia_id}/{revision}/{page_number}"
+            
+            debug_logger.debug("Created base URL", base_url=base_url)
+            
+            # Create data payload
+            payload = {
+                "enovia_id": enovia_id,
+                "revision": revision,
+                "page_number": page_number,
+                "url": base_url
+            }
+            
+            # Create HMAC signature
+            payload_json = json.dumps(payload, sort_keys=True)
+            signature = hmac.new(
+                self.hmac_secret.encode('utf-8'),
+                payload_json.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            
+            # Add signature to payload
+            payload["signature"] = signature
+            
+            # Return the complete URL with signature
+            return f"{base_url}?sig={signature}"
+            
         except Exception as e:
-            logger.warning("Failed to add label to QR code", error=str(e))
+            logger.error(f"Error generating QR data", error=str(e))
+            raise
 
-        return final_img
+    def generate_qr_code_image(self, qr_data: str) -> BytesIO:
+        """
+        Generate QR code image from data
+        """
+        logger.debug("Generating QR code image", qr_data=qr_data)
+        try:
+            # Create QR code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=getattr(qrcode.constants, f'ERROR_CORRECT_{self.error_correction}'),
+                box_size=10,
+                border=self.qr_border,
+            )
+            
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            
+            # Create image
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Convert to BytesIO
+            img_buffer = BytesIO()
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            
+            return img_buffer
+            
+        except Exception as e:
+            logger.error(f"Error generating QR code image", error=str(e))
+            raise
 
-    def generate_qr_codes(
+    def verify_qr_signature(self, qr_data: str) -> bool:
+        """
+        Verify HMAC signature of QR code data
+        """
+        try:
+            logger.debug("Verifying QR signature", qr_data=qr_data)
+            # Parse URL and extract signature
+            if '?sig=' not in qr_data:
+                return False
+                
+            base_url, signature = qr_data.split('?sig=')
+            
+            # Extract components from URL
+            # Expected format: /r/{enovia_id}/{revision}/{page_number}
+            parts = base_url.split('/')
+            if len(parts) < 5 or parts[-4] != 'r':
+                return False
+                
+            enovia_id = parts[-3]
+            revision = parts[-2]
+            page_number = int(parts[-1])
+            
+            # Recreate payload
+            payload = {
+                "enovia_id": enovia_id,
+                "revision": revision,
+                "page_number": page_number,
+                "url": base_url
+            }
+            
+            # Generate expected signature
+            payload_json = json.dumps(payload, sort_keys=True)
+            expected_signature = hmac.new(
+                self.hmac_secret.encode('utf-8'),
+                payload_json.encode('utf-8'),
+                hashlib.sha256
+            ).hexdigest()
+            
+            # Compare signatures
+            return hmac.compare_digest(signature, expected_signature)
+            
+        except Exception as e:
+            logger.error(f"Error verifying QR signature", error=str(e))
+            return False
+
+    def parse_qr_data(self, qr_data: str) -> Dict[str, Any]:
+        """
+        Parse QR code data and extract components
+        """
+        try:
+            logger.debug("Parsing QR data", qr_data=qr_data)
+            if '?sig=' not in qr_data:
+                raise ValueError("Invalid QR code format")
+                
+            base_url, signature = qr_data.split('?sig=')
+            
+            # Extract components from URL
+            parts = base_url.split('/')
+            if len(parts) < 5 or parts[-4] != 'r':
+                raise ValueError("Invalid QR code URL format")
+                
+            return {
+                "enovia_id": parts[-3],
+                "revision": parts[-2],
+                "page_number": int(parts[-1]),
+                "url": base_url,
+                "signature": signature
+            }
+            
+        except Exception as e:
+            logger.error(f"Error parsing QR data", error=str(e))
+            raise
+
+    def generate_qr_data_with_hmac(
+        self, payload: dict, base_url_prefix: str, expires_in_minutes: int = 1440
+    ) -> tuple[str, str]:
+        """
+        Generates QR data with an HMAC signature and embeds it into a URL.
+
+        Args:
+            payload: The data to be embedded in the QR code (e.g., document ID, revision, page).
+            base_url_prefix: The base URL prefix for the QR code (e.g., "http://localhost:3000/r").
+            expires_in_minutes: The expiration time for the QR code in minutes.
+
+        Returns:
+            A tuple containing:
+            - The full URL with encoded QR data and signature.
+            - The raw HMAC signature.
+        """
+        try:
+            logger.debug("Generating QR data with HMAC", payload=payload, base_url_prefix=base_url_prefix, expires_in_minutes=expires_in_minutes)
+            # Add expiration to payload
+            from datetime import datetime, timedelta
+            expiration_time = datetime.utcnow() + timedelta(minutes=expires_in_minutes)
+            payload["exp"] = int(expiration_time.timestamp())
+
+            json_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+            signature = hmac.new(
+                self.hmac_secret.encode("utf-8"),
+                json_payload.encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+
+            # Construct URL like: {base_url_prefix}/{enovia_id}/{revision}/{page_number}/{signature}
+            qr_data_url = (
+                f"{base_url_prefix}/"
+                f"{payload['enovia_id']}/"
+                f"{payload['revision']}/"
+                f"{payload['page']}/"
+                f"{signature}"
+            )
+
+            logger.debug("Generated QR data URL", qr_data_url=qr_data_url)
+            return qr_data_url, signature
+        except Exception as e:
+            logger.error(f"Error generating QR data with HMAC", error=str(e))
+            raise
+
+    def generate_qr_code_image(
         self,
-        doc_uid: str,
-        revision: str,
-        pages: List[int],
-        style: str = "BLACK",
-        dpi: int = 300,
-        size: int = 200,
-    ) -> List[Dict[str, Any]]:
-        """Generate QR codes for multiple pages"""
-        results = []
+        data: str,
+        size: int = None,
+        border: int = None,
+        error_correction: str = None,
+    ) -> bytes:
+        """
+        Generates a QR code image for the given data.
 
-        for page in pages:
-            try:
-                # Generate URL
-                qr_url = self._generate_qr_url(doc_uid, revision, page)
+        Args:
+            data: The data to encode in the QR code.
+            size: The size of the QR code in pixels.
+            border: The border size around the QR code.
+            error_correction: Error correction level (L, M, Q, H).
 
-                # Create QR code image
-                if style == "WITH_LABEL":
-                    qr_img = self._create_qr_with_label(
-                        qr_url, f"{doc_uid} Rev.{revision} P.{page}", size
-                    )
-                else:
-                    qr_img = self._create_qr_image(qr_url, size, style=style)
+        Returns:
+            The QR code image as bytes.
+        """
+        try:
+            logger.debug("Generating QR code image", data=data, size=size, border=border, error_correction=error_correction)
+            # Use defaults if not provided
+            if size is None:
+                size = self.qr_size
+            if border is None:
+                border = self.qr_border
+            if error_correction is None:
+                error_correction = self.error_correction
 
-                # Convert to different formats
-                png_data = self._image_to_base64(qr_img, "PNG")
-                svg_data = self._generate_svg_qr(qr_url, size)
+            if error_correction == "L":
+                error_correction_level = qrcode.constants.ERROR_CORRECT_L
+            elif error_correction == "M":
+                error_correction_level = qrcode.constants.ERROR_CORRECT_M
+            elif error_correction == "Q":
+                error_correction_level = qrcode.constants.ERROR_CORRECT_Q
+            elif error_correction == "H":
+                error_correction_level = qrcode.constants.ERROR_CORRECT_H
+            else:
+                error_correction_level = qrcode.constants.ERROR_CORRECT_M
 
-                results.append(
-                    {
-                        "page": page,
-                        "url": qr_url,
-                        "data": {"png": png_data, "svg": svg_data},
-                    }
-                )
+            qr = qrcode.QRCode(
+                version=None,
+                error_correction=error_correction_level,
+                box_size=size // 29,  # Adjust box_size based on desired total size
+                border=border,
+            )
+            qr.add_data(data)
+            qr.make(fit=True)
 
-                logger.info(
-                    "QR code generated",
-                    doc_uid=doc_uid,
-                    revision=revision,
-                    page=page,
-                    style=style,
-                )
+            img = qr.make_image(fill_color="black", back_color="white")
 
-            except Exception as e:
-                logger.error(
-                    "Failed to generate QR code",
-                    doc_uid=doc_uid,
-                    revision=revision,
-                    page=page,
-                    error=str(e),
-                )
-                raise
-
-        return results
-
-    def generate_qr_for_pdf_stamp(
-        self, doc_uid: str, revision: str, page: int, dpi: int = 300, size_mm: int = 35
-    ) -> Image.Image:
-        """Generate QR code optimized for PDF stamping"""
-        # Convert mm to pixels (assuming 300 DPI)
-        size_px = int(size_mm * dpi / 25.4)
-
-        # Generate URL
-        qr_url = self._generate_qr_url(doc_uid, revision, page)
-
-        # Create QR code with high error correction for small size
-        qr = segno.make(qr_url, error="h")  # High error correction
-
-        # Convert to PIL Image
-        qr_img = qr.to_pil(size=size_px, border=2)
-
-        # Convert to RGB if needed
-        if qr_img.mode != "RGB":
-            qr_img = qr_img.convert("RGB")
-
-        return qr_img
-
-    def _image_to_base64(self, img: Image.Image, format: str) -> str:
-        """Convert PIL Image to base64 string"""
-        buffer = io.BytesIO()
-        img.save(buffer, format=format)
-        return base64.b64encode(buffer.getvalue()).decode()
-
-    def _generate_svg_qr(self, data: str, size: int) -> str:
-        """Generate SVG QR code"""
-        qr = segno.make(data)
-        return qr.svg_inline(scale=size // 25, border=2)
-
-    def verify_qr_signature(
-        self, doc_uid: str, revision: str, page: int, timestamp: int, signature: str
-    ) -> bool:
-        """Verify QR code signature"""
-        return self.hmac_signer.verify_signature(
-            doc_uid, revision, page, timestamp, signature
-        )
+            img_buffer = BytesIO()
+            img.save(img_buffer, format="PNG")
+            img_buffer.seek(0)
+            return img_buffer.getvalue()
+        except Exception as e:
+            logger.error(f"Error generating QR code image", error=str(e))
+            raise
 
 
-# Global QR service instance
-qr_service = QRCodeGenerator()
+# Global QR service instance - will be created lazily
+_qr_service_instance = None
+
+
+def get_qr_service() -> QRService:
+    """Get QR service instance (lazy initialization)"""
+    global _qr_service_instance
+    if _qr_service_instance is None:
+        _qr_service_instance = QRService()
+    return _qr_service_instance
+
+
+# For backward compatibility
+qr_service = get_qr_service()

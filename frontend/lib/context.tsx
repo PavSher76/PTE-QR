@@ -42,6 +42,8 @@ const UserContext = createContext<{
   user: {
     username: string
     email: string
+    role: string
+    isAdmin: boolean
   } | null
   isAuthenticated: boolean
   login: (credentials: { username: string; password: string }) => Promise<{ success: boolean; error?: string }>
@@ -135,6 +137,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{
     username: string
     email: string
+    role: string
+    isAdmin: boolean
   } | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
@@ -167,6 +171,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const userData = {
           username: credentials.username,
           email: `${credentials.username}@example.com`,
+          role: credentials.username === 'admin' ? 'admin' : 'user',
+          isAdmin: credentials.username === 'admin',
         }
 
         setUser(userData)

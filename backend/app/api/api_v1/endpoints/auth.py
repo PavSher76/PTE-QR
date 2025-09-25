@@ -11,9 +11,11 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.auth_service import auth_service
 from app.services.metrics_service import metrics_service
+from app.core.logging import DebugLogger, log_api_request, log_api_response
 
 router = APIRouter()
 logger = structlog.get_logger()
+debug_logger = DebugLogger(__name__)
 
 
 @router.post("/login")
@@ -23,58 +25,69 @@ async def login(credentials: dict, request: Request, db: Session = Depends(get_d
     """
     start_time = time.time()
     client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "")
 
-    logger.info("Login attempt started", client_ip=client_ip)
+    log_api_request("POST", "/login", client_ip=client_ip, user_agent=user_agent)
+    debug_logger.info("Login attempt started", client_ip=client_ip, user_agent=user_agent)
 
     try:
         username = credentials.get("username")
         password = credentials.get("password")
 
-        logger.info(
-            "Login credentials received", username=username, has_password=bool(password)
+        debug_logger.debug(
+            "Login credentials received", 
+            username=username, 
+            has_password=bool(password),
+            password_length=len(password) if password else 0
         )
 
         if not username or not password:
-            logger.warning(
+            duration = time.time() - start_time
+            debug_logger.warning(
                 "Login failed: missing credentials",
                 username=username,
                 has_password=bool(password),
+                duration=duration
             )
+            log_api_response(422, duration, error="Missing credentials")
             raise HTTPException(
                 status_code=422, detail="Username and password are required"
             )
 
         # Authenticate user
-        logger.info("Starting user authentication", username=username)
+        debug_logger.debug("Starting user authentication", username=username)
         user = await auth_service.authenticate_user(username, password, db)
         if not user:
             duration = time.time() - start_time
             metrics_service.record_api_request("POST", "/auth/login", 401, duration)
-            logger.warning(
+            debug_logger.warning(
                 "Login failed: authentication failed",
                 username=username,
                 duration=duration,
             )
+            log_api_response(401, duration, error="Authentication failed")
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
         if not user.is_active:
             duration = time.time() - start_time
             metrics_service.record_api_request("POST", "/auth/login", 403, duration)
-            logger.warning(
+            debug_logger.warning(
                 "Login failed: user account deactivated",
                 username=username,
                 user_id=str(user.id),
+                duration=duration
             )
+            log_api_response(403, duration, error="Account deactivated")
             raise HTTPException(status_code=403, detail="User account is deactivated")
 
         # Create token response
-        logger.info("Creating token response", username=username, user_id=str(user.id))
+        debug_logger.debug("Creating token response", username=username, user_id=str(user.id))
         token_response = auth_service.create_token_response(user)
 
         duration = time.time() - start_time
         metrics_service.record_api_request("POST", "/auth/login", 200, duration)
 
-        logger.info(
+        debug_logger.info(
             "User logged in successfully",
             username=username,
             user_id=str(user.id),

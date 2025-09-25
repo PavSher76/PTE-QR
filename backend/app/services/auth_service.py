@@ -11,8 +11,10 @@ from passlib.context import CryptContext
 
 from app.core.config import settings
 from app.models.user import User, UserRole
+from app.core.logging import DebugLogger, log_function_call, log_function_result, log_database_operation
 
 logger = structlog.get_logger()
+debug_logger = DebugLogger(__name__)
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,9 +24,17 @@ class AuthService:
     """Authentication service"""
 
     def __init__(self):
+        log_function_call("AuthService.__init__")
         self.secret_key = settings.JWT_SECRET_KEY
         self.algorithm = settings.JWT_ALGORITHM
         self.access_token_expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        
+        debug_logger.info(
+            "AuthService initialized",
+            algorithm=self.algorithm,
+            token_expire_minutes=self.access_token_expire_minutes
+        )
+        log_function_result("AuthService.__init__", algorithm=self.algorithm)
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify password against hash"""

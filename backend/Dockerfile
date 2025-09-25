@@ -12,6 +12,15 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \
+    libgl1-mesa-dri \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgthread-2.0-0 \
+    libzbar0 \
+    libzbar-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
@@ -34,6 +43,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y \
     libpq5 \
     curl \
+    libgl1-mesa-dri \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    libgthread-2.0-0 \
+    libzbar0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder stage

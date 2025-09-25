@@ -12,92 +12,104 @@ export function NotificationContainer() {
   }
 
   return (
-    <div className="fixed right-4 top-4 z-50 space-y-2">
-      {notifications.map((notification) => (
+    <div className="fixed right-4 top-4 z-50 space-y-3">
+      {notifications.map((notification, index) => (
         <div
           key={notification.id}
-          className={`pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-800 ${
+          className={`pointer-events-auto w-full max-w-md overflow-hidden rounded-xl border shadow-lg transition-all duration-300 ease-in-out hover:shadow-xl notification-enter ${
             notification.type === 'success'
-              ? 'border-l-4 border-green-400'
+              ? 'border-success-200 bg-white dark:border-success-800 dark:bg-gray-800'
               : notification.type === 'error'
-              ? 'border-l-4 border-red-400'
+              ? 'border-danger-200 bg-white dark:border-danger-800 dark:bg-gray-800'
               : notification.type === 'warning'
-              ? 'border-l-4 border-yellow-400'
-              : 'border-l-4 border-blue-400'
+              ? 'border-warning-200 bg-white dark:border-warning-800 dark:bg-gray-800'
+              : 'border-primary-200 bg-white dark:border-primary-800 dark:bg-gray-800'
           }`}
+          style={{
+            animationDelay: `${index * 100}ms`,
+            animationFillMode: 'both',
+          }}
         >
-          <div className="p-4">
+          <div className="p-5">
             <div className="flex items-start">
               <div className="flex-shrink-0">
                 {notification.type === 'success' && (
-                  <svg
-                    className="h-5 w-5 text-green-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success-100 dark:bg-success-900">
+                    <svg
+                      className="h-5 w-5 text-success-600 dark:text-success-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 )}
                 {notification.type === 'error' && (
-                  <svg
-                    className="h-5 w-5 text-red-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-danger-100 dark:bg-danger-900">
+                    <svg
+                      className="h-5 w-5 text-danger-600 dark:text-danger-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 )}
                 {notification.type === 'warning' && (
-                  <svg
-                    className="h-5 w-5 text-yellow-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-warning-100 dark:bg-warning-900">
+                    <svg
+                      className="h-5 w-5 text-warning-600 dark:text-warning-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 )}
                 {notification.type === 'info' && (
-                  <svg
-                    className="h-5 w-5 text-blue-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900">
+                    <svg
+                      className="h-5 w-5 text-primary-600 dark:text-primary-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 )}
               </div>
-              <div className="ml-3 w-0 flex-1 pt-0.5">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
+              <div className="ml-4 w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
                   {notification.title}
                 </p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-300">
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                   {notification.message}
                 </p>
               </div>
               <div className="ml-4 flex flex-shrink-0">
                 <button
-                  className="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-gray-800"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                   onClick={() => removeNotification(notification.id)}
                 >
                   <span className="sr-only">{t('notification.dismiss')}</span>
                   <svg
-                    className="h-5 w-5"
+                    className="h-4 w-4"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >

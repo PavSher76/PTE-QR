@@ -12,9 +12,11 @@ from app.core.database import get_db
 from app.models.document import Document
 from app.services.metrics_service import metrics_service
 from app.services.pdf_service import pdf_service
+from app.core.logging import DebugLogger, log_api_request, log_api_response, log_file_operation
 
 router = APIRouter()
 logger = structlog.get_logger()
+debug_logger = DebugLogger(__name__)
 
 
 @router.post("/stamp")
@@ -30,18 +32,59 @@ async def stamp_pdf_with_qr(
     Stamp existing PDF with QR codes
     """
     start_time = time.time()
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "")
+
+    log_api_request(
+        "POST", 
+        "/pdf/stamp", 
+        client_ip=client_ip, 
+        user_agent=user_agent,
+        doc_uid=doc_uid,
+        revision=revision,
+        pages=pages
+    )
+    
+    debug_logger.info(
+        "PDF stamp request started",
+        filename=file.filename,
+        content_type=file.content_type,
+        doc_uid=doc_uid,
+        revision=revision,
+        pages=pages,
+        client_ip=client_ip
+    )
 
     try:
         # Validate file
         if not file.filename.endswith(".pdf"):
+            duration = time.time() - start_time
+            debug_logger.warning(
+                "PDF stamp failed: invalid file type",
+                filename=file.filename,
+                content_type=file.content_type,
+                duration=duration
+            )
+            log_api_response(400, duration, error="Invalid file type")
             raise HTTPException(status_code=400, detail="File must be a PDF")
 
         # Read file content
+        debug_logger.debug("Reading PDF file content", filename=file.filename)
         pdf_data = await file.read()
+        log_file_operation("read", file.filename, file_size=len(pdf_data))
 
         # Validate PDF
+        debug_logger.debug("Validating PDF content", filename=file.filename, data_size=len(pdf_data))
         is_valid, error_msg = pdf_service.validate_pdf(pdf_data)
         if not is_valid:
+            duration = time.time() - start_time
+            debug_logger.warning(
+                "PDF validation failed",
+                filename=file.filename,
+                error=error_msg,
+                duration=duration
+            )
+            log_api_response(400, duration, error=error_msg)
             raise HTTPException(status_code=400, detail=error_msg)
 
         # Parse pages parameter
