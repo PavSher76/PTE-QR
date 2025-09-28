@@ -451,11 +451,20 @@ class PDFService:
                 return default_x, default_y
             
             # 1. СНАЧАЛА вычисляем базовый якорь bottom-right
-            # Используем MediaBox границы для landscape
-            x0 = 0.0  # Предполагаем x0=0 для landscape
-            y0 = 0.0  # Предполагаем y0=0 для landscape
-            x1 = page_width
-            y1 = page_height
+            # Используем границы активного бокса из layout_info
+            if layout_info:
+                coordinate_info = layout_info.get("coordinate_info", {})
+                active_box = coordinate_info.get("active_box", {})
+                x0 = active_box.get("x0", 0.0)
+                y0 = active_box.get("y0", 0.0)
+                x1 = active_box.get("x1", page_width)
+                y1 = active_box.get("y1", page_height)
+            else:
+                # Fallback к MediaBox границам
+                x0 = 0.0
+                y0 = 0.0
+                x1 = page_width
+                y1 = page_height
             
             base_x, base_y = self.compute_anchor_xy(
                 x0=x0, y0=y0, x1=x1, y1=y1,
@@ -496,9 +505,9 @@ class PDFService:
             debug_logger.error("Error calculating landscape QR position", 
                              error=str(e), pdf_path=pdf_path, page_number=page_number)
             # Fallback: используем базовый якорь без эвристик
-            # Используем MediaBox границы для landscape
-            x0 = 0.0  # Предполагаем x0=0 для landscape
-            y0 = 0.0  # Предполагаем y0=0 для landscape
+            # Используем MediaBox границы для landscape (fallback)
+            x0 = 0.0
+            y0 = 0.0
             x1 = page_width
             y1 = page_height
             
@@ -635,23 +644,33 @@ class PDFService:
                     
                     try:
                         # Use intelligent positioning with PDF analysis
+                        # Для одностраничного PDF используем page_number = 0
                         x_position, y_position = self._calculate_landscape_qr_position(
-                            page_width, page_height, qr_size_points, temp_pdf_path, page_number - 1
+                            page_width, page_height, qr_size_points, temp_pdf_path, 0
                         )
                         logger.info(f"Landscape page detected - QR positioned intelligently at ({x_position:.1f}, {y_position:.1f})")
                     except Exception as e:
-                        logger.warning(f"Intelligent positioning failed, using default: {e}")
-                        # Fallback to default positioning
-                        bottom_margin_cm = 5.5 + 0.5 + 3.5  # 5.5 hight of giggest main note, 0.5 bottom margin, 3.5 hight of QR code
-                        right_margin_cm = 3.5 + 0.5    # 4 cm from left edge
+                        logger.warning(f"Intelligent positioning failed, using fallback: {e}")
+                        # Fallback: используем правильный якорь bottom-right
+                        # Используем MediaBox границы для landscape
+                        x0 = 0.0  # Предполагаем x0=0 для landscape
+                        y0 = 0.0  # Предполагаем y0=0 для landscape
+                        x1 = page_width
+                        y1 = page_height
                         
-                        bottom_margin_points = bottom_margin_cm * 28.35
-                        right_margin_points = right_margin_cm * 28.35
+                        base_x, base_y = self.compute_anchor_xy(
+                            x0=x0, y0=y0, x1=x1, y1=y1,
+                            qr_w=qr_size_points,
+                            qr_h=qr_size_points,
+                            margin_pt=settings.QR_MARGIN_PT,
+                            stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                            rotation=0
+                        )
                         
-                        x_position = page_width - right_margin_points - qr_size_points
-                        y_position = page_height - bottom_margin_points - qr_size_points
+                        x_position = base_x
+                        y_position = base_y
                         
-                        logger.info(f"Landscape page detected - QR positioned at bottom-right corner (fallback): {bottom_margin_cm}cm up from bottom, {right_margin_cm}cm from right edge")
+                        logger.info(f"Landscape page detected - QR positioned at bottom-right (fallback): x={x_position:.1f}, y={y_position:.1f}")
                     finally:
                         # Clean up temporary file
                         if os.path.exists(temp_pdf_path):
