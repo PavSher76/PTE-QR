@@ -791,14 +791,16 @@ class PDFService:
             y = max(0, min(y, H - qr_h))
             
             debug_logger.debug("🎯 Anchor calculation", 
+                            page="TBD",  # Будет заполнено вызывающим кодом
+                            box=settings.QR_POSITION_BOX,
+                            W=W, H=H,
+                            rot=rotation,
                             anchor=anchor,
-                            rotation=rotation,
-                            page_width=W,
-                            page_height=H,
-                            qr_width=qr_w,
-                            qr_height=qr_h,
+                            qr=(qr_w, qr_h),
                             margin=margin,
-                            x=x, y=y,
+                            base=(x, y),
+                            delta=(0.0, 0.0),  # Будет заполнено при применении эвристик
+                            final=(x, y),
                             clamped=True)
             
             return x, y

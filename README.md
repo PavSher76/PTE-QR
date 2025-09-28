@@ -70,24 +70,29 @@ PTE-QR/
 
 #### Правила конверсии координат
 
-Для конверсии из Image-СК в PDF-СК используется функция `to_pdf_coords()`:
+Для конверсии из Image-СК в PDF-СК используются две функции:
 
 ```python
-def to_pdf_coords(x_img: float, y_img: float, img_h: float, page_h: float) -> Tuple[float, float]:
-    """
-    Конвертирует координаты из image-СК в PDF-СК
-    
-    Формула для Y: y_pdf = page_height - (y_img + img_height)
-    X координата остается неизменной
-    """
+# Для точки (без высоты объекта)
+def to_pdf_point(x_img: float, y_img: float, page_h: float) -> Tuple[float, float]:
+    """Конвертирует точку из image-СК в PDF-СК"""
     x_pdf = x_img
-    y_pdf = page_h - (y_img + img_h)
+    y_pdf = page_h - y_img  # Для точки
     return x_pdf, y_pdf
+
+# Для bbox (верхний левый угол объекта)
+def to_pdf_bbox(x_img: float, y_img: float, obj_w: float, obj_h: float, page_h: float):
+    """Конвертирует bbox из image-СК в PDF-СК"""
+    x_pdf = x_img
+    y_pdf = page_h - (y_img + obj_h)  # Для bbox
+    return x_pdf, y_pdf, obj_w, obj_h
 ```
 
 **Пример конверсии:**
 - Image-СК: (100, 50) - точка на 100px справа, 50px от верха
 - PDF-СК: (100, 742) - та же точка, но 742pt от низа (для A4: 792 - 50 = 742)
+
+**Подробная документация:** См. [COORDINATE_FIXES_REPORT.md](COORDINATE_FIXES_REPORT.md) и [PATCH_IMPLEMENTATION_REPORT.md](PATCH_IMPLEMENTATION_REPORT.md)
 
 ### Конфигурация позиционирования
 
