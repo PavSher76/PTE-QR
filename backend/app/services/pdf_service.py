@@ -199,9 +199,15 @@ class PDFService:
             )
             raise
 
-    def _add_qr_code_to_page(self, page, qr_image, page_number: int, pdf_path: str = None):
+    def _add_qr_code_to_page(self, page, qr_image, page_number: int, pdf_content: bytes = None):
         """
         Add QR code to a PDF page with intelligent positioning
+        
+        Args:
+            page: PDF page object
+            qr_image: QR code image
+            page_number: Page number (1-based)
+            pdf_content: Original PDF content for analysis
         """
         log_function_call("PDFService._add_qr_code_to_page", page_number=page_number)
         
@@ -217,8 +223,9 @@ class PDFService:
             qr_size = qr_size_cm * 28.35  # 99.225 points
             
             # Use new unified positioning system
+            # Анализируем исходный документ с правильным индексом страницы (0-based)
             x_position, y_position, position_info = self._calculate_unified_qr_position(
-                page, qr_size, pdf_path, page_number - 1
+                page, qr_size, pdf_content, page_number - 1
             )
             
             # Get page dimensions for audit (используем MediaBox для консистентности)
@@ -643,10 +650,12 @@ class PDFService:
                     try:
                         # Use intelligent positioning with PDF analysis
                         # Анализируем исходный документ с правильным индексом страницы
+                        total_pages = len(reader.pages)
+                        logger.info(f"INTELIGENT POSITIONING. ANALYZE PDF. Find Main note stamp for QR code position: src=original, tmp=NO, total_pages={total_pages}, requested_page={page_number}")
                         x_position, y_position, position_info = self._calculate_unified_qr_position(
                             page, qr_size_points, pdf_content, page_number - 1
                         )
-                        logger.info(f"Landscape page detected - QR positioned intelligently at ({x_position:.1f}, {y_position:.1f})")
+                        logger.info(f"INTELIGENT POSITIONING. Landscape page detected - QR positioned intelligently at ({x_position:.1f}, {y_position:.1f}), position_info={position_info}")
                     except Exception as e:
                         logger.warning(f"Intelligent positioning failed, using fallback: {e}")
                         # Fallback: используем правильный якорь bottom-right
