@@ -55,6 +55,7 @@ class Settings:
     # QR Code positioning settings
     QR_ANCHOR: str = "bottom-right"  # bottom-right, bottom-left, top-right, top-left
     QR_MARGIN_PT: float = 12.0  # Margin in points (1 pt = 1/72 inch)
+    QR_STAMP_CLEARANCE_PT: float = 0.0  # Additional clearance from stamp in points
     QR_POSITION_BOX: str = "media"  # media or crop (MediaBox or CropBox)
     QR_RESPECT_ROTATION: bool = True  # Whether to respect page rotation
     QR_DEBUG_FRAME: bool = False  # Draw debug frame around QR position

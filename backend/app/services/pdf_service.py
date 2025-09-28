@@ -287,30 +287,32 @@ class PDFService:
             if not layout_info:
                 debug_logger.warning("Could not analyze page layout, using fallback position")
                 # Fallback: используем базовый якорь без эвристик
-                page_width = float(page.mediabox.width)
-                page_height = float(page.mediabox.height)
+                # Используем MediaBox границы
+                x0 = float(page.mediabox.x0)
+                y0 = float(page.mediabox.y0)
+                x1 = float(page.mediabox.x1)
+                y1 = float(page.mediabox.y1)
                 rotation = 0  # Предполагаем поворот 0° для fallback
                 
                 base_x, base_y = self.compute_anchor_xy(
-                    W=page_width,
-                    H=page_height,
+                    x0=x0, y0=y0, x1=x1, y1=y1,
                     qr_w=qr_size,
                     qr_h=qr_size,
-                    margin=settings.QR_MARGIN_PT,
-                    rotation=rotation,
-                    anchor=settings.QR_ANCHOR
+                    margin_pt=settings.QR_MARGIN_PT,
+                    stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                    rotation=rotation
                 )
                 
                 debug_logger.info("🔍 FALLBACK - Base anchor only", 
                                 page=page_number,
                                 box="media",
-                                W=page_width,
-                                H=page_height,
+                                x0=x0, x1=x1, y0=y0, y1=y1,
+                                W=x1-x0, H=y1-y0,
                                 rot=rotation,
-                                anchor=settings.QR_ANCHOR,
                                 qr=(qr_size, qr_size),
                                 margin=settings.QR_MARGIN_PT,
-                                base=(base_x, base_y),
+                                stamp_clearance=settings.QR_STAMP_CLEARANCE_PT,
+                                anchor=(base_x, base_y),
                                 delta=(0.0, 0.0),
                                 final=(base_x, base_y))
                 
@@ -322,17 +324,19 @@ class PDFService:
             rotation = coordinate_info.get("rotation", 0)
             
             # 1. СНАЧАЛА вычисляем базовый якорь bottom-right с учетом rotation
-            page_width = active_box.get("width", float(page.mediabox.width))
-            page_height = active_box.get("height", float(page.mediabox.height))
+            # Используем границы активного бокса
+            x0 = active_box.get("x0", float(page.mediabox.x0))
+            y0 = active_box.get("y0", float(page.mediabox.y0))
+            x1 = active_box.get("x1", float(page.mediabox.x1))
+            y1 = active_box.get("y1", float(page.mediabox.y1))
             
             base_x, base_y = self.compute_anchor_xy(
-                W=page_width,
-                H=page_height, 
+                x0=x0, y0=y0, x1=x1, y1=y1,
                 qr_w=qr_size,
                 qr_h=qr_size,
-                margin=settings.QR_MARGIN_PT,
-                rotation=rotation,
-                anchor=settings.QR_ANCHOR
+                margin_pt=settings.QR_MARGIN_PT,
+                stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                rotation=rotation
             )
             
             # 2. ПОТОМ получаем дельту от эвристик (если нужно)
@@ -342,21 +346,21 @@ class PDFService:
             x_position = base_x + dx
             y_position = base_y + dy
             
-            # 4. Клэмпим координаты в пределах страницы
-            x_position = max(0, min(x_position, page_width - qr_size))
-            y_position = max(0, min(y_position, page_height - qr_size))
+            # 4. Клэмпим координаты в пределах активного бокса
+            x_position = max(x0, min(x_position, x1 - qr_size))
+            y_position = max(y0, min(y_position, y1 - qr_size))
             
             # COORDINATE PIPELINE AUDIT - Detailed calculation info
             debug_logger.info("🔍 COORDINATE PIPELINE AUDIT - Detailed calculation", 
                             page=page_number,
                             box=coordinate_info.get("active_box_type", "media"),
-                            W=page_width,
-                            H=page_height,
+                            x0=x0, x1=x1, y0=y0, y1=y1,
+                            W=x1-x0, H=y1-y0,
                             rot=rotation,
-                            anchor=settings.QR_ANCHOR,
                             qr=(qr_size, qr_size),
                             margin=settings.QR_MARGIN_PT,
-                            base=(base_x, base_y),
+                            stamp_clearance=settings.QR_STAMP_CLEARANCE_PT,
+                            anchor=(base_x, base_y),
                             delta=(dx, dy),
                             final=(x_position, y_position),
                             respect_rotation=settings.QR_RESPECT_ROTATION)
@@ -375,30 +379,32 @@ class PDFService:
             debug_logger.error("Error calculating unified QR position", 
                              error=str(e), pdf_path=pdf_path, page_number=page_number)
             # Fallback: используем базовый якорь без эвристик
-            page_width = float(page.mediabox.width)
-            page_height = float(page.mediabox.height)
+            # Используем MediaBox границы
+            x0 = float(page.mediabox.x0)
+            y0 = float(page.mediabox.y0)
+            x1 = float(page.mediabox.x1)
+            y1 = float(page.mediabox.y1)
             rotation = 0  # Предполагаем поворот 0° для fallback
             
             base_x, base_y = self.compute_anchor_xy(
-                W=page_width,
-                H=page_height,
+                x0=x0, y0=y0, x1=x1, y1=y1,
                 qr_w=qr_size,
                 qr_h=qr_size,
-                margin=settings.QR_MARGIN_PT,
-                rotation=rotation,
-                anchor=settings.QR_ANCHOR
+                margin_pt=settings.QR_MARGIN_PT,
+                stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                rotation=rotation
             )
             
             debug_logger.info("🔍 EXCEPTION FALLBACK - Base anchor only", 
                             page=page_number,
                             box="media",
-                            W=page_width,
-                            H=page_height,
+                            x0=x0, x1=x1, y0=y0, y1=y1,
+                            W=x1-x0, H=y1-y0,
                             rot=rotation,
-                            anchor=settings.QR_ANCHOR,
                             qr=(qr_size, qr_size),
                             margin=settings.QR_MARGIN_PT,
-                            base=(base_x, base_y),
+                            stamp_clearance=settings.QR_STAMP_CLEARANCE_PT,
+                            anchor=(base_x, base_y),
                             delta=(0.0, 0.0),
                             final=(base_x, base_y))
             
@@ -445,14 +451,19 @@ class PDFService:
                 return default_x, default_y
             
             # 1. СНАЧАЛА вычисляем базовый якорь bottom-right
+            # Используем MediaBox границы для landscape
+            x0 = 0.0  # Предполагаем x0=0 для landscape
+            y0 = 0.0  # Предполагаем y0=0 для landscape
+            x1 = page_width
+            y1 = page_height
+            
             base_x, base_y = self.compute_anchor_xy(
-                W=page_width,
-                H=page_height,
+                x0=x0, y0=y0, x1=x1, y1=y1,
                 qr_w=qr_size,
                 qr_h=qr_size,
-                margin=settings.QR_MARGIN_PT,
-                rotation=0,  # Предполагаем поворот 0° для landscape
-                anchor=settings.QR_ANCHOR
+                margin_pt=settings.QR_MARGIN_PT,
+                stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                rotation=0  # Предполагаем поворот 0° для landscape
             )
             
             # 2. ПОТОМ получаем дельту от эвристик
@@ -462,20 +473,20 @@ class PDFService:
             x_position = base_x + dx
             y_position = base_y + dy
             
-            # 4. Клэмпим координаты в пределах страницы
-            x_position = max(0, min(x_position, page_width - qr_size))
-            y_position = max(0, min(y_position, page_height - qr_size))
+            # 4. Клэмпим координаты в пределах активного бокса
+            x_position = max(x0, min(x_position, x1 - qr_size))
+            y_position = max(y0, min(y_position, y1 - qr_size))
             
             debug_logger.info("🔍 LANDSCAPE - Base anchor + heuristics delta", 
                             page=page_number,
                             box="media",
-                            W=page_width,
-                            H=page_height,
+                            x0=x0, x1=x1, y0=y0, y1=y1,
+                            W=x1-x0, H=y1-y0,
                             rot=0,
-                            anchor=settings.QR_ANCHOR,
                             qr=(qr_size, qr_size),
                             margin=settings.QR_MARGIN_PT,
-                            base=(base_x, base_y),
+                            stamp_clearance=settings.QR_STAMP_CLEARANCE_PT,
+                            anchor=(base_x, base_y),
                             delta=(dx, dy),
                             final=(x_position, y_position))
             
@@ -485,26 +496,31 @@ class PDFService:
             debug_logger.error("Error calculating landscape QR position", 
                              error=str(e), pdf_path=pdf_path, page_number=page_number)
             # Fallback: используем базовый якорь без эвристик
+            # Используем MediaBox границы для landscape
+            x0 = 0.0  # Предполагаем x0=0 для landscape
+            y0 = 0.0  # Предполагаем y0=0 для landscape
+            x1 = page_width
+            y1 = page_height
+            
             base_x, base_y = self.compute_anchor_xy(
-                W=page_width,
-                H=page_height,
+                x0=x0, y0=y0, x1=x1, y1=y1,
                 qr_w=qr_size,
                 qr_h=qr_size,
-                margin=settings.QR_MARGIN_PT,
-                rotation=0,
-                anchor=settings.QR_ANCHOR
+                margin_pt=settings.QR_MARGIN_PT,
+                stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                rotation=0
             )
             
             debug_logger.info("🔍 LANDSCAPE EXCEPTION FALLBACK - Base anchor only", 
                             page=page_number,
                             box="media",
-                            W=page_width,
-                            H=page_height,
+                            x0=x0, x1=x1, y0=y0, y1=y1,
+                            W=x1-x0, H=y1-y0,
                             rot=0,
-                            anchor=settings.QR_ANCHOR,
                             qr=(qr_size, qr_size),
                             margin=settings.QR_MARGIN_PT,
-                            base=(base_x, base_y),
+                            stamp_clearance=settings.QR_STAMP_CLEARANCE_PT,
+                            anchor=(base_x, base_y),
                             delta=(0.0, 0.0),
                             final=(base_x, base_y))
             
@@ -681,24 +697,27 @@ class PDFService:
             logger.error(f"Error adding QR codes to PDF", error=str(e))
             raise
 
-    def compute_anchor_xy(self, W: float, H: float, qr_w: float, qr_h: float, 
-                         margin: float, rotation: int, anchor: str = "bottom-right") -> tuple[float, float]:
+    def compute_anchor_xy(self, x0: float, y0: float, x1: float, y1: float, 
+                         qr_w: float, qr_h: float, margin_pt: float, 
+                         stamp_clearance_pt: float, rotation: int) -> tuple[float, float]:
         """
-        Вычисляет координаты якоря с учетом поворота страницы
+        Единая функция якоря (визуально bottom-right)
         
         Args:
-            W: Ширина страницы в точках
-            H: Высота страницы в точках
-            qr_w: Ширина QR кода в точках
-            qr_h: Высота QR кода в точках
-            margin: Отступ в точках
+            x0, y0, x1, y1: Границы активного бокса (mediabox/cropbox)
+            qr_w, qr_h: Размеры QR кода в точках
+            margin_pt: Отступ в точках
+            stamp_clearance_pt: Отступ от штампа в точках
             rotation: Поворот страницы в градусах (0, 90, 180, 270)
-            anchor: Якорь позиционирования
             
         Returns:
             Tuple (x, y) координаты в PDF-СК (origin снизу-слева)
         """
         try:
+            # Границы активного бокса (mediabox/cropbox):
+            W = x1 - x0
+            H = y1 - y0
+            
             # Нормализуем поворот
             rotation = rotation % 360
             
@@ -706,70 +725,43 @@ class PDFService:
             if not settings.QR_RESPECT_ROTATION:
                 rotation = 0
             
-            # Вычисляем координаты по таблице поворотов
+            # Визуально "низ-право" после учёта rotation:
             if rotation == 0:
-                if anchor == "bottom-right":
-                    x = W - margin - qr_w
-                    y = margin
-                elif anchor == "bottom-left":
-                    x = margin
-                    y = margin
-                elif anchor == "top-right":
-                    x = W - margin - qr_w
-                    y = H - margin - qr_h
-                elif anchor == "top-left":
-                    x = margin
-                    y = H - margin - qr_h
-                else:
-                    debug_logger.warning(f"Unknown anchor '{anchor}', using 'bottom-right'")
-                    x = W - margin - qr_w
-                    y = margin
-                    
+                x = x1 - margin_pt - qr_w            # <— ОТ ПРАВОЙ ГРАНИЦЫ!
+                y = y0 + margin_pt + stamp_clearance_pt
             elif rotation == 180:
-                # Поворот на 180°: визуальный нижний-правый
-                x = margin
-                y = H - margin - qr_h
-                
+                x = x0 + margin_pt
+                y = y1 - margin_pt - qr_h - stamp_clearance_pt
             elif rotation == 90:
-                # Поворот на 90°: визуальный нижний-правый
-                x = margin
-                y = margin
-                
+                x = x0 + margin_pt
+                y = y0 + margin_pt + stamp_clearance_pt
             elif rotation == 270:
-                # Поворот на 270°: визуальный нижний-правый
-                x = W - margin - qr_w
-                y = H - margin - qr_h
-                
+                x = x1 - margin_pt - qr_w
+                y = y1 - margin_pt - qr_h - stamp_clearance_pt
             else:
-                debug_logger.warning(f"Unsupported rotation {rotation}, using 0°")
-                x = W - margin - qr_w
-                y = margin
+                x = x1 - margin_pt - qr_w
+                y = y0 + margin_pt + stamp_clearance_pt
             
-            # Клэмп координат
-            x = max(0, min(x, W - qr_w))
-            y = max(0, min(y, H - qr_h))
+            # Клэмп в пределах бокса:
+            x = max(x0, min(x, x1 - qr_w))
+            y = max(y0, min(y, y1 - qr_h))
             
             debug_logger.debug("🎯 Anchor calculation", 
-                            page="TBD",  # Будет заполнено вызывающим кодом
-                            box=settings.QR_POSITION_BOX,
+                            x0=x0, x1=x1, y0=y0, y1=y1,
                             W=W, H=H,
                             rot=rotation,
-                            anchor=anchor,
                             qr=(qr_w, qr_h),
-                            margin=margin,
-                            base=(x, y),
-                            delta=(0.0, 0.0),  # Будет заполнено при применении эвристик
-                            final=(x, y),
-                            clamped=True)
+                            margin=margin_pt,
+                            stamp_clearance=stamp_clearance_pt,
+                            anchor=(x, y))
             
             return x, y
             
         except Exception as e:
             debug_logger.error("❌ Error computing anchor", 
-                            error=str(e), anchor=anchor, rotation=rotation)
-            # Fallback к bottom-right
-            x = max(0, min(W - margin - qr_w, W - qr_w))
-            y = max(0, min(margin, H - qr_h))
+                            error=str(e), rotation=rotation)
+            x = max(x0, min(x1 - margin_pt - qr_w, x1 - qr_w))
+            y = max(y0, min(y0 + margin_pt + stamp_clearance_pt, y1 - qr_h))
             return x, y
 
 
