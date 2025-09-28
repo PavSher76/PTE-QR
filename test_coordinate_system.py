@@ -120,7 +120,9 @@ def test_coordinate_system():
             
             try:
                 # Анализируем макет страницы
-                layout_info = pdf_analyzer.analyze_page_layout(pdf_path, 0)
+                with open(pdf_path, 'rb') as f:
+                    pdf_content = f.read()
+                layout_info = pdf_analyzer.analyze_page_layout(pdf_content, 0)
                 
                 if layout_info:
                     coordinate_info = layout_info.get("coordinate_info", {})

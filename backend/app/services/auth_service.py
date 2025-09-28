@@ -22,8 +22,19 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class AuthService:
     """Authentication service"""
+    
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(AuthService, cls).__new__(cls)
+        return cls._instance
 
     def __init__(self):
+        if self._initialized:
+            return
+            
         log_function_call("AuthService.__init__")
         self.secret_key = settings.JWT_SECRET_KEY
         self.algorithm = settings.JWT_ALGORITHM
@@ -35,6 +46,7 @@ class AuthService:
             token_expire_minutes=self.access_token_expire_minutes
         )
         log_function_result("AuthService.__init__", algorithm=self.algorithm)
+        self._initialized = True
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """Verify password against hash"""

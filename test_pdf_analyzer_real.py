@@ -41,7 +41,9 @@ def test_pdf_analyzer():
         
         try:
             # Анализируем первую страницу каждого PDF
-            layout_info = analyzer.analyze_page_layout(pdf_path, 0)
+            with open(pdf_path, 'rb') as f:
+                pdf_content = f.read()
+            layout_info = analyzer.analyze_page_layout(pdf_content, 0)
             
             print(f"  📊 Результаты анализа:")
             print(f"    - Номер страницы: {layout_info.get('page_number', 'N/A')}")

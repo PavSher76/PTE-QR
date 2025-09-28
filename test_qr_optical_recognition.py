@@ -110,7 +110,9 @@ class QROpticalRecognitionTester:
         """Анализирует макет страницы для определения элементов"""
         try:
             # Используем PDFAnalyzer для анализа страницы
-            analysis_result = self.pdf_analyzer.analyze_page_layout(pdf_path, page_number)
+            with open(pdf_path, 'rb') as f:
+                pdf_content = f.read()
+            analysis_result = self.pdf_analyzer.analyze_page_layout(pdf_content, page_number)
             
             print(f"📊 Анализ макета страницы {page_number}:")
             print(f"   🖼️  Ориентация: {'Landscape' if analysis_result.get('is_landscape') else 'Portrait'}")

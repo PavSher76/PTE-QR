@@ -3,13 +3,23 @@ PDF analyzer for detecting stamp and frame positions
 """
 
 import structlog
+import time
+import psutil
 from typing import Dict, Any, Tuple, Optional, List
 from PyPDF2 import PdfReader
 from PIL import Image
 import io
+from io import BytesIO
 import fitz  # PyMuPDF
 import numpy as np
 from app.core.config import settings
+from app.utils.pdf_exceptions import (
+    PDFAnalysisError, PDFFileError, PDFCorruptedError, PDFPageError, 
+    PDFPageOutOfRangeError, PDFPageCorruptedError, PDFImageProcessingError,
+    PDFOpenCVError, PDFCoordinateError, PDFAnalysisTimeoutError, 
+    PDFMemoryError, PDFDependencyError, PDFConfigurationError,
+    PDFAnalysisWarning, PDFPerformanceWarning
+)
 
 # Try to import OpenCV and scikit-image, fallback to basic functionality if not available
 try:
@@ -17,15 +27,163 @@ try:
     from scipy import ndimage
     from skimage import measure, morphology
     CV_AVAILABLE = True
+    CV_VERSION = cv2.__version__
+    SCIPY_VERSION = ndimage.__version__ if hasattr(ndimage, '__version__') else "unknown"
 except ImportError as e:
-    structlog.get_logger().warning(f"OpenCV/scikit-image not available: {e}. Using fallback mode.")
+    logger = structlog.get_logger()
+    logger.warning(f"OpenCV/scikit-image not available: {e}. Using fallback mode.")
     CV_AVAILABLE = False
+    CV_VERSION = None
+    SCIPY_VERSION = None
+    
+    # Вызываем предупреждение о зависимости
+    import warnings
+    warnings.warn(
+        PDFDependencyError(
+            f"OpenCV/scikit-image not available: {e}. Using fallback mode.",
+            missing_dependency="opencv-python",
+            fallback_used=True
+        )
+    )
 
 class PDFAnalyzer:
     """PDF analyzer for detecting stamp and frame positions"""
     
     def __init__(self):
         self.logger = structlog.get_logger(__name__)
+        self.analysis_timeout = 30.0  # Таймаут анализа в секундах
+        self.max_memory_usage = 1024 * 1024 * 1024  # 1GB максимальное использование памяти
+        
+        # Статистика анализа
+        self.analysis_stats = {
+            "total_analyses": 0,
+            "successful_analyses": 0,
+            "failed_analyses": 0,
+            "fallback_analyses": 0,
+            "average_analysis_time": 0.0,
+            "memory_usage_history": []
+        }
+    
+    def _check_system_resources(self) -> None:
+        """Проверка доступности системных ресурсов"""
+        try:
+            # Проверка доступной памяти
+            memory = psutil.virtual_memory()
+            available_memory = memory.available
+            
+            if available_memory < self.max_memory_usage:
+                raise PDFMemoryError(
+                    f"Insufficient memory for PDF analysis. Available: {available_memory / (1024*1024):.1f}MB, Required: {self.max_memory_usage / (1024*1024):.1f}MB",
+                    required_memory=self.max_memory_usage,
+                    available_memory=available_memory
+                )
+            
+            # Проверка загрузки CPU
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            if cpu_percent > 90:
+                import warnings
+                warnings.warn(
+                    PDFPerformanceWarning(
+                        f"High CPU usage detected: {cpu_percent:.1f}%. PDF analysis may be slow.",
+                        performance_metric="cpu_usage",
+                        metric_value=cpu_percent
+                    )
+                )
+                
+        except Exception as e:
+            self.logger.warning("Failed to check system resources", error=str(e))
+    
+    def _validate_pdf_content(self, pdf_content: bytes) -> None:
+        """Валидация содержимого PDF"""
+        if not pdf_content:
+            raise PDFFileError("PDF content is empty", file_size=0)
+        
+        if len(pdf_content) < 100:  # Минимальный размер PDF
+            raise PDFFileError(
+                f"PDF file is too small: {len(pdf_content)} bytes. Minimum size is 100 bytes.",
+                file_size=len(pdf_content)
+            )
+        
+        if not pdf_content.startswith(b'%PDF'):
+            raise PDFCorruptedError(
+                "Invalid PDF file format. File does not start with PDF signature.",
+                corruption_type="invalid_signature"
+            )
+        
+        # Проверка на повреждение файла
+        if b'%%EOF' not in pdf_content[-1000:]:  # Проверяем последние 1000 байт
+            raise PDFCorruptedError(
+                "PDF file appears to be truncated. EOF marker not found.",
+                corruption_type="truncated_file"
+            )
+    
+    def _validate_page_number(self, page_number: int, total_pages: int) -> None:
+        """Валидация номера страницы"""
+        if page_number < 0:
+            raise PDFPageError(
+                f"Page number cannot be negative: {page_number}",
+                page_number=page_number,
+                total_pages=total_pages
+            )
+        
+        if page_number >= total_pages:
+            raise PDFPageOutOfRangeError(page_number, total_pages)
+    
+    def _check_analysis_timeout(self, start_time: float, stage: str) -> None:
+        """Проверка таймаута анализа"""
+        elapsed_time = time.time() - start_time
+        if elapsed_time > self.analysis_timeout:
+            raise PDFAnalysisTimeoutError(
+                f"PDF analysis timed out after {elapsed_time:.1f} seconds during {stage}",
+                timeout_seconds=elapsed_time,
+                analysis_stage=stage
+            )
+    
+    def _update_analysis_stats(self, success: bool, analysis_time: float, fallback_used: bool = False) -> None:
+        """Обновление статистики анализа"""
+        self.analysis_stats["total_analyses"] += 1
+        
+        if success:
+            self.analysis_stats["successful_analyses"] += 1
+        else:
+            self.analysis_stats["failed_analyses"] += 1
+        
+        if fallback_used:
+            self.analysis_stats["fallback_analyses"] += 1
+        
+        # Обновляем среднее время анализа
+        total_successful = self.analysis_stats["successful_analyses"]
+        if total_successful > 0:
+            current_avg = self.analysis_stats["average_analysis_time"]
+            self.analysis_stats["average_analysis_time"] = (
+                (current_avg * (total_successful - 1) + analysis_time) / total_successful
+            )
+        
+        # Записываем использование памяти
+        try:
+            memory_usage = psutil.Process().memory_info().rss
+            self.analysis_stats["memory_usage_history"].append({
+                "timestamp": time.time(),
+                "memory_mb": memory_usage / (1024 * 1024)
+            })
+            
+            # Ограничиваем историю последними 100 записями
+            if len(self.analysis_stats["memory_usage_history"]) > 100:
+                self.analysis_stats["memory_usage_history"] = self.analysis_stats["memory_usage_history"][-100:]
+                
+        except Exception as e:
+            self.logger.warning("Failed to record memory usage", error=str(e))
+    
+    def get_analysis_stats(self) -> Dict[str, Any]:
+        """Получение статистики анализа"""
+        return {
+            **self.analysis_stats,
+            "cv_available": CV_AVAILABLE,
+            "cv_version": CV_VERSION,
+            "scipy_version": SCIPY_VERSION,
+            "analysis_timeout": self.analysis_timeout,
+            "max_memory_usage_mb": self.max_memory_usage / (1024 * 1024)
+        }
     
     def to_pdf_point(self, x_img: float, y_img: float, page_h: float) -> Tuple[float, float]:
         """
@@ -104,10 +262,10 @@ class PDFAnalyzer:
                 cropbox_info = {
                     "width": cropbox_width,
                     "height": cropbox_height,
-                    "x0": float(cropbox.x0),
-                    "y0": float(cropbox.y0),
-                    "x1": float(cropbox.x1),
-                    "y1": float(cropbox.y1)
+                    "x0": float(cropbox[0]),  # left
+                    "y0": float(cropbox[1]),  # bottom
+                    "x1": float(cropbox[2]),  # right
+                    "y1": float(cropbox[3])   # top
                 }
             
             # Определяем какой бокс использовать для позиционирования
@@ -121,10 +279,10 @@ class PDFAnalyzer:
                 active_box = {
                     "width": mediabox_width,
                     "height": mediabox_height,
-                    "x0": float(mediabox.x0),
-                    "y0": float(mediabox.y0),
-                    "x1": float(mediabox.x1),
-                    "y1": float(mediabox.y1)
+                    "x0": float(mediabox[0]),  # left
+                    "y0": float(mediabox[1]),  # bottom
+                    "x1": float(mediabox[2]),  # right
+                    "y1": float(mediabox[3])   # top
                 }
                 active_box_type = "mediabox"
             
@@ -135,10 +293,10 @@ class PDFAnalyzer:
                 "mediabox": {
                     "width": mediabox_width,
                     "height": mediabox_height,
-                    "x0": float(mediabox.x0),
-                    "y0": float(mediabox.y0),
-                    "x1": float(mediabox.x1),
-                    "y1": float(mediabox.y1)
+                    "x0": float(mediabox[0]),  # left
+                    "y0": float(mediabox[1]),  # bottom
+                    "x1": float(mediabox[2]),  # right
+                    "y1": float(mediabox[3])   # top
                 },
                 "cropbox": cropbox_info,
                 "active_box": active_box,
@@ -162,10 +320,10 @@ class PDFAnalyzer:
                             rotation=rotation,
                             mediabox_width=mediabox_width,
                             mediabox_height=mediabox_height,
-                            mediabox_x0=float(mediabox.x0),
-                            mediabox_y0=float(mediabox.y0),
-                            mediabox_x1=float(mediabox.x1),
-                            mediabox_y1=float(mediabox.y1),
+                            mediabox_x0=float(mediabox[0]),  # left
+                            mediabox_y0=float(mediabox[1]),  # bottom
+                            mediabox_x1=float(mediabox[2]),  # right
+                            mediabox_y1=float(mediabox[3]),  # top
                             cropbox=cropbox_info,
                             active_box_type=active_box_type,
                             active_box_width=active_box["width"],
@@ -333,7 +491,7 @@ class PDFAnalyzer:
         Отрисовывает debug-рамку вокруг ожидаемого положения QR кода
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы
             x, y: Координаты левого нижнего угла QR кода
             width, height: Размеры QR кода
@@ -411,20 +569,21 @@ class PDFAnalyzer:
     def detect_stamp_top_edge_landscape(self, pdf_path: str, page_number: int = 0) -> Optional[float]:
         """
         Определяет верхний край штампа основной надписи на landscape странице
-        
+        Detect top edge of main note stamp on landscape page
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
             Y-координата верхнего края штампа в точках PDF, или None если не найден
         """
+        self.logger.info(f"INTELIGENT POSITIONING. Detect top edge of main note stamp on landscape page: src=original, tmp=NO, requested_page={page_number}")
         if not CV_AVAILABLE:
             self.logger.warning("OpenCV not available, using fallback stamp detection")
             return self._fallback_stamp_detection(pdf_path, page_number)
             
         try:
-            self.logger.debug("🔍 Starting stamp detection for landscape page", 
+            self.logger.debug("🔍 INTELIGENT POSITIONING. Starting stamp detection for landscape page", 
                             pdf_path=pdf_path, page_number=page_number)
             
             # Открываем PDF с помощью PyMuPDF для анализа изображения
@@ -697,7 +856,7 @@ class PDFAnalyzer:
         Вычисляет дельту (dx, dy) для коррекции якоря на основе эвристик
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -705,8 +864,17 @@ class PDFAnalyzer:
         """
         try:
             # Получаем полную позицию от эвристик
-            self.logger.info(f"INTELIGENT POSITIONING. Compute Heuristics Delta. Find QR code position in stamp region: src=original, tmp=NO, total_pages={total_pages}, requested_page={page_number}")
-            position = self.detect_qr_position_in_stamp_region(pdf_path, page_number)
+            self.logger.info(f"INTELIGENT POSITIONING. Compute Heuristics Delta. Find QR code position in stamp region: src=original, tmp=NO, requested_page={page_number}")
+            # Создаем временный файл для совместимости
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                temp_file.write(pdf_content)
+                temp_pdf_path = temp_file.name
+            
+            try:
+                position = self.detect_qr_position_in_stamp_region(temp_pdf_path, page_number)
+            finally:
+                os.unlink(temp_pdf_path)
             self.logger.info(f"INTELIGENT POSITIONING. Compute Heuristics Delta. QR code position in stamp region: {position}")
             if position is None:
                 # Если эвристики не сработали, возвращаем нулевую дельту
@@ -757,7 +925,7 @@ class PDFAnalyzer:
                             error=str(e), pdf_path=pdf_path, page_number=page_number)
             return 0.0, 0.0
 
-    def detect_qr_position_in_stamp_region(self, pdf_path: str, page_number: int = 0) -> Optional[Dict[str, float]]:
+    def detect_qr_position_in_stamp_region(self, pdf_content: bytes, page_number: int = 0) -> Optional[Dict[str, float]]:
         """
         Находит позицию для QR кода в области поиска штампа
         
@@ -771,7 +939,7 @@ class PDFAnalyzer:
         7. Если fallback - ставим QR на 1 см выше нижнего края листа
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -784,10 +952,10 @@ class PDFAnalyzer:
             
         try:
             self.logger.debug("🔍 Starting QR position detection in stamp region", 
-                            pdf_path=pdf_path, page_number=page_number)
+                            page_number=page_number)
             
             # Открываем PDF
-            doc = fitz.open(pdf_path)
+            doc = PdfReader(BytesIO(pdf_content))
             if page_number >= len(doc):
                 self.logger.error("❌ Page number out of range", 
                                 page_number=page_number, total_pages=len(doc))
@@ -950,7 +1118,7 @@ class PDFAnalyzer:
         Определяет край рамки на правой стороне листа
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -1044,7 +1212,7 @@ class PDFAnalyzer:
         Определяет край нижней рамки листа
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -1133,91 +1301,310 @@ class PDFAnalyzer:
                             error=str(e), pdf_path=pdf_path, page_number=page_number)
             return None
     
-    def analyze_page_layout(self, pdf_path: str, page_number: int = 0) -> Dict[str, Any]:
+    def analyze_page_layout(self, pdf_content: bytes, page_number: int = 0) -> Dict[str, Any]:
         """
         Анализирует макет страницы и возвращает информацию о позициях элементов
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
             Словарь с информацией о макете страницы
         """
+        start_time = time.time()
+        analysis_success = False
+        fallback_used = False
+        
         try:
-            self.logger.debug("Analyzing page layout", 
-                            pdf_path=pdf_path, page_number=page_number)
+            self.logger.debug("Starting page layout analysis", 
+                            page_number=page_number, 
+                            content_size=len(pdf_content))
             
-            # Открываем PDF
-            doc = fitz.open(pdf_path)
-            if page_number >= len(doc):
-                self.logger.error("Page number out of range", 
-                                page_number=page_number, total_pages=len(doc))
-                return {}
-                
-            page = doc[page_number]
+            # Проверка системных ресурсов
+            self._check_system_resources()
+            
+            # Валидация входных данных
+            self._validate_pdf_content(pdf_content)
+            
+            # Открываем PDF с детальной обработкой ошибок
+            try:
+                doc = PdfReader(BytesIO(pdf_content))
+                total_pages = len(doc.pages)
+                self.logger.debug("PDF opened successfully", 
+                                total_pages=total_pages, 
+                                page_number=page_number)
+            except Exception as e:
+                raise PDFCorruptedError(
+                    f"Failed to open PDF file: {str(e)}",
+                    corruption_type="read_error"
+                )
+            
+            # Валидация номера страницы
+            self._validate_page_number(page_number, total_pages)
+            
+            # Проверка таймаута
+            self._check_analysis_timeout(start_time, "page_validation")
+            
+            # Получаем страницу с обработкой ошибок
+            try:
+                page = doc.pages[page_number]
+                self.logger.debug("Page retrieved successfully", page_number=page_number)
+            except Exception as e:
+                raise PDFPageCorruptedError(
+                    page_number, 
+                    f"Failed to retrieve page: {str(e)}"
+                )
             
             # Аудит координат страницы
-            coordinate_info = self._audit_page_coordinates(page, page_number)
+            try:
+                coordinate_info = self._audit_page_coordinates(page, page_number)
+                self.logger.debug("Page coordinates audited", 
+                                coordinate_info=coordinate_info)
+            except Exception as e:
+                self.logger.warning("Failed to audit page coordinates, using defaults", 
+                                  error=str(e), page_number=page_number)
+                # Fallback координаты
+                coordinate_info = {
+                    "page_number": page_number,
+                    "rotation": 0,
+                    "active_box": {
+                        "width": float(page.mediabox.width),
+                        "height": float(page.mediabox.height)
+                    },
+                    "orientation": "landscape" if float(page.mediabox.width) > float(page.mediabox.height) else "portrait",
+                    "active_box_type": "mediabox"
+                }
+                fallback_used = True
             
             # Определяем ориентацию страницы
-            is_landscape = coordinate_info["orientation"] == "landscape"
+            is_landscape = coordinate_info.get("orientation") == "landscape"
             
             result = {
                 "page_number": page_number,
                 "page_width": coordinate_info["active_box"]["width"],
                 "page_height": coordinate_info["active_box"]["height"],
-                "rotation": coordinate_info["rotation"],
+                "rotation": coordinate_info.get("rotation", 0),
                 "is_landscape": is_landscape,
                 "coordinate_info": coordinate_info,
                 "stamp_top_edge": None,
                 "right_frame_edge": None,
                 "bottom_frame_edge": None,
                 "horizontal_line_18cm": None,
-                "free_space_3_5cm": None
+                "free_space_3_5cm": None,
+                "analysis_metadata": {
+                    "analysis_time": 0.0,
+                    "fallback_used": fallback_used,
+                    "cv_available": CV_AVAILABLE,
+                    "errors": [],
+                    "warnings": []
+                }
             }
             
-            # Для landscape страниц определяем верхний край штампа
-            stamp_top = None
-            if is_landscape:
-                stamp_top = self.detect_stamp_top_edge_landscape(pdf_path, page_number)
-                result["stamp_top_edge"] = stamp_top
+            # Проверка таймаута перед анализом элементов
+            self._check_analysis_timeout(start_time, "coordinate_analysis")
             
-            # Определяем правый край рамки для всех страниц
-            right_frame = self.detect_right_frame_edge(pdf_path, page_number)
-            result["right_frame_edge"] = right_frame
+            # Создаем временный файл для методов, которые требуют pdf_path
+            import tempfile
+            import os
             
-            # Определяем нижний край рамки для всех страниц
-            bottom_frame = self.detect_bottom_frame_edge(pdf_path, page_number)
-            result["bottom_frame_edge"] = bottom_frame
+            temp_pdf_path = None
+            try:
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                    temp_file.write(pdf_content)
+                    temp_pdf_path = temp_file.name
+                
+                self.logger.debug("Temporary PDF file created", 
+                                temp_path=temp_pdf_path)
+                
+                # Анализ элементов страницы с детальной обработкой ошибок
+                analysis_methods = [
+                    ("stamp_top_edge", lambda: self._analyze_stamp_top_edge(temp_pdf_path, page_number, is_landscape)),
+                    ("right_frame_edge", lambda: self._analyze_right_frame_edge(temp_pdf_path, page_number)),
+                    ("bottom_frame_edge", lambda: self._analyze_bottom_frame_edge(temp_pdf_path, page_number)),
+                    ("horizontal_line_18cm", lambda: self._analyze_horizontal_line(temp_pdf_path, page_number)),
+                    ("free_space_3_5cm", lambda: self._analyze_free_space(temp_pdf_path, page_number))
+                ]
+                
+                for element_name, analysis_func in analysis_methods:
+                    try:
+                        self._check_analysis_timeout(start_time, f"{element_name}_analysis")
+                        element_result = analysis_func()
+                        result[element_name] = element_result
+                        
+                        if element_result is not None:
+                            self.logger.debug(f"Element analysis successful", 
+                                            element=element_name, 
+                                            result=element_result)
+                        else:
+                            self.logger.debug(f"Element not found", element=element_name)
+                            
+                    except PDFAnalysisTimeoutError:
+                        self.logger.warning(f"Analysis timeout for {element_name}", 
+                                          page_number=page_number)
+                        result["analysis_metadata"]["warnings"].append(
+                            f"Timeout during {element_name} analysis"
+                        )
+                        result[element_name] = None
+                        
+                    except PDFOpenCVError as e:
+                        self.logger.warning(f"OpenCV error during {element_name} analysis", 
+                                          error=str(e), page_number=page_number)
+                        result["analysis_metadata"]["warnings"].append(
+                            f"OpenCV error during {element_name} analysis: {str(e)}"
+                        )
+                        result[element_name] = None
+                        fallback_used = True
+                        
+                    except Exception as e:
+                        self.logger.warning(f"Error during {element_name} analysis", 
+                                          error=str(e), page_number=page_number)
+                        result["analysis_metadata"]["errors"].append(
+                            f"Error during {element_name} analysis: {str(e)}"
+                        )
+                        result[element_name] = None
+                
+            finally:
+                # Удаляем временный файл
+                if temp_pdf_path and os.path.exists(temp_pdf_path):
+                    try:
+                        os.unlink(temp_pdf_path)
+                        self.logger.debug("Temporary PDF file cleaned up")
+                    except OSError as e:
+                        self.logger.warning("Failed to clean up temporary file", 
+                                          error=str(e), temp_path=temp_pdf_path)
             
-            # Определяем горизонтальную линию длиной не менее 18 см
-            horizontal_line = self.detect_horizontal_line_18cm(pdf_path, page_number)
-            result["horizontal_line_18cm"] = horizontal_line
+            # Завершаем анализ
+            analysis_time = time.time() - start_time
+            result["analysis_metadata"]["analysis_time"] = analysis_time
+            result["analysis_metadata"]["fallback_used"] = fallback_used
             
-            # Ищем свободное место 3.5x3.5 см в нижнем левом углу
-            free_space = self.detect_free_space_3_5cm(pdf_path, page_number)
-            result["free_space_3_5cm"] = free_space
+            analysis_success = True
             
-            self.logger.info("Page layout analysis completed", 
+            self.logger.info("Page layout analysis completed successfully", 
                            page_number=page_number,
                            is_landscape=is_landscape,
-                           rotation=coordinate_info["rotation"],
+                           rotation=coordinate_info.get("rotation", 0),
                            page_width=coordinate_info["active_box"]["width"],
                            page_height=coordinate_info["active_box"]["height"],
-                           active_box_type=coordinate_info["active_box_type"],
-                           stamp_top_edge=stamp_top,
-                           right_frame_edge=right_frame,
-                           horizontal_line_18cm=horizontal_line,
-                           free_space_3_5cm=free_space)
+                           active_box_type=coordinate_info.get("active_box_type", "mediabox"),
+                           analysis_time=analysis_time,
+                           fallback_used=fallback_used,
+                           elements_found={
+                               "stamp_top_edge": result["stamp_top_edge"] is not None,
+                               "right_frame_edge": result["right_frame_edge"] is not None,
+                               "bottom_frame_edge": result["bottom_frame_edge"] is not None,
+                               "horizontal_line_18cm": result["horizontal_line_18cm"] is not None,
+                               "free_space_3_5cm": result["free_space_3_5cm"] is not None
+                           })
             
-            doc.close()
+            # PdfReader не имеет метода close()
             return result
             
+        except (PDFFileError, PDFCorruptedError, PDFPageError, PDFPageOutOfRangeError, 
+                PDFPageCorruptedError, PDFMemoryError, PDFAnalysisTimeoutError) as e:
+            # Специфичные ошибки PDF анализа
+            analysis_time = time.time() - start_time
+            self.logger.error("PDF analysis failed with specific error", 
+                            error_type=type(e).__name__,
+                            error_code=getattr(e, 'error_code', 'UNKNOWN'),
+                            error_message=str(e),
+                            page_number=page_number,
+                            analysis_time=analysis_time,
+                            error_details=getattr(e, 'details', {}))
+            
+            self._update_analysis_stats(False, analysis_time, fallback_used)
+            raise
+            
         except Exception as e:
-            self.logger.error("Error analyzing page layout", 
-                            error=str(e), pdf_path=pdf_path, page_number=page_number)
-            return {}
+            # Общие ошибки
+            analysis_time = time.time() - start_time
+            self.logger.error("PDF analysis failed with unexpected error", 
+                            error=str(e),
+                            error_type=type(e).__name__,
+                            page_number=page_number,
+                            analysis_time=analysis_time,
+                            exc_info=True)
+            
+            self._update_analysis_stats(False, analysis_time, fallback_used)
+            raise PDFAnalysisError(
+                f"Unexpected error during PDF analysis: {str(e)}",
+                details={"original_error": str(e), "error_type": type(e).__name__}
+            )
+            
+        finally:
+            # Обновляем статистику
+            analysis_time = time.time() - start_time
+            self._update_analysis_stats(analysis_success, analysis_time, fallback_used)
+    
+    def _analyze_stamp_top_edge(self, pdf_path: str, page_number: int, is_landscape: bool) -> Optional[float]:
+        """Анализ верхнего края штампа с обработкой ошибок"""
+        try:
+            if not is_landscape:
+                self.logger.debug("Skipping stamp analysis for portrait page", page_number=page_number)
+                return None
+            
+            if not CV_AVAILABLE:
+                self.logger.warning("OpenCV not available for stamp analysis", page_number=page_number)
+                return self._fallback_stamp_detection(pdf_path, page_number)
+            
+            return self.detect_stamp_top_edge_landscape(pdf_path, page_number)
+            
+        except Exception as e:
+            self.logger.warning("Error during stamp analysis", error=str(e), page_number=page_number)
+            return self._fallback_stamp_detection(pdf_path, page_number)
+    
+    def _analyze_right_frame_edge(self, pdf_path: str, page_number: int) -> Optional[float]:
+        """Анализ правого края рамки с обработкой ошибок"""
+        try:
+            if not CV_AVAILABLE:
+                self.logger.warning("OpenCV not available for frame analysis", page_number=page_number)
+                return self._fallback_frame_detection(pdf_path, page_number, "right")
+            
+            return self.detect_right_frame_edge(pdf_path, page_number)
+            
+        except Exception as e:
+            self.logger.warning("Error during right frame analysis", error=str(e), page_number=page_number)
+            return self._fallback_frame_detection(pdf_path, page_number, "right")
+    
+    def _analyze_bottom_frame_edge(self, pdf_path: str, page_number: int) -> Optional[float]:
+        """Анализ нижнего края рамки с обработкой ошибок"""
+        try:
+            if not CV_AVAILABLE:
+                self.logger.warning("OpenCV not available for frame analysis", page_number=page_number)
+                return self._fallback_frame_detection(pdf_path, page_number, "bottom")
+            
+            return self.detect_bottom_frame_edge(pdf_path, page_number)
+            
+        except Exception as e:
+            self.logger.warning("Error during bottom frame analysis", error=str(e), page_number=page_number)
+            return self._fallback_frame_detection(pdf_path, page_number, "bottom")
+    
+    def _analyze_horizontal_line(self, pdf_path: str, page_number: int) -> Optional[Dict[str, float]]:
+        """Анализ горизонтальной линии с обработкой ошибок"""
+        try:
+            if not CV_AVAILABLE:
+                self.logger.warning("OpenCV not available for line analysis", page_number=page_number)
+                return self._fallback_horizontal_line_detection(pdf_path, page_number)
+            
+            return self.detect_horizontal_line_18cm(pdf_path, page_number)
+            
+        except Exception as e:
+            self.logger.warning("Error during horizontal line analysis", error=str(e), page_number=page_number)
+            return self._fallback_horizontal_line_detection(pdf_path, page_number)
+    
+    def _analyze_free_space(self, pdf_path: str, page_number: int) -> Optional[Dict[str, float]]:
+        """Анализ свободного места с обработкой ошибок"""
+        try:
+            if not CV_AVAILABLE:
+                self.logger.warning("OpenCV not available for free space analysis", page_number=page_number)
+                return self._fallback_qr_position_in_stamp_region(pdf_path, page_number)
+            
+            return self.detect_free_space_3_5cm(pdf_path, page_number)
+            
+        except Exception as e:
+            self.logger.warning("Error during free space analysis", error=str(e), page_number=page_number)
+            return self._fallback_qr_position_in_stamp_region(pdf_path, page_number)
     
     def _fallback_stamp_detection(self, pdf_path: str, page_number: int = 0) -> Optional[float]:
         """
@@ -1268,7 +1655,7 @@ class PDFAnalyzer:
         Определяет верхнюю горизонтальную линию длиной не менее 15 см в верхней части листа
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -1414,7 +1801,7 @@ class PDFAnalyzer:
         2. Если не удается, использует старый алгоритм поиска в верхней части листа
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -1427,7 +1814,16 @@ class PDFAnalyzer:
             
             # Шаг 1: Пытаемся найти позицию в области поиска штампа
             self.logger.debug("🔍 Step 1: Trying to find QR position in stamp region")
-            stamp_region_position = self.detect_qr_position_in_stamp_region(pdf_path, page_number)
+            # Создаем временный файл для совместимости
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                temp_file.write(pdf_content)
+                temp_pdf_path = temp_file.name
+            
+            try:
+                stamp_region_position = self.detect_qr_position_in_stamp_region(temp_pdf_path, page_number)
+            finally:
+                os.unlink(temp_pdf_path)
             
             if stamp_region_position:
                 self.logger.info("✅ QR position found in stamp region", 
@@ -1451,7 +1847,7 @@ class PDFAnalyzer:
         (переименованный оригинальный метод detect_free_space_3_5cm)
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -1546,7 +1942,7 @@ class PDFAnalyzer:
         Находит все горизонтальные линии длиной не менее 15 см в верхней части страницы
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:
@@ -1679,7 +2075,7 @@ class PDFAnalyzer:
         Проверяет, является ли указанная область изображения пустой (без значимых элементов)
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             x, y: Координаты левого верхнего угла области в PDF точках
             width, height: Размеры области в PDF точках
@@ -2176,7 +2572,7 @@ class PDFAnalyzer:
         Fallback метод для позиционирования QR кода в области поиска штампа без OpenCV
         
         Args:
-            pdf_path: Путь к PDF файлу
+            pdf_content: Содержимое PDF файла в байтах
             page_number: Номер страницы (начиная с 0)
             
         Returns:

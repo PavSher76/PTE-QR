@@ -26,8 +26,19 @@ debug_logger = DebugLogger(__name__)
 
 class PDFService:
     """Service for PDF processing and QR code integration"""
+    
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(PDFService, cls).__new__(cls)
+        return cls._instance
 
     def __init__(self):
+        if self._initialized:
+            return
+            
         log_function_call("PDFService.__init__")
         # Use temp directory for local development
         self.output_dir = os.path.join(tempfile.gettempdir(), "pte_qr_pdf_output")
@@ -35,6 +46,7 @@ class PDFService:
         self.pdf_analyzer = PDFAnalyzer()
         debug_logger.info("PDFService initialized", output_dir=self.output_dir)
         log_function_result("PDFService.__init__", output_dir=self.output_dir)
+        self._initialized = True
 
     async def process_pdf_with_qr_codes(
         self,
@@ -234,10 +246,10 @@ class PDFService:
             active_box_type = "media"
             
             # Получаем границы активного бокса
-            x0 = float(page.mediabox.x0)
-            y0 = float(page.mediabox.y0)
-            x1 = float(page.mediabox.x1)
-            y1 = float(page.mediabox.y1)
+            x0 = float(page.mediabox[0])  # left
+            y0 = float(page.mediabox[1])  # bottom
+            x1 = float(page.mediabox[2])  # right
+            y1 = float(page.mediabox[3])  # top
             
             # QR FINAL: Детальный лог перед вставкой QR кода
             debug_logger.info("🎯 QR FINAL - Position before insertion", 
@@ -276,7 +288,7 @@ class PDFService:
             # Return original page if QR code addition fails
             return page
 
-    def _calculate_unified_qr_position(self, page, qr_size: float, pdf_path: str, page_number: int) -> tuple[float, float]:
+    def _calculate_unified_qr_position_legacy(self, page, qr_size: float, pdf_path: str, page_number: int) -> tuple[float, float]:
         """
         Унифицированный расчет позиции QR кода без двойной инверсии
         
@@ -294,16 +306,18 @@ class PDFService:
                              qr_size=qr_size, pdf_path=pdf_path, page_number=page_number)
             
             # Анализируем макет страницы для получения координатной информации
-            layout_info = self.pdf_analyzer.analyze_page_layout(pdf_path, page_number)
+            with open(pdf_path, 'rb') as f:
+                pdf_content = f.read()
+            layout_info = self.pdf_analyzer.analyze_page_layout(pdf_content, page_number)
             
             if not layout_info:
                 debug_logger.warning("Could not analyze page layout, using fallback position")
                 # Fallback: используем базовый якорь без эвристик
                 # Используем MediaBox границы
-                x0 = float(page.mediabox.x0)
-                y0 = float(page.mediabox.y0)
-                x1 = float(page.mediabox.x1)
-                y1 = float(page.mediabox.y1)
+                x0 = float(page.mediabox[0])  # left
+                y0 = float(page.mediabox[1])  # bottom
+                x1 = float(page.mediabox[2])  # right
+                y1 = float(page.mediabox[3])  # top
                 rotation = 0  # Предполагаем поворот 0° для fallback
                 
                 base_x, base_y = self.compute_anchor_xy(
@@ -336,11 +350,18 @@ class PDFService:
             rotation = coordinate_info.get("rotation", 0)
             
             # 1. СНАЧАЛА вычисляем базовый якорь bottom-right с учетом rotation
-            # Используем границы активного бокса
-            x0 = active_box.get("x0", float(page.mediabox.x0))
-            y0 = active_box.get("y0", float(page.mediabox.y0))
-            x1 = active_box.get("x1", float(page.mediabox.x1))
-            y1 = active_box.get("y1", float(page.mediabox.y1))
+            # Инициализируем координаты из MediaBox, затем обновляем из active_box если доступно
+            x0 = float(page.mediabox[0])  # left
+            y0 = float(page.mediabox[1])  # bottom
+            x1 = float(page.mediabox[2])  # right
+            y1 = float(page.mediabox[3])  # top
+            
+            # Обновляем координаты из active_box, если они доступны
+            if active_box:
+                x0 = active_box.get("x0", x0)
+                y0 = active_box.get("y0", y0)
+                x1 = active_box.get("x1", x1)
+                y1 = active_box.get("y1", y1)
             
             base_x, base_y = self.compute_anchor_xy(
                 x0=x0, y0=y0, x1=x1, y1=y1,
@@ -392,10 +413,10 @@ class PDFService:
                              error=str(e), pdf_path=pdf_path, page_number=page_number)
             # Fallback: используем базовый якорь без эвристик
             # Используем MediaBox границы
-            x0 = float(page.mediabox.x0)
-            y0 = float(page.mediabox.y0)
-            x1 = float(page.mediabox.x1)
-            y1 = float(page.mediabox.y1)
+            x0 = float(page.mediabox[0])  # left
+            y0 = float(page.mediabox[1])  # bottom
+            x1 = float(page.mediabox[2])  # right
+            y1 = float(page.mediabox[3])  # top
             rotation = 0  # Предполагаем поворот 0° для fallback
             
             base_x, base_y = self.compute_anchor_xy(
@@ -456,27 +477,30 @@ class PDFService:
                 return default_x, default_y
             
             # Analyze page layout to detect elements and free space
-            layout_info = self.pdf_analyzer.analyze_page_layout(pdf_path, page_number)
+            with open(pdf_path, 'rb') as f:
+                pdf_content = f.read()
+            layout_info = self.pdf_analyzer.analyze_page_layout(pdf_content, page_number)
             
             if not layout_info:
                 debug_logger.warning("Could not analyze page layout, using default position")
                 return default_x, default_y
             
             # 1. СНАЧАЛА вычисляем базовый якорь bottom-right
-            # Используем границы активного бокса из layout_info
+            # Инициализируем координаты по умолчанию
+            x0 = 0.0
+            y0 = 0.0
+            x1 = page_width
+            y1 = page_height
+            
+            # Обновляем координаты из layout_info, если доступно
             if layout_info:
                 coordinate_info = layout_info.get("coordinate_info", {})
                 active_box = coordinate_info.get("active_box", {})
-                x0 = active_box.get("x0", 0.0)
-                y0 = active_box.get("y0", 0.0)
-                x1 = active_box.get("x1", page_width)
-                y1 = active_box.get("y1", page_height)
-            else:
-                # Fallback к MediaBox границам
-                x0 = 0.0
-                y0 = 0.0
-                x1 = page_width
-                y1 = page_height
+                if active_box:
+                    x0 = active_box.get("x0", x0)
+                    y0 = active_box.get("y0", y0)
+                    x1 = active_box.get("x1", x1)
+                    y1 = active_box.get("y1", y1)
             
             base_x, base_y = self.compute_anchor_xy(
                 x0=x0, y0=y0, x1=x1, y1=y1,
@@ -784,55 +808,106 @@ class PDFService:
         except Exception as e:
             debug_logger.error("❌ Error computing anchor", 
                             error=str(e), rotation=rotation)
-            x = max(x0, min(x1 - margin_pt - qr_w, x1 - qr_w))
-            y = max(y0, min(y0 + margin_pt + stamp_clearance_pt, y1 - qr_h))
+            # Fallback: используем безопасные значения
+            x = max(0.0, min(100.0 - margin_pt - qr_w, 100.0 - qr_w))
+            y = max(0.0, min(0.0 + margin_pt + stamp_clearance_pt, 100.0 - qr_h))
             return x, y
 
-    def _calculate_unified_qr_position(self, page, qr_size: float, pdf_content_or_path, page_number: int) -> tuple[float, float, dict]:
+    def _calculate_unified_qr_position(self, page, qr_size: float, pdf_content: bytes, page_number: int) -> tuple[float, float, dict]:
         """
         Вычисляет позицию QR кода с использованием единой системы позиционирования
         
         Args:
             page: Страница PDF
             qr_size: Размер QR кода в точках
-            pdf_content_or_path: Содержимое PDF или путь к файлу (для совместимости)
+            pdf_content_or_path: Содержимое PDF (bytes)
             page_number: Номер страницы (0-based)
             
         Returns:
             Tuple (x, y) координаты в PDF-СК
         """
         try:
-            logger.info(f"INTELIGENT POSITIONING. Calculate Unified QR position: src=original, tmp=NO, total_pages={total_pages}, requested_page={page_number}")
+            reader = PdfReader(BytesIO(pdf_content))
+
+            total_pages = len(reader.pages)
+            logger.info(f"INTELIGENT POSITIONING. _Calculate Unified QR position: src=original, tmp=NO, total_pages={total_pages}, requested_page={page_number}")
             # Получаем границы активного бокса
-            x0 = float(page.mediabox.x0)
-            y0 = float(page.mediabox.y0)
-            x1 = float(page.mediabox.x1)
-            y1 = float(page.mediabox.y1)
+            x0 = float(page.mediabox[0])  # left
+            y0 = float(page.mediabox[1])  # bottom
+            x1 = float(page.mediabox[2])  # right
+            y1 = float(page.mediabox[3])  # top
             
-            # Используем базовый якорь bottom-right
+            layout_info = None
+            rotation = 0
+            stamp_top_edge = None
+            dx, dy = 0.0, 0.0
+            
+            # Инициализируем base_x и base_y по умолчанию
             base_x, base_y = self.compute_anchor_xy(
                 x0=x0, y0=y0, x1=x1, y1=y1,
                 qr_w=qr_size,
                 qr_h=qr_size,
                 margin_pt=settings.QR_MARGIN_PT,
                 stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
-                rotation=0  # TODO: получить rotation из анализа
+                rotation=0
             )
-            logger.info(f"INTELIGENT POSITIONING. Calculate Unified QR position: base_x={base_x}, base_y={base_y}")
 
-            # TODO: добавить анализ штампа и дельту
-            # TODO: add main note stamp analysis and delta
+            try:
+                logger.info(f"INTELIGENT POSITIONING. _Calculate Unified QR position. Call analyze_page_layout to calculate Unified QR position: page_number={page_number}")
+                layout_info = self.pdf_analyzer.analyze_page_layout(pdf_content, page_number)
 
-            dx, dy = self.pdf_analyzer.compute_heuristics_delta(pdf_content_or_path, page_number)
+                if layout_info:
+                    coordinate_info = layout_info.get("coordinate_info", {})
+                    active_box = coordinate_info.get("active_box", {})
+                    # Обновляем координаты из active_box, если они доступны
+                    x0 = active_box.get("x0", x0)  # x0 уже инициализирован выше
+                    y0 = active_box.get("y0", y0)  # y0 уже инициализирован выше
+                    x1 = active_box.get("x1", x1)  # x1 уже инициализирован выше
+                    y1 = active_box.get("y1", y1)  # y1 уже инициализирован выше
+                    rotation = coordinate_info.get("rotation", 0)
+                    stamp_top_edge = layout_info.get("stamp_top_edge")
+                    logger.info(f"INTELIGENT POSITIONING. Calculate Unified QR position: stamp_top_edge={stamp_top_edge}")
+
+                # Обновляем base_x и base_y с учетом rotation
+                base_x, base_y = self.compute_anchor_xy(
+                    x0=x0, y0=y0, x1=x1, y1=y1,
+                    qr_w=qr_size,
+                    qr_h=qr_size,
+                    margin_pt=settings.QR_MARGIN_PT,
+                    stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                    rotation=rotation
+                )
+
+                if stamp_top_edge is not None:
+                    safe_y = stamp_top_edge + settings.QR_MARGIN_PT
+                    base_y = min(max(base_y, safe_y), y1 - qr_size)
+
+                logger.info(
+                    f"INTELIGENT POSITIONING. Calculate Unified QR position: base_x={base_x}, base_y={base_y}, rotation={rotation}, stamp_top_edge={stamp_top_edge}"
+                )
+
+                # Вычисляем дельту эвристик (если доступно)
+                try:
+                    dx, dy = self.pdf_analyzer.compute_heuristics_delta(pdf_content, page_number)
+                except Exception as e:
+                    debug_logger.warning("Could not compute heuristics delta", error=str(e))
+                    dx, dy = 0.0, 0.0
+            except Exception as e:
+                debug_logger.error("❌ INTELIGENT POSITIONING. Error calculating heuristics delta", 
+                                 error=str(e), page_number=page_number)
+                dx, dy = 0.0, 0.0
+            finally:
+                # Очистка временных файлов (если есть)
+                pass
             logger.info(f"INTELIGENT POSITIONING. Calculate Unified QR position: dx={dx}, dy={dy}")
             
             # Применяем дельту
             x_position = base_x + dx
             y_position = base_y + dy
             
-            # Клэмпим координаты
-            x_position = max(x0, min(x_position, x1 - qr_size))
-            y_position = max(y0, min(y_position, y1 - qr_size))
+            # Клэмпим координаты (используем безопасные значения если переменные не инициализированы)
+            x_position = max(x0 if 'x0' in locals() else 0.0, min(x_position, (x1 if 'x1' in locals() else 100.0) - qr_size))
+            y_position = max(y0 if 'y0' in locals() else 0.0, min(y_position, (y1 if 'y1' in locals() else 100.0) - qr_size))
             
             debug_logger.info("🔍 INTELIGENT POSITIONING. Unified QR position calculated", 
                             page=page_number + 1,
@@ -844,8 +919,8 @@ class PDFService:
             info = {
                 'base': (base_x, base_y),
                 'delta': (dx, dy),
-                'rotation': 0,
-                'stamp_bbox': 'NOT_FOUND'
+                'rotation': rotation,
+                'stamp_bbox': stamp_top_edge if stamp_top_edge is not None else 'NOT_FOUND'
             }
             
             return x_position, y_position, info
@@ -854,10 +929,10 @@ class PDFService:
             debug_logger.error("❌ INTELIGENT POSITIONING. Error calculating unified QR position", 
                              error=str(e), page_number=page_number)
             # Fallback к простому якорю
-            x0 = float(page.mediabox.x0)
-            y0 = float(page.mediabox.y0)
-            x1 = float(page.mediabox.x1)
-            y1 = float(page.mediabox.y1)
+            x0 = float(page.mediabox[0])  # left
+            y0 = float(page.mediabox[1])  # bottom
+            x1 = float(page.mediabox[2])  # right
+            y1 = float(page.mediabox[3])  # top
             
             base_x, base_y = self.compute_anchor_xy(
                 x0=x0, y0=y0, x1=x1, y1=y1,

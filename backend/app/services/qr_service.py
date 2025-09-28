@@ -19,8 +19,19 @@ debug_logger = DebugLogger(__name__)
 
 class QRService:
     """Service for QR code generation and validation"""
+    
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(QRService, cls).__new__(cls)
+        return cls._instance
 
     def __init__(self):
+        if self._initialized:
+            return
+            
         log_function_call("QRService.__init__")
         self.hmac_secret = settings.QR_HMAC_SECRET
         self.qr_size = settings.QR_CODE_SIZE
@@ -33,6 +44,7 @@ class QRService:
             qr_border=self.qr_border,
             error_correction=self.error_correction
         )
+        self._initialized = True
         log_function_result("QRService.__init__", qr_size=self.qr_size)
 
     def generate_qr_data(

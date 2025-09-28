@@ -50,7 +50,9 @@ def analyze_pdf(pdf_path: str, page_number: int = 0, **kwargs):
     
     try:
         # Анализируем макет страницы
-        layout_info = pdf_analyzer.analyze_page_layout(pdf_path, page_number)
+        with open(pdf_path, 'rb') as f:
+            pdf_content = f.read()
+        layout_info = pdf_analyzer.analyze_page_layout(pdf_content, page_number)
         
         if not layout_info:
             logger.error("❌ Не удалось проанализировать макет страницы")
@@ -137,7 +139,9 @@ def test_coordinates(pdf_path: str, **kwargs):
     
     try:
         # Анализируем макет страницы
-        layout_info = pdf_analyzer.analyze_page_layout(pdf_path, 0)
+        with open(pdf_path, 'rb') as f:
+            pdf_content = f.read()
+        layout_info = pdf_analyzer.analyze_page_layout(pdf_content, 0)
         
         if not layout_info:
             logger.error("❌ Не удалось проанализировать макет страницы")
