@@ -5,6 +5,7 @@ Service for PDF processing and QR code integration
 import os
 import tempfile
 import uuid
+from copy import deepcopy
 from typing import Dict, Any, List
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
@@ -12,6 +13,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import inch
 from io import BytesIO
 import structlog
+from PIL import Image
 
 from app.services.qr_service import QRService
 from app.services.document_service import DocumentService
@@ -214,22 +216,24 @@ class PDFService:
             qr_size_cm = 3.5
             qr_size = qr_size_cm * 28.35  # 99.225 points
             
-            # Get page dimensions for audit
-            page_width = float(page.mediabox.width)
-            page_height = float(page.mediabox.height)
-            
             # Use new unified positioning system
             x_position, y_position = self._calculate_unified_qr_position(
                 page, qr_size, pdf_path, page_number - 1
             )
             
+            # Get page dimensions for audit (используем MediaBox для консистентности)
+            page_width = float(page.mediabox.width)
+            page_height = float(page.mediabox.height)
+            active_box_type = "media"
+            
             # COORDINATE PIPELINE AUDIT - Log all parameters before insertion
             debug_logger.info("🔍 COORDINATE PIPELINE AUDIT - Before QR insertion", 
-                            mediabox_width=page_width,
-                            mediabox_height=page_height,
+                            page=page_number,
+                            box=active_box_type,
+                            W=page_width,
+                            H=page_height,
                             rotation="TBD",  # Will be filled by _calculate_unified_qr_position
-                            qr_width=qr_size,
-                            qr_height=qr_size,
+                            qr=(qr_size, qr_size),
                             margin="TBD",  # Will be filled by _calculate_unified_qr_position
                             x_position=x_position,
                             y_position=y_position,
@@ -282,43 +286,79 @@ class PDFService:
             
             if not layout_info:
                 debug_logger.warning("Could not analyze page layout, using fallback position")
-                # Fallback: bottom-right corner
+                # Fallback: используем базовый якорь без эвристик
                 page_width = float(page.mediabox.width)
                 page_height = float(page.mediabox.height)
-                margin = 12.0  # 12 pt margin
-                return page_width - qr_size - margin, margin
+                rotation = 0  # Предполагаем поворот 0° для fallback
+                
+                base_x, base_y = self.compute_anchor_xy(
+                    W=page_width,
+                    H=page_height,
+                    qr_w=qr_size,
+                    qr_h=qr_size,
+                    margin=settings.QR_MARGIN_PT,
+                    rotation=rotation,
+                    anchor=settings.QR_ANCHOR
+                )
+                
+                debug_logger.info("🔍 FALLBACK - Base anchor only", 
+                                page=page_number,
+                                box="media",
+                                W=page_width,
+                                H=page_height,
+                                rot=rotation,
+                                anchor=settings.QR_ANCHOR,
+                                qr=(qr_size, qr_size),
+                                margin=settings.QR_MARGIN_PT,
+                                base=(base_x, base_y),
+                                delta=(0.0, 0.0),
+                                final=(base_x, base_y))
+                
+                return base_x, base_y
             
             # Получаем информацию о координатах
             coordinate_info = layout_info.get("coordinate_info", {})
             active_box = coordinate_info.get("active_box", {})
             rotation = coordinate_info.get("rotation", 0)
             
-            # Используем новую унифицированную функцию расчета позиции
-            page_box = {
-                "width": active_box.get("width", float(page.mediabox.width)),
-                "height": active_box.get("height", float(page.mediabox.height))
-            }
+            # 1. СНАЧАЛА вычисляем базовый якорь bottom-right с учетом rotation
+            page_width = active_box.get("width", float(page.mediabox.width))
+            page_height = active_box.get("height", float(page.mediabox.height))
             
-            x_position, y_position = self.pdf_analyzer.compute_qr_anchor(
-                page_box=page_box,
-                qr_size=qr_size,
-                rotation=rotation
+            base_x, base_y = self.compute_anchor_xy(
+                W=page_width,
+                H=page_height, 
+                qr_w=qr_size,
+                qr_h=qr_size,
+                margin=settings.QR_MARGIN_PT,
+                rotation=rotation,
+                anchor=settings.QR_ANCHOR
             )
+            
+            # 2. ПОТОМ получаем дельту от эвристик (если нужно)
+            dx, dy = self.pdf_analyzer.compute_heuristics_delta(pdf_path, page_number)
+            
+            # 3. Применяем дельту к базовому якорю
+            x_position = base_x + dx
+            y_position = base_y + dy
+            
+            # 4. Клэмпим координаты в пределах страницы
+            x_position = max(0, min(x_position, page_width - qr_size))
+            y_position = max(0, min(y_position, page_height - qr_size))
             
             # COORDINATE PIPELINE AUDIT - Detailed calculation info
             debug_logger.info("🔍 COORDINATE PIPELINE AUDIT - Detailed calculation", 
-                            mediabox_width=page_box["width"],
-                            mediabox_height=page_box["height"],
-                            rotation=rotation,
-                            qr_width=qr_size,
-                            qr_height=qr_size,
-                            margin=settings.QR_MARGIN_PT,
+                            page=page_number,
+                            box=coordinate_info.get("active_box_type", "media"),
+                            W=page_width,
+                            H=page_height,
+                            rot=rotation,
                             anchor=settings.QR_ANCHOR,
-                            x_position=x_position,
-                            y_position=y_position,
-                            x_cm=round(x_position / 28.35, 2),
-                            y_cm=round(y_position / 28.35, 2),
-                            active_box_type=coordinate_info.get("active_box_type"),
+                            qr=(qr_size, qr_size),
+                            margin=settings.QR_MARGIN_PT,
+                            base=(base_x, base_y),
+                            delta=(dx, dy),
+                            final=(x_position, y_position),
                             respect_rotation=settings.QR_RESPECT_ROTATION)
             
             # Отрисовываем debug рамку если включено
@@ -334,11 +374,35 @@ class PDFService:
         except Exception as e:
             debug_logger.error("Error calculating unified QR position", 
                              error=str(e), pdf_path=pdf_path, page_number=page_number)
-            # Fallback: bottom-right corner
+            # Fallback: используем базовый якорь без эвристик
             page_width = float(page.mediabox.width)
             page_height = float(page.mediabox.height)
-            margin = 12.0  # 12 pt margin
-            return page_width - qr_size - margin, margin
+            rotation = 0  # Предполагаем поворот 0° для fallback
+            
+            base_x, base_y = self.compute_anchor_xy(
+                W=page_width,
+                H=page_height,
+                qr_w=qr_size,
+                qr_h=qr_size,
+                margin=settings.QR_MARGIN_PT,
+                rotation=rotation,
+                anchor=settings.QR_ANCHOR
+            )
+            
+            debug_logger.info("🔍 EXCEPTION FALLBACK - Base anchor only", 
+                            page=page_number,
+                            box="media",
+                            W=page_width,
+                            H=page_height,
+                            rot=rotation,
+                            anchor=settings.QR_ANCHOR,
+                            qr=(qr_size, qr_size),
+                            margin=settings.QR_MARGIN_PT,
+                            base=(base_x, base_y),
+                            delta=(0.0, 0.0),
+                            final=(base_x, base_y))
+            
+            return base_x, base_y
 
     def _calculate_landscape_qr_position(self, page_width: float, page_height: float, 
                                        qr_size: float, pdf_path: str, page_number: int) -> tuple[float, float]:
@@ -380,172 +444,71 @@ class PDFService:
                 debug_logger.warning("Could not analyze page layout, using default position")
                 return default_x, default_y
             
-            # Get detected positions using new algorithm
-            free_space = layout_info.get("free_space_3_5cm")
-            horizontal_line = layout_info.get("horizontal_line_18cm")
-            right_frame_edge = layout_info.get("right_frame_edge")
+            # 1. СНАЧАЛА вычисляем базовый якорь bottom-right
+            base_x, base_y = self.compute_anchor_xy(
+                W=page_width,
+                H=page_height,
+                qr_w=qr_size,
+                qr_h=qr_size,
+                margin=settings.QR_MARGIN_PT,
+                rotation=0,  # Предполагаем поворот 0° для landscape
+                anchor=settings.QR_ANCHOR
+            )
             
-            debug_logger.info("New algorithm analysis results", 
-                            free_space_3_5cm=free_space,
-                            horizontal_line_18cm=horizontal_line,
-                            right_frame_edge=right_frame_edge)
+            # 2. ПОТОМ получаем дельту от эвристик
+            dx, dy = self.pdf_analyzer.compute_heuristics_delta(pdf_path, page_number)
             
-            # Use new algorithm: search for free space 3.5x3.5 cm
-            if free_space:
-                x_position = free_space["x"]
-                y_position = free_space["y"]
-                
-                debug_logger.info("✅ Using new algorithm - free space 3.5x3.5cm found", 
-                                x_position=x_position, y_position=y_position,
-                                x_cm=round(x_position / 28.35, 2),
-                                y_cm=round(y_position / 28.35, 2))
-                
-                # Log final QR code positioning with pixel coordinates
-                debug_logger.info("Final QR code positioning (new algorithm)",
-                                qr_x_position_points=x_position,
-                                qr_y_position_points=y_position,
-                                qr_x_position_pixels=int(x_position * 2),
-                                qr_y_position_pixels=int(y_position * 2),
-                                qr_x_position_cm=round(x_position / 28.35, 2),
-                                qr_y_position_cm=round(y_position / 28.35, 2),
-                                qr_size_points=qr_size,
-                                qr_size_pixels=int(qr_size * 2),
-                                qr_size_cm=round(qr_size / 28.35, 2))
-                
-                return x_position, y_position
+            # 3. Применяем дельту к базовому якорю
+            x_position = base_x + dx
+            y_position = base_y + dy
             
-            # Fallback to new fallback algorithm if new algorithm fails
-            debug_logger.warning("New algorithm failed, falling back to frame-based algorithm")
+            # 4. Клэмпим координаты в пределах страницы
+            x_position = max(0, min(x_position, page_width - qr_size))
+            y_position = max(0, min(y_position, page_height - qr_size))
             
-            # Get frame positions for fallback algorithm
-            bottom_frame_edge = layout_info.get("bottom_frame_edge")
-            
-            debug_logger.info("Fallback algorithm analysis results", 
-                            right_frame_edge=right_frame_edge,
-                            bottom_frame_edge=bottom_frame_edge)
-            
-            # Log detailed positioning information
-            debug_logger.info("QR positioning details - page dimensions and element positions",
-                            page_width_points=page_width,
-                            page_height_points=page_height,
-                            page_width_pixels=int(page_width * 2),  # Assuming 2x scale factor
-                            page_height_pixels=int(page_height * 2),  # Assuming 2x scale factor
-                            right_frame_edge_points=right_frame_edge,
-                            right_frame_edge_pixels=int(right_frame_edge * 2) if right_frame_edge else None,
-                            bottom_frame_edge_points=bottom_frame_edge,
-                            bottom_frame_edge_pixels=int(bottom_frame_edge * 2) if bottom_frame_edge else None,
-                            qr_size_points=qr_size,
-                            qr_size_pixels=int(qr_size * 2))
-            
-            # FALLBACK 1: Position along bottom and right frame edges
-            if bottom_frame_edge is not None and right_frame_edge is not None:
-                debug_logger.info("Using FALLBACK 1: Position along bottom and right frame edges")
-                
-                # Y position: above bottom frame with margin
-                margin_cm = 0.5  # 0.5 cm margin above bottom frame
-                margin_points = margin_cm * 28.35
-                y_position = bottom_frame_edge + margin_points
-                
-                # X position: left of right frame with margin
-                x_position = right_frame_edge - qr_size - margin_points
-                
-                # Ensure QR code doesn't go off the page
-                max_y = page_height - qr_size - (1.0 * 28.35)  # 1 cm from top
-                y_position = min(y_position, max_y)
-                
-                min_x = 1.0 * 28.35  # 1 cm from left edge
-                x_position = max(x_position, min_x)
-                
-                debug_logger.info("FALLBACK 1 positioning", 
-                                bottom_frame_edge=bottom_frame_edge,
-                                right_frame_edge=right_frame_edge,
-                                x_position=x_position,
-                                y_position=y_position,
-                                margin_cm=margin_cm)
-                
-            elif right_frame_edge is not None:
-                debug_logger.info("Using FALLBACK 1 (right frame only): Position along right frame edge")
-                
-                # Y position: use default (bottom area)
-                y_position = default_y
-                
-                # X position: left of right frame with margin
-                margin_cm = 0.5  # 0.5 cm margin from right frame
-                margin_points = margin_cm * 28.35
-                x_position = right_frame_edge - qr_size - margin_points
-                
-                # Ensure QR code doesn't go off the left edge
-                min_x = 1.0 * 28.35  # 1 cm from left edge
-                x_position = max(x_position, min_x)
-                
-                debug_logger.info("FALLBACK 1 (right frame only) positioning", 
-                                right_frame_edge=right_frame_edge,
-                                x_position=x_position,
-                                y_position=y_position,
-                                margin_cm=margin_cm)
-                
-            elif bottom_frame_edge is not None:
-                debug_logger.info("Using FALLBACK 1 (bottom frame only): Position along bottom frame edge")
-                
-                # Y position: above bottom frame with margin
-                margin_cm = 0.5  # 0.5 cm margin above bottom frame
-                margin_points = margin_cm * 28.35
-                y_position = bottom_frame_edge + margin_points
-                
-                # X position: use default (left area)
-                x_position = default_x
-                
-                # Ensure QR code doesn't go off the top of the page
-                max_y = page_height - qr_size - (1.0 * 28.35)  # 1 cm from top
-                y_position = min(y_position, max_y)
-                
-                debug_logger.info("FALLBACK 1 (bottom frame only) positioning", 
-                                bottom_frame_edge=bottom_frame_edge,
-                                x_position=x_position,
-                                y_position=y_position,
-                                margin_cm=margin_cm)
-                
-            else:
-                # FALLBACK 2: 1 cm offset from bottom-right corner of the page
-                debug_logger.info("Using FALLBACK 2: 1 cm offset from bottom-right corner")
-                
-                margin_cm = 1.0  # 1 cm margin from edges
-                margin_points = margin_cm * 28.35
-                
-                # Position QR code 1 cm from bottom-right corner
-                x_position = page_width - qr_size - margin_points
-                y_position = margin_points
-                
-                debug_logger.info("FALLBACK 2 positioning", 
-                                page_width=page_width,
-                                page_height=page_height,
-                                x_position=x_position,
-                                y_position=y_position,
-                                margin_cm=margin_cm)
-            
-            debug_logger.info("Calculated QR position (fallback algorithm)", 
-                            x_position=x_position, y_position=y_position,
-                            right_frame_edge=right_frame_edge, bottom_frame_edge=bottom_frame_edge)
-            
-            # Log final QR code positioning with pixel coordinates
-            debug_logger.info("Final QR code positioning (fallback algorithm)",
-                            qr_x_position_points=x_position,
-                            qr_y_position_points=y_position,
-                            qr_x_position_pixels=int(x_position * 2),
-                            qr_y_position_pixels=int(y_position * 2),
-                            qr_x_position_cm=round(x_position / 28.35, 2),
-                            qr_y_position_cm=round(y_position / 28.35, 2),
-                            qr_size_points=qr_size,
-                            qr_size_pixels=int(qr_size * 2),
-                            qr_size_cm=round(qr_size / 28.35, 2))
+            debug_logger.info("🔍 LANDSCAPE - Base anchor + heuristics delta", 
+                            page=page_number,
+                            box="media",
+                            W=page_width,
+                            H=page_height,
+                            rot=0,
+                            anchor=settings.QR_ANCHOR,
+                            qr=(qr_size, qr_size),
+                            margin=settings.QR_MARGIN_PT,
+                            base=(base_x, base_y),
+                            delta=(dx, dy),
+                            final=(x_position, y_position))
             
             return x_position, y_position
             
         except Exception as e:
             debug_logger.error("Error calculating landscape QR position", 
                              error=str(e), pdf_path=pdf_path, page_number=page_number)
-            # Return default position on error
-            return default_x, default_y
+            # Fallback: используем базовый якорь без эвристик
+            base_x, base_y = self.compute_anchor_xy(
+                W=page_width,
+                H=page_height,
+                qr_w=qr_size,
+                qr_h=qr_size,
+                margin=settings.QR_MARGIN_PT,
+                rotation=0,
+                anchor=settings.QR_ANCHOR
+            )
+            
+            debug_logger.info("🔍 LANDSCAPE EXCEPTION FALLBACK - Base anchor only", 
+                            page=page_number,
+                            box="media",
+                            W=page_width,
+                            H=page_height,
+                            rot=0,
+                            anchor=settings.QR_ANCHOR,
+                            qr=(qr_size, qr_size),
+                            margin=settings.QR_MARGIN_PT,
+                            base=(base_x, base_y),
+                            delta=(0.0, 0.0),
+                            final=(base_x, base_y))
+            
+            return base_x, base_y
 
     def get_pdf_info(self, pdf_path: str) -> Dict[str, Any]:
         """
@@ -591,7 +554,7 @@ class PDFService:
                 page_number = i + 1
                 
                 # Calculate position based on page orientation
-                # Get actual page dimensions from the PDF page
+                # Get actual page dimensions from the PDF page (используем MediaBox для консистентности)
                 page_width = float(page.mediabox.width)
                 page_height = float(page.mediabox.height)
                 
@@ -638,21 +601,20 @@ class PDFService:
                 )
 
                 # Create a copy of the original page for modification
-                from copy import deepcopy
                 modified_page = deepcopy(page)
                 
                 # Convert PIL Image to ReportLab Image
-                from PIL import Image
                 pil_image = Image.open(BytesIO(qr_image_bytes))
                 
                 if is_landscape:
                     # For Landscape pages: Use intelligent positioning with PDF analysis
                     logger.info(f"Landscape page detected - using intelligent positioning with PDF analysis")
                     
-                    # Save PDF content to temporary file for analysis
-                    import tempfile
+                    # Create temporary file with single page for analysis
+                    temp_writer = PdfWriter()
+                    temp_writer.add_page(page)
                     with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-                        temp_pdf.write(pdf_content)
+                        temp_writer.write(temp_pdf)
                         temp_pdf_path = temp_pdf.name
                     
                     try:
@@ -676,14 +638,12 @@ class PDFService:
                         logger.info(f"Landscape page detected - QR positioned at bottom-right corner (fallback): {bottom_margin_cm}cm up from bottom, {right_margin_cm}cm from right edge")
                     finally:
                         # Clean up temporary file
-                        import os
                         if os.path.exists(temp_pdf_path):
                             os.unlink(temp_pdf_path)
                     
                     logger.info(f"QR positioning details: page_size=({page_width:.1f}x{page_height:.1f}), qr_size={qr_size_points:.1f}, position=({x_position:.1f}, {y_position:.1f})")
 
                 # Save PIL image to temporary file for ReportLab
-                import tempfile
                 with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_img:
                     pil_image.save(temp_img.name, format='PNG')
                     
@@ -701,7 +661,6 @@ class PDFService:
                     )
                     
                     # Clean up temp file
-                    import os
                     os.unlink(temp_img.name)
                 c.save()
 

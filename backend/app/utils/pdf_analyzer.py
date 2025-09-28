@@ -666,9 +666,8 @@ class PDFAnalyzer:
             # stamp_top_y в image-СК (от верха), нужно в PDF-СК (от низа)
             x_img_points = actual_x / scale_factor
             y_img_points = stamp_top_y / scale_factor
-            img_height_points = img_array.shape[0] / scale_factor
             
-            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            x_pdf, y_pdf = self.to_pdf_point(x_img_points, y_img_points, page_height)
             stamp_top_y_points = y_pdf
             
             self.logger.debug("🔄 Coordinate conversion", 
@@ -736,10 +735,17 @@ class PDFAnalyzer:
             dx = position["x"] - base_x
             dy = position["y"] - base_y
             
+            # Ограничиваем дельту для предотвращения "поднятия" QR в верх
+            max_delta = 50.0  # Максимальная дельта в точках
+            dx = max(-max_delta, min(dx, max_delta))
+            dy = max(-max_delta, min(dy, max_delta))  # НЕ поднимаем в верх!
+            
             self.logger.debug("🔍 Heuristics delta calculation", 
                             base_x=base_x, base_y=base_y,
                             heuristic_x=position["x"], heuristic_y=position["y"],
-                            dx=dx, dy=dy)
+                            raw_dx=position["x"] - base_x, raw_dy=position["y"] - base_y,
+                            clamped_dx=dx, clamped_dy=dy,
+                            max_delta=max_delta)
             
             doc.close()
             return dx, dy
@@ -1015,9 +1021,8 @@ class PDFAnalyzer:
             scale_factor = 2.0
             x_img_points = actual_x / scale_factor
             y_img_points = 0  # Y не важен для правой рамки
-            img_height_points = img_array.shape[0] / scale_factor
             
-            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            x_pdf, y_pdf = self.to_pdf_point(x_img_points, y_img_points, page_height)
             frame_right_x_points = x_pdf
             
             self.logger.info("Right frame edge detected", 
@@ -1110,9 +1115,8 @@ class PDFAnalyzer:
             scale_factor = 2.0
             x_img_points = 0  # X не важен для нижней рамки
             y_img_points = actual_y / scale_factor
-            img_height_points = img_array.shape[0] / scale_factor
             
-            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            x_pdf, y_pdf = self.to_pdf_point(x_img_points, y_img_points, page_height)
             frame_bottom_y_points = y_pdf
             
             self.logger.info("Bottom frame edge detected", 
@@ -1352,17 +1356,17 @@ class PDFAnalyzer:
                 doc.close()
                 return None
             
-            # Сортируем линии по Y-позиции (от верха к низу) и выбираем самую верхнюю
-            valid_lines.sort(key=lambda line: line["y"])  # Сортируем от верха к низу
+            # Сортируем линии по Y-позиции (от низа к верху) и выбираем самую нижнюю
+            valid_lines.sort(key=lambda line: line["y"], reverse=True)  # Сортируем от низа к верху
             
             self.logger.debug("📊 Found horizontal lines in top area", 
                             total_lines=len(valid_lines),
                             lines_info=[f"Y={line['y']}, length={line['length_cm']:.1f}cm" 
                                        for line in valid_lines[:5]])  # Показываем первые 5
             
-            # Выбираем самую верхнюю линию
+            # Выбираем самую нижнюю линию (ближе к базовому якорю)
             best_line = valid_lines[0]
-            self.logger.info("✅ Selected topmost horizontal line", 
+            self.logger.info("✅ Selected bottommost horizontal line (closest to anchor)", 
                            y_position=best_line["y"],
                            length_cm=best_line["length_cm"],
                            total_candidates=len(valid_lines))
@@ -1375,9 +1379,8 @@ class PDFAnalyzer:
             scale_factor = 2.0
             x_img_points = best_line["start_x"] / scale_factor
             y_img_points = actual_y / scale_factor
-            img_height_points = img_array.shape[0] / scale_factor
             
-            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            x_pdf, y_pdf = self.to_pdf_point(x_img_points, y_img_points, page_height)
             
             line_info = {
                 "start_x": best_line["start_x"] / scale_factor,
@@ -1648,9 +1651,8 @@ class PDFAnalyzer:
                 # Нормализация координат: используем новую функцию конверсии
                 x_img_points = line["start_x"] / scale_factor
                 y_img_points = line["y"] / scale_factor
-                img_height_points = img_array.shape[0] / scale_factor
                 
-                x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+                x_pdf, y_pdf = self.to_pdf_point(x_img_points, y_img_points, page_height)
                 
                 line_info = {
                     "start_x": line["start_x"] / scale_factor,
