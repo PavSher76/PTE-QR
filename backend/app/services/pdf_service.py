@@ -498,7 +498,7 @@ class PDFService:
             - A list of dictionaries, each containing QR code data (page_number, qr_data, hmac_signature).
         """ 
         try:
-            logger.debug("Adding QR codes to PDF", pdf_content=pdf_content, enovia_id=enovia_id, revision=revision, base_url_prefix=base_url_prefix)
+            logger.debug("Adding QR codes to PDF", enovia_id=enovia_id, revision=revision, base_url_prefix=base_url_prefix)
             reader = PdfReader(BytesIO(pdf_content))
             writer = PdfWriter()
             qr_codes_data_list = []

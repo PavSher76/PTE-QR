@@ -69,12 +69,12 @@ async def stamp_pdf_with_qr(
             raise HTTPException(status_code=400, detail="File must be a PDF")
 
         # Read file content
-        debug_logger.debug("Reading PDF file content", filename=file.filename)
+        debug_logger.debug("Reading PDF file", filename=file.filename)
         pdf_data = await file.read()
         log_file_operation("read", file.filename, file_size=len(pdf_data))
 
         # Validate PDF
-        debug_logger.debug("Validating PDF content", filename=file.filename, data_size=len(pdf_data))
+        debug_logger.debug("Validating PDF", filename=file.filename, data_size=len(pdf_data))
         is_valid, error_msg = pdf_service.validate_pdf(pdf_data)
         if not is_valid:
             duration = time.time() - start_time
