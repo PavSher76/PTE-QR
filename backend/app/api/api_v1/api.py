@@ -10,6 +10,7 @@ from app.api.api_v1.endpoints import (
     documents,
     frontend,
     health,
+    normocontrol,
     pdf,
     pdf_upload,
     qrcodes,
@@ -27,4 +28,5 @@ api_router.include_router(pdf.router, prefix="/pdf", tags=["pdf"])
 api_router.include_router(pdf_upload.router, prefix="/pdf", tags=["pdf-upload"])
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
+api_router.include_router(normocontrol.router, prefix="/normocontrol", tags=["normocontrol"])
 api_router.include_router(frontend.router, tags=["frontend"])

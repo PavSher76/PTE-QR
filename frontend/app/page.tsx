@@ -10,6 +10,7 @@ import { Logo } from '@/components/Logo'
 import { useTranslation } from '@/lib/i18n'
 import { useNotifications, useUser } from '@/lib/context'
 import { PdfUploadForm } from '@/components/PdfUploadForm'
+import { DocumentControl } from '@/components/DocumentControl'
 import Link from 'next/link'
 
 export default function HomePage() {
@@ -19,6 +20,7 @@ export default function HomePage() {
   const [scannedData, setScannedData] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
   const [showPdfUpload, setShowPdfUpload] = useState(false)
+  const [showDocumentControl, setShowDocumentControl] = useState(false)
 
   // Update document title when language changes
   useEffect(() => {
@@ -158,10 +160,13 @@ export default function HomePage() {
 
           {/* Features Section */}
           <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
-            <div className="card p-6 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary-100">
+            <button 
+              onClick={() => setShowDocumentControl(true)}
+              className="card p-6 text-center transition-all duration-200 hover:shadow-lg hover:scale-105"
+            >
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors">
                 <svg
-                  className="h-6 w-6 text-primary-600"
+                  className="h-6 w-6 text-blue-600"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -170,25 +175,17 @@ export default function HomePage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
               </div>
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">
-                {language === 'ru'
-                  ? 'Проверка актуальности'
-                  : language === 'en'
-                  ? 'Status Verification'
-                  : '状态验证'}
+              <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                {t('normocontrol.title')}
               </h3>
-              <p className="text-gray-600">
-                {language === 'ru'
-                  ? 'Мгновенная проверка актуальности документа и его ревизии'
-                  : language === 'en'
-                  ? 'Instant verification of document status and revision'
-                  : '即时验证文档状态和修订版'}
+              <p className="text-gray-600 dark:text-gray-300">
+                {t('normocontrol.description')}
               </p>
-            </div>
+            </button>
 
             <div className="card p-6 text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-success-100">
@@ -383,6 +380,11 @@ export default function HomePage() {
       {/* PDF Upload Modal */}
       {showPdfUpload && (
         <PdfUploadForm onClose={() => setShowPdfUpload(false)} />
+      )}
+
+      {/* Document Control Modal */}
+      {showDocumentControl && (
+        <DocumentControl onClose={() => setShowDocumentControl(false)} />
       )}
     </div>
   )

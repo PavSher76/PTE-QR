@@ -65,6 +65,9 @@ WORKDIR /app
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+# Copy test_docs
+COPY --chown=appuser:appuser test_docs /app/test_docs
+
 # Create necessary directories
 RUN mkdir -p /app/logs /app/tmp && \
     chown -R appuser:appuser /app

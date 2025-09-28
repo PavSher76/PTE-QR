@@ -259,11 +259,12 @@ class PDFService:
     def _calculate_landscape_qr_position(self, page_width: float, page_height: float, 
                                        qr_size: float, pdf_path: str, page_number: int) -> tuple[float, float]:
         """
-        Calculate intelligent QR code position for landscape pages
+        Calculate intelligent QR code position for landscape pages using new algorithm
         
-        Positioning logic:
-        1. Y-position (PRIORITY): Above the main title block (stamp) if detected
-        2. X-position (SECONDARY): At the right edge of the page, above the stamp
+        New positioning logic:
+        1. Search for free space 3.5x3.5 cm in bottom-left corner
+        2. Along horizontal line of at least 18 cm length
+        3. Along right vertical frame of the drawing
         
         Args:
             page_width: Width of the page in points
@@ -276,32 +277,66 @@ class PDFService:
             Tuple of (x_position, y_position) in points
         """
         try:
-            debug_logger.debug("Calculating landscape QR position", 
+            debug_logger.debug("Calculating landscape QR position with new algorithm", 
                              page_width=page_width, page_height=page_height, 
                              qr_size=qr_size, pdf_path=pdf_path, page_number=page_number)
             
             # Default fallback position (bottom-left corner)
-            default_x = 0.5 * 28.35  # 4 cm from left edge
-            default_y = 0.5 * 28.35  # 9 cm up from bottom
+            default_x = 0.5 * 28.35  # 0.5 cm from left edge
+            default_y = 0.5 * 28.35  # 0.5 cm up from bottom
             
             if not pdf_path or not os.path.exists(pdf_path):
                 debug_logger.warning("PDF path not available for analysis, using default position")
                 return default_x, default_y
             
-            # Analyze page layout to detect stamp and frame positions
+            # Analyze page layout to detect elements and free space
             layout_info = self.pdf_analyzer.analyze_page_layout(pdf_path, page_number)
             
             if not layout_info:
                 debug_logger.warning("Could not analyze page layout, using default position")
                 return default_x, default_y
             
-            # Get detected positions
-            stamp_top_edge = layout_info.get("stamp_top_edge")
+            # Get detected positions using new algorithm
+            free_space = layout_info.get("free_space_3_5cm")
+            horizontal_line = layout_info.get("horizontal_line_18cm")
             right_frame_edge = layout_info.get("right_frame_edge")
+            
+            debug_logger.info("New algorithm analysis results", 
+                            free_space_3_5cm=free_space,
+                            horizontal_line_18cm=horizontal_line,
+                            right_frame_edge=right_frame_edge)
+            
+            # Use new algorithm: search for free space 3.5x3.5 cm
+            if free_space:
+                x_position = free_space["x"]
+                y_position = free_space["y"]
+                
+                debug_logger.info("✅ Using new algorithm - free space 3.5x3.5cm found", 
+                                x_position=x_position, y_position=y_position,
+                                x_cm=round(x_position / 28.35, 2),
+                                y_cm=round(y_position / 28.35, 2))
+                
+                # Log final QR code positioning with pixel coordinates
+                debug_logger.info("Final QR code positioning (new algorithm)",
+                                qr_x_position_points=x_position,
+                                qr_y_position_points=y_position,
+                                qr_x_position_pixels=int(x_position * 2),
+                                qr_y_position_pixels=int(y_position * 2),
+                                qr_x_position_cm=round(x_position / 28.35, 2),
+                                qr_y_position_cm=round(y_position / 28.35, 2),
+                                qr_size_points=qr_size,
+                                qr_size_pixels=int(qr_size * 2),
+                                qr_size_cm=round(qr_size / 28.35, 2))
+                
+                return x_position, y_position
+            
+            # Fallback to new fallback algorithm if new algorithm fails
+            debug_logger.warning("New algorithm failed, falling back to frame-based algorithm")
+            
+            # Get frame positions for fallback algorithm
             bottom_frame_edge = layout_info.get("bottom_frame_edge")
             
-            debug_logger.info("Page layout analysis results", 
-                            stamp_top_edge=stamp_top_edge, 
+            debug_logger.info("Fallback algorithm analysis results", 
                             right_frame_edge=right_frame_edge,
                             bottom_frame_edge=bottom_frame_edge)
             
@@ -311,8 +346,6 @@ class PDFService:
                             page_height_points=page_height,
                             page_width_pixels=int(page_width * 2),  # Assuming 2x scale factor
                             page_height_pixels=int(page_height * 2),  # Assuming 2x scale factor
-                            stamp_top_edge_points=stamp_top_edge,
-                            stamp_top_edge_pixels=int(stamp_top_edge * 2) if stamp_top_edge else None,
                             right_frame_edge_points=right_frame_edge,
                             right_frame_edge_pixels=int(right_frame_edge * 2) if right_frame_edge else None,
                             bottom_frame_edge_points=bottom_frame_edge,
@@ -320,88 +353,98 @@ class PDFService:
                             qr_size_points=qr_size,
                             qr_size_pixels=int(qr_size * 2))
             
-            # Calculate Y position based on stamp top edge (PRIORITY: above stamp)
-            if stamp_top_edge is not None:
-                # Position QR code above the stamp with some margin
-                # stamp_top_edge is distance from bottom to top of stamp
-                # To place QR above stamp: stamp_top_edge + margin (from bottom)
-                margin_cm = 0.5  # 0.5 cm margin above stamp
-                margin_points = margin_cm * 28.35
-                y_position = stamp_top_edge + margin_points
+            # FALLBACK 1: Position along bottom and right frame edges
+            if bottom_frame_edge is not None and right_frame_edge is not None:
+                debug_logger.info("Using FALLBACK 1: Position along bottom and right frame edges")
                 
-                # Ensure QR code doesn't go off the top of the page
-                max_y = page_height - qr_size - (1.0 * 28.35)  # 1 cm from top
-                y_position = min(y_position, max_y)
-                
-                debug_logger.info("Y position calculated from stamp", 
-                                stamp_top_edge=stamp_top_edge, 
-                                page_height=page_height,
-                                margin_points=margin_points,
-                                qr_size=qr_size,
-                                y_position=y_position)
-            elif bottom_frame_edge is not None and right_frame_edge is not None:
-                # Special case: Only frame detected - position 4 cm from bottom frame
-                margin_cm = 4.0  # 4 cm from bottom frame
+                # Y position: above bottom frame with margin
+                margin_cm = 0.5  # 0.5 cm margin above bottom frame
                 margin_points = margin_cm * 28.35
                 y_position = bottom_frame_edge + margin_points
                 
-                # Ensure QR code doesn't go off the top of the page
+                # X position: left of right frame with margin
+                x_position = right_frame_edge - qr_size - margin_points
+                
+                # Ensure QR code doesn't go off the page
                 max_y = page_height - qr_size - (1.0 * 28.35)  # 1 cm from top
                 y_position = min(y_position, max_y)
                 
-                debug_logger.info("Y position calculated from bottom frame (frame-only case)", 
-                                bottom_frame_edge=bottom_frame_edge, y_position=y_position)
-            else:
-                # Fallback: use default Y position
-                y_position = default_y
-                debug_logger.info("Y position using default", y_position=y_position)
-            
-            # Calculate X position based on stamp and right frame edge
-            if stamp_top_edge is not None:
-                # Primary case: Position QR code above the stamp at the right edge of the page
-                # Align QR code with the right edge of the stamp area
-                margin_cm = 1.0  # 1 cm margin from right edge
-                margin_points = margin_cm * 28.35
-                x_position = page_width - qr_size - margin_points
+                min_x = 1.0 * 28.35  # 1 cm from left edge
+                x_position = max(x_position, min_x)
                 
-                debug_logger.info("X position calculated above stamp at right edge", 
-                                page_width=page_width, x_position=x_position)
+                debug_logger.info("FALLBACK 1 positioning", 
+                                bottom_frame_edge=bottom_frame_edge,
+                                right_frame_edge=right_frame_edge,
+                                x_position=x_position,
+                                y_position=y_position,
+                                margin_cm=margin_cm)
+                
             elif right_frame_edge is not None:
-                # Check if this is the "frame-only" case
-                if bottom_frame_edge is not None:
-                    # Special case: Only frame detected - position 4 cm left of right frame
-                    margin_cm = 4.0  # 4 cm left of right frame
-                    margin_points = margin_cm * 28.35
-                    x_position = right_frame_edge - qr_size - margin_points
-                    
-                    debug_logger.info("X position calculated from right frame (frame-only case)", 
-                                    right_frame_edge=right_frame_edge, x_position=x_position)
-                else:
-                    # Frame detected but no stamp - position at right edge
-                    margin_cm = 1.0  # 1 cm margin from right edge
-                    margin_points = margin_cm * 28.35
-                    x_position = page_width - qr_size - margin_points
-                    
-                    debug_logger.info("X position calculated at right edge (frame case)", 
-                                    page_width=page_width, x_position=x_position)
+                debug_logger.info("Using FALLBACK 1 (right frame only): Position along right frame edge")
+                
+                # Y position: use default (bottom area)
+                y_position = default_y
+                
+                # X position: left of right frame with margin
+                margin_cm = 0.5  # 0.5 cm margin from right frame
+                margin_points = margin_cm * 28.35
+                x_position = right_frame_edge - qr_size - margin_points
                 
                 # Ensure QR code doesn't go off the left edge
                 min_x = 1.0 * 28.35  # 1 cm from left edge
                 x_position = max(x_position, min_x)
-            else:
-                # Fallback: position at right edge of page
-                margin_cm = 1.0  # 1 cm margin from right edge
+                
+                debug_logger.info("FALLBACK 1 (right frame only) positioning", 
+                                right_frame_edge=right_frame_edge,
+                                x_position=x_position,
+                                y_position=y_position,
+                                margin_cm=margin_cm)
+                
+            elif bottom_frame_edge is not None:
+                debug_logger.info("Using FALLBACK 1 (bottom frame only): Position along bottom frame edge")
+                
+                # Y position: above bottom frame with margin
+                margin_cm = 0.5  # 0.5 cm margin above bottom frame
                 margin_points = margin_cm * 28.35
+                y_position = bottom_frame_edge + margin_points
+                
+                # X position: use default (left area)
+                x_position = default_x
+                
+                # Ensure QR code doesn't go off the top of the page
+                max_y = page_height - qr_size - (1.0 * 28.35)  # 1 cm from top
+                y_position = min(y_position, max_y)
+                
+                debug_logger.info("FALLBACK 1 (bottom frame only) positioning", 
+                                bottom_frame_edge=bottom_frame_edge,
+                                x_position=x_position,
+                                y_position=y_position,
+                                margin_cm=margin_cm)
+                
+            else:
+                # FALLBACK 2: 1 cm offset from bottom-right corner of the page
+                debug_logger.info("Using FALLBACK 2: 1 cm offset from bottom-right corner")
+                
+                margin_cm = 1.0  # 1 cm margin from edges
+                margin_points = margin_cm * 28.35
+                
+                # Position QR code 1 cm from bottom-right corner
                 x_position = page_width - qr_size - margin_points
-                debug_logger.info("X position using right edge fallback", 
-                                page_width=page_width, x_position=x_position)
+                y_position = margin_points
+                
+                debug_logger.info("FALLBACK 2 positioning", 
+                                page_width=page_width,
+                                page_height=page_height,
+                                x_position=x_position,
+                                y_position=y_position,
+                                margin_cm=margin_cm)
             
-            debug_logger.info("Calculated QR position", 
+            debug_logger.info("Calculated QR position (fallback algorithm)", 
                             x_position=x_position, y_position=y_position,
-                            stamp_top_edge=stamp_top_edge, right_frame_edge=right_frame_edge)
+                            right_frame_edge=right_frame_edge, bottom_frame_edge=bottom_frame_edge)
             
             # Log final QR code positioning with pixel coordinates
-            debug_logger.info("Final QR code positioning",
+            debug_logger.info("Final QR code positioning (fallback algorithm)",
                             qr_x_position_points=x_position,
                             qr_y_position_points=y_position,
                             qr_x_position_pixels=int(x_position * 2),

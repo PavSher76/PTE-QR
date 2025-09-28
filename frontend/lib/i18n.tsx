@@ -80,6 +80,9 @@ const translations = {
     'footer.privacy': 'Политика конфиденциальности',
     'footer.terms': 'Условия использования',
     'footer.copyright': '© 2024 ПТИ. Все права защищены.',
+    'normocontrol.title': 'Нормоконтроль документа',
+    'normocontrol.description': 'Проверка соответствия документа нормативным требованиям',
+    'normocontrol.upload': 'Загрузить для нормоконтроля',
   },
   en: {
     'app.title': 'PTE QR System',
@@ -153,6 +156,9 @@ const translations = {
     'footer.privacy': 'Privacy Policy',
     'footer.terms': 'Terms of Use',
     'footer.copyright': '© 2024 PTI. All rights reserved.',
+    'normocontrol.title': 'Document Control',
+    'normocontrol.description': 'Verification of document compliance with regulatory requirements',
+    'normocontrol.upload': 'Upload for Control',
   },
   zh: {
     'app.title': 'PTE QR 系统',
@@ -225,6 +231,9 @@ const translations = {
     'footer.privacy': '隐私政策',
     'footer.terms': '使用条款',
     'footer.copyright': '© 2024 PTI. 版权所有。',
+    'normocontrol.title': '文档控制',
+    'normocontrol.description': '验证文档是否符合监管要求',
+    'normocontrol.upload': '上传进行控制',
   },
 }
 
