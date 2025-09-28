@@ -226,19 +226,24 @@ class PDFService:
             page_height = float(page.mediabox.height)
             active_box_type = "media"
             
-            # COORDINATE PIPELINE AUDIT - Log all parameters before insertion
-            debug_logger.info("🔍 COORDINATE PIPELINE AUDIT - Before QR insertion", 
+            # Получаем границы активного бокса
+            x0 = float(page.mediabox.x0)
+            y0 = float(page.mediabox.y0)
+            x1 = float(page.mediabox.x1)
+            y1 = float(page.mediabox.y1)
+            
+            # DEBUG QR: Детальный лог перед вставкой QR кода
+            debug_logger.info("🎯 DEBUG QR - Final position before insertion", 
                             page=page_number,
                             box=active_box_type,
-                            W=page_width,
-                            H=page_height,
-                            rotation="TBD",  # Will be filled by _calculate_unified_qr_position
+                            x0=x0, y0=y0, x1=x1, y1=y1,
+                            rot=0,  # TBD: получить из анализа
                             qr=(qr_size, qr_size),
-                            margin="TBD",  # Will be filled by _calculate_unified_qr_position
-                            x_position=x_position,
-                            y_position=y_position,
-                            x_cm=round(x_position / 28.35, 2),
-                            y_cm=round(y_position / 28.35, 2))
+                            margin=settings.QR_MARGIN_PT,
+                            clearance=settings.QR_STAMP_CLEARANCE_PT,
+                            base="TBD",  # TBD: получить из анализа
+                            delta="TBD",  # TBD: получить из анализа
+                            final=(x_position, y_position))
             
             # Draw QR code
             can.drawImage(qr_image, x_position, y_position, 
@@ -572,6 +577,11 @@ class PDFService:
         try:
             logger.debug("Adding QR codes to PDF", enovia_id=enovia_id, revision=revision, base_url_prefix=base_url_prefix)
             reader = PdfReader(BytesIO(pdf_content))
+            
+            # Создаем временный файл с исходным PDF для анализа
+            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
+                temp_file.write(pdf_content)
+                input_pdf_path = temp_file.name
             writer = PdfWriter()
             qr_codes_data_list = []
 
@@ -635,18 +645,11 @@ class PDFService:
                     # For Landscape pages: Use intelligent positioning with PDF analysis
                     logger.info(f"Landscape page detected - using intelligent positioning with PDF analysis")
                     
-                    # Create temporary file with single page for analysis
-                    temp_writer = PdfWriter()
-                    temp_writer.add_page(page)
-                    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-                        temp_writer.write(temp_pdf)
-                        temp_pdf_path = temp_pdf.name
-                    
                     try:
                         # Use intelligent positioning with PDF analysis
-                        # Для одностраничного PDF используем page_number = 0
+                        # Анализируем исходный документ с правильным индексом страницы
                         x_position, y_position = self._calculate_landscape_qr_position(
-                            page_width, page_height, qr_size_points, temp_pdf_path, 0
+                            page_width, page_height, qr_size_points, input_pdf_path, page_number - 1
                         )
                         logger.info(f"Landscape page detected - QR positioned intelligently at ({x_position:.1f}, {y_position:.1f})")
                     except Exception as e:
@@ -671,10 +674,6 @@ class PDFService:
                         y_position = base_y
                         
                         logger.info(f"Landscape page detected - QR positioned at bottom-right (fallback): x={x_position:.1f}, y={y_position:.1f}")
-                    finally:
-                        # Clean up temporary file
-                        if os.path.exists(temp_pdf_path):
-                            os.unlink(temp_pdf_path)
                     
                     logger.info(f"QR positioning details: page_size=({page_width:.1f}x{page_height:.1f}), qr_size={qr_size_points:.1f}, position=({x_position:.1f}, {y_position:.1f})")
 
@@ -715,6 +714,10 @@ class PDFService:
         except Exception as e:
             logger.error(f"Error adding QR codes to PDF", error=str(e))
             raise
+        finally:
+            # Очищаем временный файл
+            if 'input_pdf_path' in locals() and os.path.exists(input_pdf_path):
+                os.unlink(input_pdf_path)
 
     def compute_anchor_xy(self, x0: float, y0: float, x1: float, y1: float, 
                          qr_w: float, qr_h: float, margin_pt: float, 
