@@ -209,28 +209,32 @@ class PDFService:
             packet = BytesIO()
             can = canvas.Canvas(packet, pagesize=letter)
             
-            # Get page dimensions
-            page_width = float(page.mediabox.width)
-            page_height = float(page.mediabox.height)
-            
             # QR code size: 3.5 cm x 3.5 cm as per requirements
             # Convert cm to points: 1 cm = 28.35 points
             qr_size_cm = 3.5
             qr_size = qr_size_cm * 28.35  # 99.225 points
             
-            # Calculate position based on page orientation and detected elements
-            is_landscape = page_width > page_height
+            # Get page dimensions for audit
+            page_width = float(page.mediabox.width)
+            page_height = float(page.mediabox.height)
             
-            if is_landscape:
-                # For Landscape pages: Use intelligent positioning
-                x_position, y_position = self._calculate_landscape_qr_position(
-                    page_width, page_height, qr_size, pdf_path, page_number - 1
-                )
-                logger.info(f"Landscape page detected - QR positioned intelligently at ({x_position:.1f}, {y_position:.1f})")
-            else:
-                # For Portrait pages: Skip QR code placement
-                logger.info(f"Portrait page detected - skipping QR code placement (portrait pages not supported)")
-                return page
+            # Use new unified positioning system
+            x_position, y_position = self._calculate_unified_qr_position(
+                page, qr_size, pdf_path, page_number - 1
+            )
+            
+            # COORDINATE PIPELINE AUDIT - Log all parameters before insertion
+            debug_logger.info("🔍 COORDINATE PIPELINE AUDIT - Before QR insertion", 
+                            mediabox_width=page_width,
+                            mediabox_height=page_height,
+                            rotation="TBD",  # Will be filled by _calculate_unified_qr_position
+                            qr_width=qr_size,
+                            qr_height=qr_size,
+                            margin="TBD",  # Will be filled by _calculate_unified_qr_position
+                            x_position=x_position,
+                            y_position=y_position,
+                            x_cm=round(x_position / 28.35, 2),
+                            y_cm=round(y_position / 28.35, 2))
             
             # Draw QR code
             can.drawImage(qr_image, x_position, y_position, 
@@ -255,6 +259,86 @@ class PDFService:
             logger.error(f"Error adding QR code to page {page_number}", error=str(e))
             # Return original page if QR code addition fails
             return page
+
+    def _calculate_unified_qr_position(self, page, qr_size: float, pdf_path: str, page_number: int) -> tuple[float, float]:
+        """
+        Унифицированный расчет позиции QR кода без двойной инверсии
+        
+        Args:
+            page: Страница PDF (PyPDF2)
+            qr_size: Размер QR кода в точках
+            pdf_path: Путь к PDF файлу для анализа
+            page_number: Номер страницы (0-indexed)
+            
+        Returns:
+            Tuple of (x_position, y_position) in PDF points (origin bottom-left)
+        """
+        try:
+            debug_logger.debug("Calculating unified QR position", 
+                             qr_size=qr_size, pdf_path=pdf_path, page_number=page_number)
+            
+            # Анализируем макет страницы для получения координатной информации
+            layout_info = self.pdf_analyzer.analyze_page_layout(pdf_path, page_number)
+            
+            if not layout_info:
+                debug_logger.warning("Could not analyze page layout, using fallback position")
+                # Fallback: bottom-right corner
+                page_width = float(page.mediabox.width)
+                page_height = float(page.mediabox.height)
+                margin = 12.0  # 12 pt margin
+                return page_width - qr_size - margin, margin
+            
+            # Получаем информацию о координатах
+            coordinate_info = layout_info.get("coordinate_info", {})
+            active_box = coordinate_info.get("active_box", {})
+            rotation = coordinate_info.get("rotation", 0)
+            
+            # Используем новую унифицированную функцию расчета позиции
+            page_box = {
+                "width": active_box.get("width", float(page.mediabox.width)),
+                "height": active_box.get("height", float(page.mediabox.height))
+            }
+            
+            x_position, y_position = self.pdf_analyzer.compute_qr_anchor(
+                page_box=page_box,
+                qr_size=qr_size,
+                rotation=rotation
+            )
+            
+            # COORDINATE PIPELINE AUDIT - Detailed calculation info
+            debug_logger.info("🔍 COORDINATE PIPELINE AUDIT - Detailed calculation", 
+                            mediabox_width=page_box["width"],
+                            mediabox_height=page_box["height"],
+                            rotation=rotation,
+                            qr_width=qr_size,
+                            qr_height=qr_size,
+                            margin=settings.QR_MARGIN_PT,
+                            anchor=settings.QR_ANCHOR,
+                            x_position=x_position,
+                            y_position=y_position,
+                            x_cm=round(x_position / 28.35, 2),
+                            y_cm=round(y_position / 28.35, 2),
+                            active_box_type=coordinate_info.get("active_box_type"),
+                            respect_rotation=settings.QR_RESPECT_ROTATION)
+            
+            # Отрисовываем debug рамку если включено
+            if hasattr(self.pdf_analyzer, '_draw_debug_frame'):
+                debug_file = self.pdf_analyzer._draw_debug_frame(
+                    pdf_path, page_number, x_position, y_position, qr_size, qr_size
+                )
+                if debug_file:
+                    debug_logger.debug("Debug frame saved", debug_file=debug_file)
+            
+            return x_position, y_position
+            
+        except Exception as e:
+            debug_logger.error("Error calculating unified QR position", 
+                             error=str(e), pdf_path=pdf_path, page_number=page_number)
+            # Fallback: bottom-right corner
+            page_width = float(page.mediabox.width)
+            page_height = float(page.mediabox.height)
+            margin = 12.0  # 12 pt margin
+            return page_width - qr_size - margin, margin
 
     def _calculate_landscape_qr_position(self, page_width: float, page_height: float, 
                                        qr_size: float, pdf_path: str, page_number: int) -> tuple[float, float]:
@@ -637,6 +721,95 @@ class PDFService:
         except Exception as e:
             logger.error(f"Error adding QR codes to PDF", error=str(e))
             raise
+
+    def compute_anchor_xy(self, W: float, H: float, qr_w: float, qr_h: float, 
+                         margin: float, rotation: int, anchor: str = "bottom-right") -> tuple[float, float]:
+        """
+        Вычисляет координаты якоря с учетом поворота страницы
+        
+        Args:
+            W: Ширина страницы в точках
+            H: Высота страницы в точках
+            qr_w: Ширина QR кода в точках
+            qr_h: Высота QR кода в точках
+            margin: Отступ в точках
+            rotation: Поворот страницы в градусах (0, 90, 180, 270)
+            anchor: Якорь позиционирования
+            
+        Returns:
+            Tuple (x, y) координаты в PDF-СК (origin снизу-слева)
+        """
+        try:
+            # Нормализуем поворот
+            rotation = rotation % 360
+            
+            # Проверяем, нужно ли учитывать поворот
+            if not settings.QR_RESPECT_ROTATION:
+                rotation = 0
+            
+            # Вычисляем координаты по таблице поворотов
+            if rotation == 0:
+                if anchor == "bottom-right":
+                    x = W - margin - qr_w
+                    y = margin
+                elif anchor == "bottom-left":
+                    x = margin
+                    y = margin
+                elif anchor == "top-right":
+                    x = W - margin - qr_w
+                    y = H - margin - qr_h
+                elif anchor == "top-left":
+                    x = margin
+                    y = H - margin - qr_h
+                else:
+                    debug_logger.warning(f"Unknown anchor '{anchor}', using 'bottom-right'")
+                    x = W - margin - qr_w
+                    y = margin
+                    
+            elif rotation == 180:
+                # Поворот на 180°: визуальный нижний-правый
+                x = margin
+                y = H - margin - qr_h
+                
+            elif rotation == 90:
+                # Поворот на 90°: визуальный нижний-правый
+                x = margin
+                y = margin
+                
+            elif rotation == 270:
+                # Поворот на 270°: визуальный нижний-правый
+                x = W - margin - qr_w
+                y = H - margin - qr_h
+                
+            else:
+                debug_logger.warning(f"Unsupported rotation {rotation}, using 0°")
+                x = W - margin - qr_w
+                y = margin
+            
+            # Клэмп координат
+            x = max(0, min(x, W - qr_w))
+            y = max(0, min(y, H - qr_h))
+            
+            debug_logger.debug("🎯 Anchor calculation", 
+                            anchor=anchor,
+                            rotation=rotation,
+                            page_width=W,
+                            page_height=H,
+                            qr_width=qr_w,
+                            qr_height=qr_h,
+                            margin=margin,
+                            x=x, y=y,
+                            clamped=True)
+            
+            return x, y
+            
+        except Exception as e:
+            debug_logger.error("❌ Error computing anchor", 
+                            error=str(e), anchor=anchor, rotation=rotation)
+            # Fallback к bottom-right
+            x = max(0, min(W - margin - qr_w, W - qr_w))
+            y = max(0, min(margin, H - qr_h))
+            return x, y
 
 
 # Global PDF service instance - will be created lazily

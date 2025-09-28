@@ -9,6 +9,7 @@ from PIL import Image
 import io
 import fitz  # PyMuPDF
 import numpy as np
+from app.core.config import settings
 
 # Try to import OpenCV and scikit-image, fallback to basic functionality if not available
 try:
@@ -25,6 +26,387 @@ class PDFAnalyzer:
     
     def __init__(self):
         self.logger = structlog.get_logger(__name__)
+    
+    def to_pdf_point(self, x_img: float, y_img: float, page_h: float) -> Tuple[float, float]:
+        """
+        Конвертирует точку из image-СК (origin верх-лево) в PDF-СК (origin низ-лево)
+        
+        Args:
+            x_img: X координата в image-СК
+            y_img: Y координата в image-СК (от верха)
+            page_h: Высота страницы в PDF точках
+            
+        Returns:
+            Tuple (x_pdf, y_pdf) в PDF-СК (origin снизу-слева)
+        """
+        # X координата остается той же
+        x_pdf = x_img
+        # Для точки: y_pdf = page_height - y_img
+        y_pdf = page_h - y_img
+        
+        self.logger.debug("🔄 Point conversion: image -> PDF", 
+                        x_img=x_img, y_img=y_img, page_h=page_h,
+                        x_pdf=x_pdf, y_pdf=y_pdf)
+        
+        return x_pdf, y_pdf
+    
+    def to_pdf_bbox(self, x_img: float, y_img: float, obj_w: float, obj_h: float, page_h: float) -> Tuple[float, float, float, float]:
+        """
+        Конвертирует bbox из image-СК (origin верх-лево) в PDF-СК (origin низ-лево)
+        
+        Args:
+            x_img: X координата верхнего левого угла в image-СК
+            y_img: Y координата верхнего левого угла в image-СК (от верха)
+            obj_w: Ширина объекта в image-СК
+            obj_h: Высота объекта в image-СК
+            page_h: Высота страницы в PDF точках
+            
+        Returns:
+            Tuple (x_pdf, y_pdf, obj_w, obj_h) в PDF-СК (origin снизу-слева)
+        """
+        # X координата остается той же
+        x_pdf = x_img
+        # Для bbox (верхний левый угол): y_pdf = page_height - (y_img + obj_h)
+        y_pdf = page_h - (y_img + obj_h)
+        
+        self.logger.debug("🔄 Bbox conversion: image -> PDF", 
+                        x_img=x_img, y_img=y_img, obj_w=obj_w, obj_h=obj_h, page_h=page_h,
+                        x_pdf=x_pdf, y_pdf=y_pdf)
+        
+        return x_pdf, y_pdf, obj_w, obj_h
+    
+    def _audit_page_coordinates(self, page, page_number: int = 0) -> Dict[str, Any]:
+        """
+        Аудит координат и юнитов страницы PDF
+        
+        Args:
+            page: Страница PDF (PyMuPDF)
+            page_number: Номер страницы
+            
+        Returns:
+            Словарь с информацией о координатах страницы
+        """
+        try:
+            # Получаем различные боксы страницы
+            mediabox = page.mediabox
+            cropbox = page.cropbox if hasattr(page, 'cropbox') else None
+            rotation = getattr(page, 'rotation', 0) % 360
+            
+            # Основные размеры
+            mediabox_width = float(mediabox.width)
+            mediabox_height = float(mediabox.height)
+            
+            # CropBox (если есть)
+            cropbox_info = None
+            if cropbox:
+                cropbox_width = float(cropbox.width)
+                cropbox_height = float(cropbox.height)
+                cropbox_info = {
+                    "width": cropbox_width,
+                    "height": cropbox_height,
+                    "x0": float(cropbox.x0),
+                    "y0": float(cropbox.y0),
+                    "x1": float(cropbox.x1),
+                    "y1": float(cropbox.y1)
+                }
+            
+            # Определяем какой бокс использовать для позиционирования
+            position_box = settings.QR_POSITION_BOX.lower()
+            if position_box == "crop" and cropbox_info:
+                # Используем CropBox если он есть
+                active_box = cropbox_info
+                active_box_type = "cropbox"
+            else:
+                # Используем MediaBox по умолчанию
+                active_box = {
+                    "width": mediabox_width,
+                    "height": mediabox_height,
+                    "x0": float(mediabox.x0),
+                    "y0": float(mediabox.y0),
+                    "x1": float(mediabox.x1),
+                    "y1": float(mediabox.y1)
+                }
+                active_box_type = "mediabox"
+            
+            # Информация о координатной системе
+            coordinate_info = {
+                "page_number": page_number,
+                "rotation": rotation,
+                "mediabox": {
+                    "width": mediabox_width,
+                    "height": mediabox_height,
+                    "x0": float(mediabox.x0),
+                    "y0": float(mediabox.y0),
+                    "x1": float(mediabox.x1),
+                    "y1": float(mediabox.y1)
+                },
+                "cropbox": cropbox_info,
+                "active_box": active_box,
+                "active_box_type": active_box_type,
+                "coordinate_system": {
+                    "origin": "bottom-left",
+                    "units": "points (pt)",
+                    "note": "PDF standard coordinate system"
+                },
+                "orientation": "landscape" if mediabox_width > mediabox_height else "portrait",
+                "aspect_ratio": mediabox_width / mediabox_height,
+                "config": {
+                    "position_box": position_box,
+                    "respect_rotation": settings.QR_RESPECT_ROTATION
+                }
+            }
+            
+            # Логируем детальную информацию
+            self.logger.debug("📐 Page coordinate audit", 
+                            page_number=page_number,
+                            rotation=rotation,
+                            mediabox_width=mediabox_width,
+                            mediabox_height=mediabox_height,
+                            mediabox_x0=float(mediabox.x0),
+                            mediabox_y0=float(mediabox.y0),
+                            mediabox_x1=float(mediabox.x1),
+                            mediabox_y1=float(mediabox.y1),
+                            cropbox=cropbox_info,
+                            active_box_type=active_box_type,
+                            active_box_width=active_box["width"],
+                            active_box_height=active_box["height"],
+                            position_box_config=position_box,
+                            respect_rotation_config=settings.QR_RESPECT_ROTATION,
+                            orientation=coordinate_info["orientation"],
+                            aspect_ratio=coordinate_info["aspect_ratio"])
+            
+            return coordinate_info
+            
+        except Exception as e:
+            self.logger.error("❌ Error auditing page coordinates", 
+                            error=str(e), page_number=page_number)
+            return {}
+    
+    def compute_simple_anchor(self, page_box: Dict[str, float], qr_size: float, margin: float = None, 
+                             anchor: str = None) -> Tuple[float, float]:
+        """
+        Жёсткий расчет позиции QR кода по якорю без учета поворота
+        
+        Args:
+            page_box: Словарь с размерами страницы {"width": float, "height": float}
+            qr_size: Размер QR кода в точках
+            margin: Отступ в точках (если None, используется из конфига)
+            anchor: Якорь позиционирования (если None, используется из конфига)
+            
+        Returns:
+            Tuple (x, y) координаты в PDF-СК (origin снизу-слева)
+        """
+        try:
+            width = page_box["width"]
+            height = page_box["height"]
+            
+            # Используем значения из конфига если не указаны
+            if margin is None:
+                margin = settings.QR_MARGIN_PT
+            if anchor is None:
+                anchor = settings.QR_ANCHOR
+            
+            # Жёсткая геометрия для разных якорей
+            if anchor == 'bottom-right':
+                x = width - qr_size - margin
+                y = margin
+            elif anchor == 'bottom-left':
+                x = margin
+                y = margin
+            elif anchor == 'top-right':
+                x = width - qr_size - margin
+                y = height - qr_size - margin
+            elif anchor == 'top-left':
+                x = margin
+                y = height - qr_size - margin
+            else:
+                self.logger.warning(f"Unknown anchor '{anchor}', using 'bottom-right'")
+                x = width - qr_size - margin
+                y = margin
+            
+            # Клэмп координат: x = clamp(x, 0, W - qr_w), y = clamp(y, 0, H - qr_h)
+            x = max(0, min(x, width - qr_size))
+            y = max(0, min(y, height - qr_size))
+            
+            self.logger.debug("🎯 Hard anchor calculation", 
+                            anchor=anchor,
+                            page_width=width,
+                            page_height=height,
+                            qr_size=qr_size,
+                            margin=margin,
+                            x=x, y=y,
+                            clamped=True)
+            
+            return x, y
+            
+        except Exception as e:
+            self.logger.error("❌ Error computing hard anchor", 
+                            error=str(e), anchor=anchor)
+            # Fallback к bottom-right с клэмпом
+            width = page_box["width"]
+            height = page_box["height"]
+            x = max(0, min(width - qr_size - margin, width - qr_size))
+            y = max(0, min(margin, height - qr_size))
+            return x, y
+
+    def compute_qr_anchor(self, page_box: Dict[str, float], qr_size: float, margin: float = None, 
+                         anchor: str = None, rotation: int = 0) -> Tuple[float, float]:
+        """
+        Унифицированный расчет позиции QR кода с учетом якоря и поворота
+        
+        Новый подход:
+        1. Сначала вычисляем жёсткую геометрию якоря
+        2. Затем применяем поворот по правильной таблице
+        
+        Args:
+            page_box: Словарь с размерами страницы {"width": float, "height": float}
+            qr_size: Размер QR кода в точках
+            margin: Отступ в точках (если None, используется из конфига)
+            anchor: Якорь позиционирования (если None, используется из конфига)
+            rotation: Поворот страницы в градусах (0, 90, 180, 270)
+            
+        Returns:
+            Tuple (x, y) координаты в PDF-СК (origin снизу-слева)
+        """
+        try:
+            # Сначала вычисляем жёсткую геометрию якоря
+            base_x, base_y = self.compute_simple_anchor(page_box, qr_size, margin, anchor)
+            
+            # Нормализуем поворот
+            rotation = rotation % 360
+            
+            # Проверяем, нужно ли учитывать поворот
+            if not settings.QR_RESPECT_ROTATION:
+                rotation = 0
+            
+            width = page_box["width"]
+            height = page_box["height"]
+            
+            # Применяем поворот по правильной таблице
+            if rotation == 0:
+                final_x, final_y = base_x, base_y
+            elif rotation == 90:
+                # Поворот на 90°: x=m, y=m (визуальный нижний-правый)
+                final_x = margin
+                final_y = margin
+            elif rotation == 180:
+                # Поворот на 180°: x=m, y=H-m-qr_h (визуальный нижний-правый)
+                final_x = margin
+                final_y = height - margin - qr_size
+            elif rotation == 270:
+                # Поворот на 270°: x=W-m-qr_w, y=H-m-qr_h (визуальный нижний-правый)
+                final_x = width - margin - qr_size
+                final_y = height - margin - qr_size
+            else:
+                self.logger.warning(f"Unsupported rotation {rotation}, using 0°")
+                final_x, final_y = base_x, base_y
+            
+            # Клэмп координат после поворота
+            final_x = max(0, min(final_x, width - qr_size))
+            final_y = max(0, min(final_y, height - qr_size))
+            
+            self.logger.debug("🎯 QR anchor calculation with rotation", 
+                            anchor=anchor,
+                            rotation=rotation,
+                            page_width=width,
+                            page_height=height,
+                            qr_size=qr_size,
+                            margin=margin,
+                            respect_rotation=settings.QR_RESPECT_ROTATION,
+                            base_x=base_x,
+                            base_y=base_y,
+                            final_x=final_x,
+                            final_y=final_y,
+                            clamped=True)
+            
+            return final_x, final_y
+            
+        except Exception as e:
+            self.logger.error("❌ Error computing QR anchor", 
+                            error=str(e), anchor=anchor, rotation=rotation)
+            # Fallback к жёсткому якорю без поворота
+            return self.compute_simple_anchor(page_box, qr_size, margin, anchor)
+    
+    def _draw_debug_frame(self, pdf_path: str, page_number: int, x: float, y: float, 
+                         width: float, height: float) -> Optional[str]:
+        """
+        Отрисовывает debug-рамку вокруг ожидаемого положения QR кода
+        
+        Args:
+            pdf_path: Путь к PDF файлу
+            page_number: Номер страницы
+            x, y: Координаты левого нижнего угла QR кода
+            width, height: Размеры QR кода
+            
+        Returns:
+            Путь к сохраненному debug изображению или None
+        """
+        if not settings.QR_DEBUG_FRAME:
+            return None
+            
+        try:
+            import fitz
+            from PIL import Image, ImageDraw
+            import io
+            
+            # Открываем PDF
+            doc = fitz.open(pdf_path)
+            if page_number >= len(doc):
+                return None
+                
+            page = doc[page_number]
+            
+            # Конвертируем страницу в изображение
+            mat = fitz.Matrix(2.0, 2.0)
+            pix = page.get_pixmap(matrix=mat)
+            img_data = pix.tobytes("png")
+            
+            # Создаем PIL изображение
+            pil_image = Image.open(io.BytesIO(img_data))
+            draw = ImageDraw.Draw(pil_image)
+            
+            # Конвертируем координаты в пиксели
+            scale_factor = 2.0
+            x_pixels = int(x * scale_factor)
+            y_pixels = int(y * scale_factor)
+            width_pixels = int(width * scale_factor)
+            height_pixels = int(height * scale_factor)
+            
+            # Конвертируем Y координату (PDF origin снизу-слева -> PIL origin сверху-слева)
+            img_height = pil_image.height
+            y_pixels_pil = img_height - y_pixels - height_pixels
+            
+            # Рисуем debug рамку (красная, толщина 2 пикселя)
+            debug_color = (255, 0, 0)  # Красный
+            debug_thickness = 2
+            
+            # Рисуем прямоугольник
+            draw.rectangle([
+                x_pixels, y_pixels_pil,
+                x_pixels + width_pixels, y_pixels_pil + height_pixels
+            ], outline=debug_color, width=debug_thickness)
+            
+            # Добавляем текст с координатами
+            text = f"QR: ({x:.1f}, {y:.1f})"
+            draw.text((x_pixels, y_pixels_pil - 20), text, fill=debug_color)
+            
+            # Сохраняем debug изображение
+            debug_filename = f"/app/tmp/debug_qr_frame_page_{page_number}.png"
+            pil_image.save(debug_filename)
+            
+            self.logger.debug("🎨 Debug frame drawn", 
+                            debug_filename=debug_filename,
+                            qr_x=x, qr_y=y,
+                            qr_width=width, qr_height=height,
+                            x_pixels=x_pixels, y_pixels_pil=y_pixels_pil)
+            
+            doc.close()
+            return debug_filename
+            
+        except Exception as e:
+            self.logger.error("❌ Error drawing debug frame", 
+                            error=str(e), pdf_path=pdf_path, page_number=page_number)
+            return None
         
     def detect_stamp_top_edge_landscape(self, pdf_path: str, page_number: int = 0) -> Optional[float]:
         """
@@ -54,14 +436,19 @@ class PDFAnalyzer:
                 
             page = doc[page_number]
             
-            # Получаем размеры страницы
-            page_rect = page.rect
-            page_width = page_rect.width
-            page_height = page_rect.height
+            # Аудит координат страницы
+            coordinate_info = self._audit_page_coordinates(page, page_number)
             
-            self.logger.debug("📄 Page dimensions", 
+            # Получаем размеры страницы из активного бокса
+            page_width = coordinate_info["active_box"]["width"]
+            page_height = coordinate_info["active_box"]["height"]
+            rotation = coordinate_info["rotation"]
+            
+            self.logger.debug("📄 Page dimensions (audited)", 
                             page_width=page_width, page_height=page_height,
-                            aspect_ratio=page_width/page_height)
+                            rotation=rotation,
+                            aspect_ratio=coordinate_info["aspect_ratio"],
+                            orientation=coordinate_info["orientation"])
             
             # Проверяем, что страница в landscape ориентации
             if page_width <= page_height:
@@ -274,7 +661,15 @@ class PDFAnalyzer:
             # Конвертируем из пикселей изображения в PDF точки
             # Учитываем масштаб (mat = 2.0)
             scale_factor = 2.0
-            stamp_top_y_points = (img_array.shape[0] - stamp_top_y) / scale_factor
+            
+            # Нормализация координат: используем новую функцию конверсии
+            # stamp_top_y в image-СК (от верха), нужно в PDF-СК (от низа)
+            x_img_points = actual_x / scale_factor
+            y_img_points = stamp_top_y / scale_factor
+            img_height_points = img_array.shape[0] / scale_factor
+            
+            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            stamp_top_y_points = y_pdf
             
             self.logger.debug("🔄 Coordinate conversion", 
                             right_start=right_start,
@@ -298,6 +693,62 @@ class PDFAnalyzer:
                             error=str(e), pdf_path=pdf_path, page_number=page_number)
             return None
     
+    def compute_heuristics_delta(self, pdf_path: str, page_number: int = 0) -> tuple[float, float]:
+        """
+        Вычисляет дельту (dx, dy) для коррекции якоря на основе эвристик
+        
+        Args:
+            pdf_path: Путь к PDF файлу
+            page_number: Номер страницы (начиная с 0)
+            
+        Returns:
+            Tuple (dx, dy) - дельта для коррекции якоря в точках PDF
+        """
+        try:
+            # Получаем полную позицию от эвристик
+            position = self.detect_qr_position_in_stamp_region(pdf_path, page_number)
+            
+            if position is None:
+                # Если эвристики не сработали, возвращаем нулевую дельту
+                return 0.0, 0.0
+            
+            # Получаем базовый якорь для сравнения
+            doc = fitz.open(pdf_path)
+            if page_number >= len(doc):
+                return 0.0, 0.0
+                
+            page = doc[page_number]
+            coordinate_info = self._audit_page_coordinates(page, page_number)
+            page_width = coordinate_info["active_box"]["width"]
+            page_height = coordinate_info["active_box"]["height"]
+            rotation = coordinate_info["rotation"]
+            
+            # Вычисляем базовый якорь
+            from app.services.pdf_service import PDFService
+            pdf_service = PDFService()
+            base_x, base_y = pdf_service.compute_anchor_xy(
+                page_width, page_height, 
+                position["width"], position["height"],
+                settings.QR_MARGIN_PT, rotation, settings.QR_ANCHOR
+            )
+            
+            # Вычисляем дельту
+            dx = position["x"] - base_x
+            dy = position["y"] - base_y
+            
+            self.logger.debug("🔍 Heuristics delta calculation", 
+                            base_x=base_x, base_y=base_y,
+                            heuristic_x=position["x"], heuristic_y=position["y"],
+                            dx=dx, dy=dy)
+            
+            doc.close()
+            return dx, dy
+            
+        except Exception as e:
+            self.logger.error("❌ Error computing heuristics delta", 
+                            error=str(e), pdf_path=pdf_path, page_number=page_number)
+            return 0.0, 0.0
+
     def detect_qr_position_in_stamp_region(self, pdf_path: str, page_number: int = 0) -> Optional[Dict[str, float]]:
         """
         Находит позицию для QR кода в области поиска штампа
@@ -335,9 +786,12 @@ class PDFAnalyzer:
                 return None
                 
             page = doc[page_number]
-            page_rect = page.rect
-            page_width = page_rect.width
-            page_height = page_rect.height
+            
+            # Аудит координат страницы
+            coordinate_info = self._audit_page_coordinates(page, page_number)
+            page_width = coordinate_info["active_box"]["width"]
+            page_height = coordinate_info["active_box"]["height"]
+            rotation = coordinate_info["rotation"]
             
             # Конвертируем страницу в изображение
             mat = fitz.Matrix(2.0, 2.0)
@@ -556,7 +1010,15 @@ class PDFAnalyzer:
             # Конвертируем координаты обратно в PDF точки
             # rightmost_x - это координата относительно правой области
             actual_x = (img_array.shape[1] - right_region_width) + rightmost_x
-            frame_right_x_points = actual_x / 2.0  # Учитываем масштаб
+            
+            # Нормализация координат: используем новую функцию конверсии
+            scale_factor = 2.0
+            x_img_points = actual_x / scale_factor
+            y_img_points = 0  # Y не важен для правой рамки
+            img_height_points = img_array.shape[0] / scale_factor
+            
+            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            frame_right_x_points = x_pdf
             
             self.logger.info("Right frame edge detected", 
                            frame_right_x_points=frame_right_x_points,
@@ -643,7 +1105,15 @@ class PDFAnalyzer:
             # Конвертируем координаты обратно в PDF точки
             # bottommost_y - это координата относительно нижней области
             actual_y = (img_array.shape[0] - bottom_region_height) + bottommost_y
-            frame_bottom_y_points = (img_array.shape[0] - actual_y) / 2.0  # Учитываем масштаб
+            
+            # Нормализация координат: используем новую функцию конверсии
+            scale_factor = 2.0
+            x_img_points = 0  # X не важен для нижней рамки
+            y_img_points = actual_y / scale_factor
+            img_height_points = img_array.shape[0] / scale_factor
+            
+            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            frame_bottom_y_points = y_pdf
             
             self.logger.info("Bottom frame edge detected", 
                            frame_bottom_y_points=frame_bottom_y_points,
@@ -680,16 +1150,20 @@ class PDFAnalyzer:
                 return {}
                 
             page = doc[page_number]
-            page_rect = page.rect
+            
+            # Аудит координат страницы
+            coordinate_info = self._audit_page_coordinates(page, page_number)
             
             # Определяем ориентацию страницы
-            is_landscape = page_rect.width > page_rect.height
+            is_landscape = coordinate_info["orientation"] == "landscape"
             
             result = {
                 "page_number": page_number,
-                "page_width": page_rect.width,
-                "page_height": page_rect.height,
+                "page_width": coordinate_info["active_box"]["width"],
+                "page_height": coordinate_info["active_box"]["height"],
+                "rotation": coordinate_info["rotation"],
                 "is_landscape": is_landscape,
+                "coordinate_info": coordinate_info,
                 "stamp_top_edge": None,
                 "right_frame_edge": None,
                 "bottom_frame_edge": None,
@@ -722,6 +1196,10 @@ class PDFAnalyzer:
             self.logger.info("Page layout analysis completed", 
                            page_number=page_number,
                            is_landscape=is_landscape,
+                           rotation=coordinate_info["rotation"],
+                           page_width=coordinate_info["active_box"]["width"],
+                           page_height=coordinate_info["active_box"]["height"],
+                           active_box_type=coordinate_info["active_box_type"],
                            stamp_top_edge=stamp_top,
                            right_frame_edge=right_frame,
                            horizontal_line_18cm=horizontal_line,
@@ -893,12 +1371,18 @@ class PDFAnalyzer:
             # best_line координаты относительно top_region
             actual_y = best_line["y"]
             
-            # Конвертируем из пикселей изображения в PDF точки
+            # Нормализация координат: используем новую функцию конверсии
             scale_factor = 2.0
+            x_img_points = best_line["start_x"] / scale_factor
+            y_img_points = actual_y / scale_factor
+            img_height_points = img_array.shape[0] / scale_factor
+            
+            x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+            
             line_info = {
                 "start_x": best_line["start_x"] / scale_factor,
                 "end_x": best_line["end_x"] / scale_factor,
-                "y": (img_array.shape[0] - actual_y) / scale_factor,
+                "y": y_pdf,  # Используем нормализованную Y координату
                 "length_cm": best_line["length_cm"]
             }
             
@@ -1161,10 +1645,17 @@ class PDFAnalyzer:
             result_lines = []
             
             for line in valid_lines:
+                # Нормализация координат: используем новую функцию конверсии
+                x_img_points = line["start_x"] / scale_factor
+                y_img_points = line["y"] / scale_factor
+                img_height_points = img_array.shape[0] / scale_factor
+                
+                x_pdf, y_pdf = self.to_pdf_coords(x_img_points, y_img_points, img_height_points, page_height)
+                
                 line_info = {
                     "start_x": line["start_x"] / scale_factor,
                     "end_x": line["end_x"] / scale_factor,
-                    "y": (img_array.shape[0] - line["y"]) / scale_factor,
+                    "y": y_pdf,  # Используем нормализованную Y координату
                     "length_cm": line["length_cm"]
                 }
                 result_lines.append(line_info)
