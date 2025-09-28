@@ -586,7 +586,7 @@ class PDFService:
             reader = PdfReader(BytesIO(pdf_content))
             writer = PdfWriter()
             qr_codes_data_list = []
-
+            logger.info(f"ADD QR CODES TO PDF. Total pages: {len(reader.pages)}")
             for i, page in enumerate(reader.pages):
                 page_number = i + 1
                 
@@ -594,13 +594,14 @@ class PDFService:
                 # Get actual page dimensions from the PDF page (используем MediaBox для консистентности)
                 page_width = float(page.mediabox.width)
                 page_height = float(page.mediabox.height)
+                logger.info(f"ADD QR CODES TO PDF. Page {page_number}: width={page_width}, height={page_height}")
                 
                 # Determine page orientation
                 is_landscape = page_width > page_height
                 
                 if not is_landscape:
                     # For Portrait pages: Skip QR code placement
-                    logger.info(f"Portrait page detected - skipping QR code placement (portrait pages not supported)")
+                    logger.info(f"ADD QR CODES TO PDF. Portrait page detected - skipping QR code placement (portrait pages not supported)")
                     writer.add_page(page)  # Add original page without QR code
                     continue
                 
@@ -801,6 +802,7 @@ class PDFService:
             Tuple (x, y) координаты в PDF-СК
         """
         try:
+            logger.info(f"INTELIGENT POSITIONING. Calculate Unified QR position: src=original, tmp=NO, total_pages={total_pages}, requested_page={page_number}")
             # Получаем границы активного бокса
             x0 = float(page.mediabox.x0)
             y0 = float(page.mediabox.y0)
@@ -816,10 +818,13 @@ class PDFService:
                 stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
                 rotation=0  # TODO: получить rotation из анализа
             )
-            
+            logger.info(f"INTELIGENT POSITIONING. Calculate Unified QR position: base_x={base_x}, base_y={base_y}")
+
             # TODO: добавить анализ штампа и дельту
-            # dx, dy = self.pdf_analyzer.compute_heuristics_delta(pdf_content_or_path, page_number)
-            dx, dy = 0.0, 0.0  # Пока используем только базовый якорь
+            # TODO: add main note stamp analysis and delta
+
+            dx, dy = self.pdf_analyzer.compute_heuristics_delta(pdf_content_or_path, page_number)
+            logger.info(f"INTELIGENT POSITIONING. Calculate Unified QR position: dx={dx}, dy={dy}")
             
             # Применяем дельту
             x_position = base_x + dx
@@ -829,7 +834,7 @@ class PDFService:
             x_position = max(x0, min(x_position, x1 - qr_size))
             y_position = max(y0, min(y_position, y1 - qr_size))
             
-            debug_logger.info("🔍 Unified QR position calculated", 
+            debug_logger.info("🔍 INTELIGENT POSITIONING. Unified QR position calculated", 
                             page=page_number + 1,
                             base=(base_x, base_y),
                             delta=(dx, dy),
@@ -846,7 +851,7 @@ class PDFService:
             return x_position, y_position, info
             
         except Exception as e:
-            debug_logger.error("Error calculating unified QR position", 
+            debug_logger.error("❌ INTELIGENT POSITIONING. Error calculating unified QR position", 
                              error=str(e), page_number=page_number)
             # Fallback к простому якорю
             x0 = float(page.mediabox.x0)

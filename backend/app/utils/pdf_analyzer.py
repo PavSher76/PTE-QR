@@ -705,10 +705,12 @@ class PDFAnalyzer:
         """
         try:
             # Получаем полную позицию от эвристик
+            self.logger.info(f"INTELIGENT POSITIONING. Compute Heuristics Delta. Find QR code position in stamp region: src=original, tmp=NO, total_pages={total_pages}, requested_page={page_number}")
             position = self.detect_qr_position_in_stamp_region(pdf_path, page_number)
-            
+            self.logger.info(f"INTELIGENT POSITIONING. Compute Heuristics Delta. QR code position in stamp region: {position}")
             if position is None:
                 # Если эвристики не сработали, возвращаем нулевую дельту
+                self.logger.info(f"INTELIGENT POSITIONING. Compute Heuristics Delta. QR code position in stamp region not found, return zero delta")
                 return 0.0, 0.0
             
             # Получаем базовый якорь для сравнения
