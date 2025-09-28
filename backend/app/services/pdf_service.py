@@ -217,7 +217,7 @@ class PDFService:
             qr_size = qr_size_cm * 28.35  # 99.225 points
             
             # Use new unified positioning system
-            x_position, y_position = self._calculate_unified_qr_position(
+            x_position, y_position, position_info = self._calculate_unified_qr_position(
                 page, qr_size, pdf_path, page_number - 1
             )
             
@@ -232,17 +232,17 @@ class PDFService:
             x1 = float(page.mediabox.x1)
             y1 = float(page.mediabox.y1)
             
-            # DEBUG QR: Детальный лог перед вставкой QR кода
-            debug_logger.info("🎯 DEBUG QR - Final position before insertion", 
+            # QR FINAL: Детальный лог перед вставкой QR кода
+            debug_logger.info("🎯 QR FINAL - Position before insertion", 
                             page=page_number,
                             box=active_box_type,
+                            rot=position_info.get('rotation', 0),
                             x0=x0, y0=y0, x1=x1, y1=y1,
-                            rot=0,  # TBD: получить из анализа
                             qr=(qr_size, qr_size),
                             margin=settings.QR_MARGIN_PT,
                             clearance=settings.QR_STAMP_CLEARANCE_PT,
-                            base="TBD",  # TBD: получить из анализа
-                            delta="TBD",  # TBD: получить из анализа
+                            stamp_bbox=position_info.get('stamp_bbox', 'NOT_FOUND'),
+                            base=position_info.get('base', 'UNKNOWN'),
                             final=(x_position, y_position))
             
             # Draw QR code
@@ -577,11 +577,6 @@ class PDFService:
         try:
             logger.debug("Adding QR codes to PDF", enovia_id=enovia_id, revision=revision, base_url_prefix=base_url_prefix)
             reader = PdfReader(BytesIO(pdf_content))
-            
-            # Создаем временный файл с исходным PDF для анализа
-            with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_file:
-                temp_file.write(pdf_content)
-                input_pdf_path = temp_file.name
             writer = PdfWriter()
             qr_codes_data_list = []
 
@@ -648,8 +643,8 @@ class PDFService:
                     try:
                         # Use intelligent positioning with PDF analysis
                         # Анализируем исходный документ с правильным индексом страницы
-                        x_position, y_position = self._calculate_landscape_qr_position(
-                            page_width, page_height, qr_size_points, input_pdf_path, page_number - 1
+                        x_position, y_position, position_info = self._calculate_unified_qr_position(
+                            page, qr_size_points, pdf_content, page_number - 1
                         )
                         logger.info(f"Landscape page detected - QR positioned intelligently at ({x_position:.1f}, {y_position:.1f})")
                     except Exception as e:
@@ -674,8 +669,9 @@ class PDFService:
                         y_position = base_y
                         
                         logger.info(f"Landscape page detected - QR positioned at bottom-right (fallback): x={x_position:.1f}, y={y_position:.1f}")
-                    
-                    logger.info(f"QR positioning details: page_size=({page_width:.1f}x{page_height:.1f}), qr_size={qr_size_points:.1f}, position=({x_position:.1f}, {y_position:.1f})")
+
+                    # QR FINAL: page=i, box=media, rot=0, x0=...,y0=...,x1=...,y1=..., qr=(w=...,h=...), margin=..., clearance=..., stamp_bbox=(sx0,sy0,sx1,sy1) FOUND|NOT_FOUND, base=(x_anchor,y_anchor), final=(x,y)
+                    logger.info(f"QR FINAL: page={page_number}, box=media, rot=0, x0={x0:.1f},y0={y0:.1f},x1={x1:.1f},y1={y1:.1f}, qr=(w={qr_size_points:.1f},h={qr_size_points:.1f}), margin={settings.QR_MARGIN_PT:.1f}, clearance={settings.QR_STAMP_CLEARANCE_PT:.1f}, stamp_bbox=(sx0,sy0,sx1,sy1) FOUND|NOT_FOUND, base=(x_anchor,y_anchor), final=(x,y)")
 
                 # Save PIL image to temporary file for ReportLab
                 with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_img:
@@ -714,10 +710,6 @@ class PDFService:
         except Exception as e:
             logger.error(f"Error adding QR codes to PDF", error=str(e))
             raise
-        finally:
-            # Очищаем временный файл
-            if 'input_pdf_path' in locals() and os.path.exists(input_pdf_path):
-                os.unlink(input_pdf_path)
 
     def compute_anchor_xy(self, x0: float, y0: float, x1: float, y1: float, 
                          qr_w: float, qr_h: float, margin_pt: float, 
@@ -785,6 +777,91 @@ class PDFService:
             x = max(x0, min(x1 - margin_pt - qr_w, x1 - qr_w))
             y = max(y0, min(y0 + margin_pt + stamp_clearance_pt, y1 - qr_h))
             return x, y
+
+    def _calculate_unified_qr_position(self, page, qr_size: float, pdf_content_or_path, page_number: int) -> tuple[float, float, dict]:
+        """
+        Вычисляет позицию QR кода с использованием единой системы позиционирования
+        
+        Args:
+            page: Страница PDF
+            qr_size: Размер QR кода в точках
+            pdf_content_or_path: Содержимое PDF или путь к файлу (для совместимости)
+            page_number: Номер страницы (0-based)
+            
+        Returns:
+            Tuple (x, y) координаты в PDF-СК
+        """
+        try:
+            # Получаем границы активного бокса
+            x0 = float(page.mediabox.x0)
+            y0 = float(page.mediabox.y0)
+            x1 = float(page.mediabox.x1)
+            y1 = float(page.mediabox.y1)
+            
+            # Используем базовый якорь bottom-right
+            base_x, base_y = self.compute_anchor_xy(
+                x0=x0, y0=y0, x1=x1, y1=y1,
+                qr_w=qr_size,
+                qr_h=qr_size,
+                margin_pt=settings.QR_MARGIN_PT,
+                stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                rotation=0  # TODO: получить rotation из анализа
+            )
+            
+            # TODO: добавить анализ штампа и дельту
+            # dx, dy = self.pdf_analyzer.compute_heuristics_delta(pdf_content_or_path, page_number)
+            dx, dy = 0.0, 0.0  # Пока используем только базовый якорь
+            
+            # Применяем дельту
+            x_position = base_x + dx
+            y_position = base_y + dy
+            
+            # Клэмпим координаты
+            x_position = max(x0, min(x_position, x1 - qr_size))
+            y_position = max(y0, min(y_position, y1 - qr_size))
+            
+            debug_logger.info("🔍 Unified QR position calculated", 
+                            page=page_number + 1,
+                            base=(base_x, base_y),
+                            delta=(dx, dy),
+                            final=(x_position, y_position))
+            
+            # Возвращаем дополнительную информацию для лога
+            info = {
+                'base': (base_x, base_y),
+                'delta': (dx, dy),
+                'rotation': 0,
+                'stamp_bbox': 'NOT_FOUND'
+            }
+            
+            return x_position, y_position, info
+            
+        except Exception as e:
+            debug_logger.error("Error calculating unified QR position", 
+                             error=str(e), page_number=page_number)
+            # Fallback к простому якорю
+            x0 = float(page.mediabox.x0)
+            y0 = float(page.mediabox.y0)
+            x1 = float(page.mediabox.x1)
+            y1 = float(page.mediabox.y1)
+            
+            base_x, base_y = self.compute_anchor_xy(
+                x0=x0, y0=y0, x1=x1, y1=y1,
+                qr_w=qr_size,
+                qr_h=qr_size,
+                margin_pt=settings.QR_MARGIN_PT,
+                stamp_clearance_pt=settings.QR_STAMP_CLEARANCE_PT,
+                rotation=0
+            )
+            
+            info = {
+                'base': (base_x, base_y),
+                'delta': (0.0, 0.0),
+                'rotation': 0,
+                'stamp_bbox': 'NOT_FOUND'
+            }
+            
+            return base_x, base_y, info
 
 
 # Global PDF service instance - will be created lazily
